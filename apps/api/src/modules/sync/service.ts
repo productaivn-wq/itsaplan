@@ -25,6 +25,8 @@ export const scopeKind: Record<string, ScopeKind> = {
     resource: 'initiatives',
   },
   inbox: { key: (projectId, userId) => `inbox:${projectId}:${userId}`, resource: null },
+  project: { key: (projectId) => `project:${projectId}`, resource: 'work_items' },
+  agents: { key: (projectId) => `agents:${projectId}`, resource: 'ai_agents' },
 };
 
 // A scope with no row has never changed; a client treats it the same as any other

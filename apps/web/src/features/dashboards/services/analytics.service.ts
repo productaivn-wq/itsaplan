@@ -62,6 +62,7 @@ export function useAgentRunsQuery(
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-runs', params),
     queryFn: () => getAgentRuns(projectKey, params),
+    refetchInterval: 5000,
   });
 }
 
@@ -69,6 +70,7 @@ export function useAgentRunStatsQuery(projectKey: string, days: number) {
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-run-stats', { days }),
     queryFn: () => getAgentRunStats(projectKey, days),
+    refetchInterval: 5000,
   });
 }
 
@@ -83,6 +85,7 @@ export function useAgentWorkloadQuery(projectKey: string) {
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-workload'),
     queryFn: () => getAgentWorkload(projectKey),
+    refetchInterval: 5000,
   });
 }
 
@@ -93,5 +96,6 @@ export function useActivityFeedQuery(
   return useQuery({
     queryKey: qk.analytics(projectKey, 'activity', params),
     queryFn: () => listActivity(projectKey, params),
+    refetchInterval: 5000,
   });
 }

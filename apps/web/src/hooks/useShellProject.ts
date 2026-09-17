@@ -12,6 +12,9 @@ import { applyFilters } from '@/utils/filters';
 import { withoutShownSubtasks } from '@/utils/subtasks';
 import { viewPath } from '@/utils/paths';
 import { useViewEditor } from '@/hooks/useViewEditor';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
+import { revScope } from '@/utils/revScopes';
+import { qk } from '@/services/queryKeys';
 
 function errorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -52,6 +55,23 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
 
   const viewsQuery = useViewsQuery(projectKey);
   const views = useMemo(() => viewsQuery.data ?? [], [viewsQuery.data]);
+
+  const projectId = scaffold?.project.id ?? null;
+  useLiveRefresh({
+    scope: projectId ? revScope.project(projectId) : null,
+    targets: [
+      qk.projects,
+      ...(projectKey ? [qk.project(projectKey)] : []),
+    ],
+  });
+
+  useLiveRefresh({
+    scope: projectId ? revScope.agents(projectId) : null,
+    targets: [
+      qk.anyAiAgents,
+      ...(projectKey ? [qk.analyticsForProject(projectKey)] : []),
+    ],
+  });
 
   // Saved-views, layout, display and filter editing for the current project. The
   // active view is the route param; selecting a view navigates.

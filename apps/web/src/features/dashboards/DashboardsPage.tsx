@@ -14,6 +14,9 @@ import { useDashboardEditor } from './hooks/useDashboardEditor';
 import DashboardTabs from './components/DashboardTabs';
 import WidgetGrid from './components/WidgetGrid';
 import AddWidgetDialog from './components/AddWidgetDialog';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
+import { revScope } from '@/utils/revScopes';
+import { qk } from '@/services/queryKeys';
 
 // The dashboards section: a tab strip of named dashboards over a grid of analytics
 // widgets. The active dashboard comes from the route; with none selected the
@@ -30,6 +33,23 @@ export default function DashboardsPage() {
 
   const { data: dashboards, isLoading, isFetching, isSuccess } = useDashboardsQuery(projectKey);
   const [editing, setEditing] = useState(false);
+
+  const projectId = project?.project.id ?? null;
+  useLiveRefresh({
+    scope: projectId ? revScope.board(projectId) : null,
+    targets: [
+      qk.boardIssues(projectKey),
+      qk.analyticsForProject(projectKey),
+    ],
+  });
+
+  useLiveRefresh({
+    scope: projectId ? revScope.agents(projectId) : null,
+    targets: [
+      qk.anyAiAgents,
+      qk.analyticsForProject(projectKey),
+    ],
+  });
 
   const list = dashboards ?? [];
   const parsedRouteId = params.dashboardId ? Number(params.dashboardId) : null;

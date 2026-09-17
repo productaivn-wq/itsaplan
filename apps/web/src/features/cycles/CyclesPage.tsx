@@ -14,6 +14,9 @@ import { useCompletedCycles } from './hooks/useCompletedCycles';
 import CyclesList from './components/list/CyclesList';
 import CyclesViewTabs from './components/list/CyclesViewTabs';
 import CycleFormDialog from './components/CycleFormDialog';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
+import { revScope } from '@/utils/revScopes';
+import { qk } from '@/services/queryKeys';
 
 // A project's cycles, grouped by the status their dates put them in, as a table or
 // on a timeline. Each layout is a route of its own, and the one picked becomes the
@@ -30,6 +33,15 @@ export default function CyclesPage({ view }: { view: CyclesView }) {
   const projectKey = project?.project.ref ?? null;
   const query = usePlannedCyclesQuery(projectKey);
   const completed = useCompletedCycles(projectKey);
+
+  useLiveRefresh({
+    scope: project ? revScope.board(project.project.id) : null,
+    targets: [
+      qk.cycles(projectKey ?? ''),
+      qk.plannedCycles(projectKey ?? ''),
+      qk.completedCycles(projectKey ?? ''),
+    ],
+  });
 
   if (!project || !projectKey) return null;
 

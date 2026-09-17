@@ -37,7 +37,7 @@ import { qk } from '@/services/queryKeys';
 // Refetched on an interval because an external agent's runner presence comes from
 // this list: without it the online/offline state stays at whatever it was when the
 // settings page opened.
-const RUNNER_PRESENCE_REFRESH_MS = 30_000;
+const RUNNER_PRESENCE_REFRESH_MS = 5_000;
 
 // The team's agents, or only the ones working in one of its projects.
 export function useAiAgentsQuery(teamId: number | null, projectId?: number) {
@@ -58,6 +58,7 @@ export function useAgentRuns(teamId: number | null, agentId: number | null) {
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     enabled: teamId != null && agentId != null,
+    refetchInterval: 3_000,
   });
 }
 
