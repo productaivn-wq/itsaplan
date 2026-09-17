@@ -5,7 +5,7 @@ import { cyclePath } from '@/utils/paths';
 import ProgressBar from '@/components/common/ProgressBar';
 import CycleActions from '../CycleActions';
 import CycleRange from '../CycleRange';
-import { cycleLength, daysLeft } from '../../utils/cycleDates';
+import { cycleLengthMinutes, minutesLeft } from '../../utils/cycleDates';
 
 // One cycle as a table row. The whole row navigates to the cycle; the name is also
 // a real anchor so middle/cmd-click opens it in a new tab.
@@ -42,10 +42,10 @@ export default function CycleTableRow({
 
       <span className="text-xs text-muted-foreground">
         <CycleRange cycle={cycle} />
-        {cycle.status === 'active' && ` · ${daysLeft(cycle)}d left`}
+        {cycle.status === 'active' && ` · ${minutesLeft(cycle)}m left`}
       </span>
 
-      <span className="text-xs text-muted-foreground tabular-nums">{cycleLength(cycle)}d</span>
+      <span className="text-xs text-muted-foreground tabular-nums">{cycleLengthMinutes(cycle)}m</span>
 
       <span className="text-xs text-muted-foreground tabular-nums">{cycle.progress.total}</span>
 

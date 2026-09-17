@@ -60,7 +60,15 @@ function zoneOption(): { timeZone?: string } {
 // "Jul 2" from an ISO datetime or a "YYYY-MM-DD" date; the raw string if it
 // does not parse (kept so a card never renders "Invalid Date"). A date-only value
 // is a calendar date, not a moment, so it is never shifted into another zone.
-export function formatShortDate(value: string): string {
+export function formatShortDate(value: string | Date): string {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    return value.toLocaleDateString(displayLocale, {
+      month: 'short',
+      day: 'numeric',
+      ...zoneOption(),
+    });
+  }
   const dateOnly = value.length <= 10;
   const date = new Date(dateOnly ? `${value}T00:00:00` : value);
   if (Number.isNaN(date.getTime())) return value;
@@ -173,9 +181,9 @@ export function formatLongDate(value: string): string {
 }
 
 // "2:05 PM" for a moment in time, rendered in the user's zone.
-export function formatTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+export function formatTime(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '';
   return date.toLocaleTimeString(displayLocale, {
     hour: 'numeric',
     minute: '2-digit',
@@ -197,11 +205,13 @@ export function dayKey(value: string): string {
   return date.toLocaleDateString('en-CA', zoneOption());
 }
 
-// Parses a "YYYY-MM-DD" date string at local midnight, so day math in the
-// calendar and timeline never shifts across a timezone boundary. Returns null
-// for a null/empty/unparseable value.
+// Parses a "YYYY-MM-DD" date string or full ISO datetime string.
 export function parseDate(value: string | null): Date | null {
   if (!value) return null;
+  if (value.includes('T') || value.includes(':') || value.includes(' ')) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
   const [y, m, d] = value.split('-').map(Number);
   if (!y || !m || !d) return null;
   const date = new Date(y, m - 1, d);

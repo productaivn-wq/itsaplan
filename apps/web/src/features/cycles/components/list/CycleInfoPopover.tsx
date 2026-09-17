@@ -10,7 +10,7 @@ import { colorDot } from '@/components/common/fields/colorDot';
 import ProgressBar from '@/components/common/ProgressBar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import CycleRange from '../CycleRange';
-import { cycleLength } from '../../utils/cycleDates';
+import { cycleLengthMinutes } from '../../utils/cycleDates';
 
 // The cycle's name in the timeline's label column, opening what does not fit on the
 // track: the goal, the range, and how far the work is. The info icon marks the name
@@ -49,7 +49,7 @@ export default function CycleInfoPopover({
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            <CycleRange cycle={cycle} /> · {cycleLength(cycle)}d
+            <CycleRange cycle={cycle} /> · {cycleLengthMinutes(cycle)}m
           </p>
         </div>
 

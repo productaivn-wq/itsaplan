@@ -268,6 +268,9 @@ export const API_KEY_MAX_EXPIRES_IN_DAYS = 365;
 export const auth = betterAuth({
   baseURL,
   secret: process.env.BETTER_AUTH_SECRET,
+  rateLimit: {
+    enabled: false,
+  },
 
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -567,9 +570,7 @@ export const auth = betterAuth({
         maxExpiresIn: API_KEY_MAX_EXPIRES_IN_DAYS,
       },
       rateLimit: {
-        enabled: true,
-        timeWindow: 1000,
-        maxRequests: 100,
+        enabled: false,
       },
     }),
     // Sign-in by emailed link, offered alongside the password. Whether it is

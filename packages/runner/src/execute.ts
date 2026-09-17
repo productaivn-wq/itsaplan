@@ -51,7 +51,11 @@ function childEnv(config: RunnerConfig, task: Task): Record<string, string> {
 // pipeline leaves its children behind.
 function killGroup(pid: number): void {
   try {
-    process.kill(-pid, 'SIGKILL');
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true });
+    } else {
+      process.kill(-pid, 'SIGKILL');
+    }
   } catch {
     // Already gone.
   }
@@ -92,7 +96,8 @@ export async function execute(
   const child = spawn(bin, args, {
     cwd: config.cwd,
     env: childEnv(config, task),
-    detached: true,
+    detached: process.platform !== 'win32',
+    windowsHide: true,
   });
 
   const kill = () => {

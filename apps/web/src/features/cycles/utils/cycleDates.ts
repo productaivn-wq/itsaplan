@@ -18,10 +18,26 @@ export function cycleLength(cycle: Cycle): number {
   return span ? daysBetween(span.start, span.end) + 1 : 0;
 }
 
+// The cycle's length in minutes (53.REF.01 Pomodoro 15m sprints).
+export function cycleLengthMinutes(cycle: Cycle): number {
+  const span = cycleSpan(cycle);
+  if (!span) return 0;
+  const ms = Math.max(0, span.end.getTime() - span.start.getTime());
+  return Math.max(1, Math.round(ms / 60000));
+}
+
 // Days from today to the last day, both counted; negative once the cycle is over.
 export function daysLeft(cycle: Cycle): number {
   const span = cycleSpan(cycle);
   return span ? daysBetween(new Date(), span.end) + 1 : 0;
+}
+
+// Minutes left from now to cycle end; negative once the cycle is over.
+export function minutesLeft(cycle: Cycle): number {
+  const span = cycleSpan(cycle);
+  if (!span) return 0;
+  const ms = span.end.getTime() - Date.now();
+  return Math.round(ms / 60000);
 }
 
 // Which ends of a cycle may still move, mirroring what the API accepts: an upcoming

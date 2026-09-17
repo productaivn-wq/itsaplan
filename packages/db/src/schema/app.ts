@@ -1249,8 +1249,8 @@ export const cycle = pgTable(
     name: text('name').notNull(),
     // What the team commits to in this cycle (the sprint goal). Empty when unset.
     goal: text('goal').notNull().default(''),
-    startDate: date('start_date').notNull(),
-    endDate: date('end_date').notNull(),
+    startDate: timestamp('start_date', { withTimezone: true }).notNull(),
+    endDate: timestamp('end_date', { withTimezone: true }).notNull(),
     // When the cycle was finished before its planned end date. NULL while it still
     // runs on its dates; once set it is never cleared, and end_date keeps the date
     // the cycle was planned to run until.

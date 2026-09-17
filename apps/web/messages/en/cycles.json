@@ -37,6 +37,9 @@
     "saveFailed": "Could not save the cycle"
   },
   "weeks": "{count, plural, one {# week} other {# weeks}}",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left",
   "transfer": {
     "title": "Move unfinished issues",
     "description": "Unfinished issues move to the cycle you pick. Finished and canceled ones stay here.",

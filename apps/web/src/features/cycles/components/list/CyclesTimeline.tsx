@@ -6,18 +6,18 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import { usePersistedWidth } from '@/hooks/usePersistedWidth';
 import { LABEL_MAX_W, LABEL_MIN_W, LABEL_NARROW_W, LABEL_W } from '@/utils/timelineTrack';
-import { TimelineHeader } from '@/components/common/timeline/TimelineHeader';
+import { CycleTimelineHeader } from './CycleTimelineHeader';
 import { TimelineLabelResizer } from '@/components/common/timeline/TimelineLabelResizer';
 import { useCycleDrag } from '../../hooks/useCycleDrag';
-import { buildCycleTimeline, CYCLE_DAY_W, cycleLabelWidthKey } from '../../utils/cycleTimeline';
+import { buildCycleTimeline, CYCLE_SLOT_15M_W, cycleLabelWidthKey } from '../../utils/cycleTimeline';
 import CycleTimelineGroupRow from './CycleTimelineGroupRow';
 import CycleTimelineRow from './CycleTimelineRow';
 
-// The project's cycles on a day track, in the same groups as the table. Dragging a
-// bar rewrites the cycle's dates; the track opens scrolled to today.
+// The project's cycles on an intraday 15-minute track, in the same groups as the table.
+// Dragging a bar rewrites the cycle's dates; the track opens scrolled to current time.
 export default function CyclesTimeline({
   cycles,
-  finished,
+  finished: _finished,
   projectKey,
 }: {
   cycles: Cycle[];
@@ -45,12 +45,11 @@ export default function CyclesTimeline({
   // wider ones it is the width the grip was dragged to.
   const narrow = viewportW < 640;
   const labelW = narrow ? LABEL_NARROW_W : labelWidth;
-  const { rows, days, months, trackWidth, todayLeft, todayInRange, dayLines, spanToRect } =
-    buildCycleTimeline({ cycles, viewportW, labelW, dayW: CYCLE_DAY_W });
+  const { rows, hours, slots, trackWidth, todayLeft, todayInRange, dayLines, spanToRect } =
+    buildCycleTimeline({ cycles, viewportW, labelW, slotW: CYCLE_SLOT_15M_W });
   const { preview, beginDrag } = useCycleDrag({
     projectKey,
-    cycles: [...cycles, ...finished],
-    dayW: CYCLE_DAY_W,
+    dayW: CYCLE_SLOT_15M_W,
     onOpen: openCycle,
   });
 
@@ -58,7 +57,7 @@ export default function CyclesTimeline({
     const el = scrollRef.current;
     if (!el || scrolledToToday.current || rows.length === 0) return;
     scrolledToToday.current = true;
-    el.scrollLeft = Math.max(0, todayLeft - labelW);
+    el.scrollLeft = Math.max(0, todayLeft - labelW - 100);
   }, [rows.length, todayLeft, labelW]);
 
   // Left to right in every language, like the work items timeline: the bars are
@@ -66,12 +65,12 @@ export default function CyclesTimeline({
   return (
     <div ref={scrollRef} dir="ltr" className="flex-1 overflow-auto">
       <div className="relative" style={{ width: labelW + trackWidth }}>
-        <TimelineHeader
+        <CycleTimelineHeader
           labelW={labelW}
           trackWidth={trackWidth}
-          dayW={CYCLE_DAY_W}
-          months={months}
-          days={days}
+          slotW={CYCLE_SLOT_15M_W}
+          hours={hours}
+          slots={slots}
         />
         {!narrow && <TimelineLabelResizer labelW={labelW} onResize={setLabelWidth} />}
 

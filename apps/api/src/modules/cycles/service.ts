@@ -35,25 +35,29 @@ export interface CycleRow {
 // its own boundary days regardless of the reader's zone. A cycle finished early is
 // completed from the moment it was finished, whatever its dates say.
 export function cycleStatus(
-  startDate: string,
-  endDate: string,
+  startDate: string | Date,
+  endDate: string | Date,
   completedAt: Date | null,
 ): CycleStatus {
   if (completedAt) return 'completed';
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < startDate) return 'upcoming';
-  if (today > endDate) return 'completed';
+  const now = Date.now();
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  if (now < start) return 'upcoming';
+  if (now > end) return 'completed';
   return 'active';
 }
 
 function toCycle(row: typeof cycle.$inferSelect, progress: CycleProgress): CycleRow {
+  const startDateStr = iso(new Date(row.startDate));
+  const endDateStr = iso(new Date(row.endDate));
   return {
     id: row.id,
     projectId: row.projectId,
     name: row.name,
     goal: row.goal,
-    startDate: row.startDate,
-    endDate: row.endDate,
+    startDate: startDateStr,
+    endDate: endDateStr,
     completedAt: row.completedAt ? iso(row.completedAt) : null,
     status: cycleStatus(row.startDate, row.endDate, row.completedAt),
     createdAt: iso(row.createdAt),
@@ -96,15 +100,11 @@ const TODAY = sql`(now() at time zone 'utc')::date`;
 
 const NOW = sql`now()` as unknown as Date;
 
-// The last day a cycle blocks another one from starting. A cycle finished early gave
-// up the rest of its planned range, and it shares the day it was finished with
-// whatever starts next — which is what "start the next cycle today" does — so it
-// blocks only up to the day before that.
-const OCCUPIED_UNTIL = sql`coalesce((${cycle.completedAt} at time zone 'utc')::date - 1, ${cycle.endDate})`;
+// The last day/time a cycle blocks another one from starting.
+const OCCUPIED_UNTIL = sql`coalesce(${cycle.completedAt}, ${cycle.endDate})`;
 
-// A cycle has finished when it was finished early or when its planned end date has
-// passed. The planned list and the archive split on exactly this.
-const FINISHED = sql`(${cycle.completedAt} is not null or ${cycle.endDate} < ${TODAY})`;
+// A cycle has finished when it was finished early or when its planned end date has passed.
+const FINISHED = sql`(${cycle.completedAt} is not null or ${cycle.endDate} < now())`;
 
 // Every cycle of a project, oldest first, so the list reads as a timeline.
 export async function listCycles(projectId: number): Promise<CycleRow[]> {
@@ -193,10 +193,12 @@ async function assertRange(
   endDate: string,
   excludeId?: number,
 ): Promise<void> {
-  if (endDate < startDate) throw new HttpError(400, 'Cycle end date must not precede its start');
+  const startIso = new Date(startDate).toISOString();
+  const endIso = new Date(endDate).toISOString();
+  if (endIso < startIso) throw new HttpError(400, 'Cycle end date must not precede its start');
   const conds = [
     eq(cycle.projectId, projectId),
-    sql`${cycle.startDate} <= ${endDate} and ${OCCUPIED_UNTIL} >= ${startDate}`,
+    sql`${cycle.startDate} <= ${endIso}::timestamptz and ${OCCUPIED_UNTIL} >= ${startIso}::timestamptz`,
   ];
   if (excludeId !== undefined) conds.push(ne(cycle.id, excludeId));
   const rows = await db
@@ -222,8 +224,8 @@ export async function createCycle(projectId: number, input: NewCycleInput): Prom
       projectId,
       name: input.name,
       goal: input.goal ?? '',
-      startDate: input.startDate,
-      endDate: input.endDate,
+      startDate: new Date(input.startDate),
+      endDate: new Date(input.endDate),
     })
     .returning();
   // A cycle nothing can point at yet, so its progress needs no reading back.
@@ -254,8 +256,10 @@ function assertDatesMovable(status: CycleStatus, movesStart: boolean, movesEnd: 
 export async function updateCycle(id: number, patch: CyclePatch): Promise<CycleRow | null> {
   const [before] = await db.select().from(cycle).where(eq(cycle.id, id));
   if (!before) return null;
-  const movesStart = patch.startDate !== undefined && patch.startDate !== before.startDate;
-  const movesEnd = patch.endDate !== undefined && patch.endDate !== before.endDate;
+  const beforeStartIso = before.startDate instanceof Date ? before.startDate.toISOString() : String(before.startDate);
+  const beforeEndIso = before.endDate instanceof Date ? before.endDate.toISOString() : String(before.endDate);
+  const movesStart = patch.startDate !== undefined && patch.startDate !== beforeStartIso;
+  const movesEnd = patch.endDate !== undefined && patch.endDate !== beforeEndIso;
   assertDatesMovable(
     cycleStatus(before.startDate, before.endDate, before.completedAt),
     movesStart,
@@ -264,8 +268,8 @@ export async function updateCycle(id: number, patch: CyclePatch): Promise<CycleR
   if (movesStart || movesEnd) {
     await assertRange(
       before.projectId,
-      patch.startDate ?? before.startDate,
-      patch.endDate ?? before.endDate,
+      patch.startDate ?? beforeStartIso,
+      patch.endDate ?? beforeEndIso,
       id,
     );
   }
@@ -273,8 +277,8 @@ export async function updateCycle(id: number, patch: CyclePatch): Promise<CycleR
   const set: Partial<typeof cycle.$inferInsert> = {};
   if (patch.name !== undefined) set.name = patch.name;
   if (patch.goal !== undefined) set.goal = patch.goal;
-  if (patch.startDate !== undefined) set.startDate = patch.startDate;
-  if (patch.endDate !== undefined) set.endDate = patch.endDate;
+  if (patch.startDate !== undefined) set.startDate = new Date(patch.startDate);
+  if (patch.endDate !== undefined) set.endDate = new Date(patch.endDate);
   if (Object.keys(set).length > 0) {
     set.updatedAt = NOW;
     await db.update(cycle).set(set).where(eq(cycle.id, id));
