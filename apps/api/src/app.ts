@@ -48,6 +48,12 @@ For agent clients, use the MCP endpoint at [${apiUrl}/mcp](${apiUrl}/mcp). SCIM,
 // binds the port; tests import it and pass it to Eden Treaty to drive routes in
 // memory (no network). Keep the chain unbroken so `type App` stays accurate.
 export const app = new Elysia()
+  .onRequest(({ request }) => {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/sync/rev') || url.pathname.includes('/board')) {
+      console.log(`[API ${new Date().toISOString()}] ${request.method} ${url.pathname}${url.search}`);
+    }
+  })
   .use(
     cors({
       origin: trustedOrigins,

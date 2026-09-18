@@ -51,6 +51,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     queryFn: () => getRevs(scopes),
     enabled: scopes.length > 0,
     refetchInterval: POLL_MS,
+    refetchIntervalInBackground: true,
     // Never served as fresh, but kept for one interval: with gcTime 0 a remount in
     // the same tick drops the in-flight read and fires a second one.
     staleTime: 0,
@@ -68,7 +69,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       if (previous === undefined || previous === rev) continue;
       for (const watcher of watchers.current) {
         if (watcher.scope !== scope) continue;
-        for (const key of watcher.targets) void qc.invalidateQueries({ queryKey: key });
+        for (const key of watcher.targets) {
+          void qc.invalidateQueries({ queryKey: key, refetchType: 'all' });
+          void qc.refetchQueries({ queryKey: key });
+        }
       }
     }
   }, [data, qc]);
