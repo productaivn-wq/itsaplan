@@ -78,6 +78,55 @@
       "expected": {
         "status": "success"
       }
+    },
+    {
+      "id": "UC-004-FR-031-POSITIVE",
+      "fr_ref": "FR-031",
+      "fr_text": "Direct database insertions/updates to itsaplan.issue from external bridge daemons must satisfy project integrity, column assignment, and chk_done_proof_and_review constraints.",
+      "description": "External bridge CDC upsert satisfies constraints",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "project_key": "PM",
+        "status": "completed",
+        "title": "Bridge Ingestion Validation Task"
+      },
+      "expected": {
+        "upsert_status": "success",
+        "constraint_valid": true
+      }
+    },
+    {
+      "id": "UC-004-FR-032-POSITIVE",
+      "fr_ref": "FR-032",
+      "fr_text": "External or internal mutations to issue rows must atomically fire trigger bump_revision(), incrementing revision.rev for scope board:<projectId> to notify frontend SyncProvider.",
+      "description": "Database issue mutation bumps revision counter atomically",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scope": "board:1",
+        "mutation": "UPDATE issue SET priority = 'high' WHERE id = 1"
+      },
+      "expected": {
+        "revision_incremented": true,
+        "rev_delta": 1
+      }
+    },
+    {
+      "id": "UC-004-FR-031-ADVERSARIAL",
+      "fr_ref": "FR-031",
+      "fr_text": "Bridge insertion with invalid column ID or non-existent project key must be rejected cleanly.",
+      "description": "Adversarial invalid project or column rejection",
+      "type": "adversarial",
+      "scenario_ref": "UC-004",
+      "input": {
+        "project_key": "NON_EXISTENT_KEY",
+        "column_id": -999
+      },
+      "expected": {
+        "status": "rejected",
+        "database_corrupted": false
+      }
     }
   ]
 }

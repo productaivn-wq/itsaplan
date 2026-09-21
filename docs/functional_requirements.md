@@ -32,3 +32,5 @@
 | **FR-028** | Stateful | Document Optimistic Locking | Document updates must provide matching `version` numbers; stale writes must be rejected with HTTP 409 Conflict. | `UC-006` |
 | **FR-029** | Stateful | Automatic Document Revisions | Every successful document write must create an immutable version snapshot in `project_document_revision` via database trigger. | `UC-006` |
 | **FR-030** | Authorization | Document Privacy Isolation | Documents with `isPrivate = true` must only be queryable and accessible by their creator/owner (`ownerUserId`). | `UC-006` |
+| **FR-031** | Stateful | External Bridge CDC Ingestion | Direct database insertions/updates to `itsaplan.issue` from external bridge daemons must satisfy project integrity, column assignment, and `chk_done_proof_and_review` constraints. | `UC-004` |
+| **FR-032** | Stateful | Reactive Revision Bus Trigger | External or internal mutations to `issue` rows must atomically fire trigger `bump_revision()`, incrementing `revision.rev` for scope `board:<projectId>` to notify frontend `SyncProvider`. | `UC-004` |

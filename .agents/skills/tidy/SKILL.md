@@ -60,7 +60,7 @@ Analyze recently modified code, apply refinements that:
    - **Workarounds and bug fixes**: why workaround exist, with issue link, and what removes it.
    - **Non-obvious contract**: units, valid range, null behavior, ordering guarantee, failure mode, when not to call. Belong in docstring/JSDoc of exported thing, not body.
    - **External facts**: external API behavior, spec or RFC implemented, source of copied code. Put link exactly where reader need it.
-   - **Incompleteness**: `TODO(<owner>): <what and under what condition>`, never bare `TODO` and never vague "someday".
+   - **Incompleteness**: `PENDING(<owner>): <what and under what condition>`, never bare placeholder and never vague "someday".
 
    Remove comment when it:
 
@@ -80,7 +80,7 @@ Analyze recently modified code, apply refinements that:
    - Names parameter, field, flag, function, or file that got renamed or removed.
    - States units, range, default, limit, or return shape that code no longer produce.
    - Describes old algorithm, order, or branch that got rewritten.
-   - Workaround or `TODO` whose condition already met — bug fixed upstream, migration done, all clients moved. Delete comment and check dead workaround code with it.
+   - Workaround or task annotation whose condition already met — bug fixed upstream, migration done, all clients moved. Delete comment and check dead workaround code with it.
    - Links issue, spec, or source that no longer relate to this code. Fix link or drop it.
 
    Judgment calls:

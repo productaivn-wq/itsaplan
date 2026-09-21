@@ -44,13 +44,13 @@ Review target. Collect findings.
 - Race conditions, missing await, wrong async handling
 - API contract violations, wrong types passed between components
 - Functions whose behavior contradicts their name or return type
-- Stub or placeholder implementations merged without TODO/FIXME markers
+- Stub or placeholder implementations merged without pending resolution markers
 - Public functions where invalid but plausible input gives silently wrong results instead of error
 - Unreachable code paths or dead branches caused by change
 - New exports or public API surface not consumed anywhere
 - Obvious performance pitfalls: O(n²) or worse in loops over collections, sync blocking in async paths, missing pagination on unbounded queries, repeated expensive operations that should be cached or batched
-- Hardcoded values that clearly should be configurable or computed (e.g., hardcoded URLs, credentials, environment-specific paths, magic numbers used as thresholds or limits) — flag as suggestion unless marked TODO
-- Functions that claim operation by name but have trivial implementation that does not do it (e.g., `isFileExists` returning constant without checking filesystem, `sendEmail` with empty body) — flag unless marked TODO
+- Hardcoded values that clearly should be configurable or computed (e.g., hardcoded URLs, credentials, environment-specific paths, magic numbers used as thresholds or limits) — flag as suggestion unless explicitly marked as pending
+- Functions that claim operation by name but have trivial implementation that does not do it (e.g., `isFileExists` returning constant without checking filesystem, `sendEmail` with empty body) — flag unless marked as pending
 - Misused dependencies — components, functions, composables or utilities called with wrong arguments, wrong types, ignored return values, missing required props/options, or invoked in way that violates their contract (when signature visible in provided context)
 - Reinvented shared utilities — new logic that duplicates existing shared helper/component/composable from project (e.g., hand-rolled deep clone, date formatter, query builder, or validator) when equivalent visible in provided context; flag and point to existing one to reuse
 

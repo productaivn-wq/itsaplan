@@ -54,8 +54,12 @@
 - **Slice S03: Multi-Channel User Notifications**  
   *Scope*: In-app notifications, email notifications via Resend/SMTP, Telegram bot dispatch.  
   *Traceability*: → TC: `TC-UC-004 Scenario G03` (Deliver mention notification to email and inbox).
+- **Slice S04: External Database Push Hook & Bi-Directional Bridge CDC Ingestion**  
+  *Scope*: Bridge daemon direct upserts into `itsaplan.issue`, automatic invocation of `bump_revision()` trigger, column ID mapping, and `chk_done_proof_and_review` constraint validation.  
+  *Traceability*: → FR: `FR-031`, `FR-032` | TC: `TC-UC-004 Scenario G04` (Direct database issue upsert from external bridge triggers instant revision counter bump and web cache invalidation).
 
 ---
 
 ## 5. Revision History
+- **2026-09-21**: Version 1.1.0 — Added Slice S04 for external SQL push trigger hook and bi-directional bridge integration.
 - **2026-09-21**: Version 1.0.0 — Aligned with `apps/web/src/context/syncContext.tsx`, `apps/api/src/modules/sync`, and `apps/worker/src`.

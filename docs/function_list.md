@@ -483,7 +483,7 @@ This document serves as the physical **Single Source of Truth (SSOT)** for all c
 
 | Function / Endpoint | Line | Type | Summary / Lineage |
 |:---|:---:|:---:|:---|
-| [`stripPdfImagePlaceholders`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/chat-attachments/pdf.ts#L6) | `6` | `function` | Domain Service Function |
+| [`stripPdfImageMarkers`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/chat-attachments/pdf.ts#L6) | `6` | `function` | Domain Service Function (stripPdfImagePlaceholders) |
 | [`pdfToMarkdown`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/chat-attachments/pdf.ts#L19) | `19` | `function` | Domain Service Function |
 
 ### Module: [`apps/api/src/modules/chat-attachments/service.ts`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/chat-attachments/service.ts)
@@ -1362,7 +1362,7 @@ This document serves as the physical **Single Source of Truth (SSOT)** for all c
 | [`teamOwnsProject`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L595) | `595` | `function` | Domain Service Function |
 | [`getTeamProject`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L607) | `607` | `function` | Domain Service Function |
 | [`listTeamProjectMembers`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L636) | `636` | `function` | Domain Service Function |
-| [`insertOwnedTeam`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L673) | `673` | `function` | Domain Service Function |
+| [`createOwnedTeam`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L673) | `673` | `function` | Domain Service Function (insertOwnedTeam) |
 | [`listTeamMemberIds`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L699) | `699` | `function` | Domain Service Function |
 | [`assertTeamSeatFree`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L709) | `709` | `function` | Domain Service Function |
 | [`createTeam`](file:///d:/WORK/01_PROJECTS/58_ITSAPLAN/apps/api/src/modules/teams/service.ts#L719) | `719` | `function` | Domain Service Function |
