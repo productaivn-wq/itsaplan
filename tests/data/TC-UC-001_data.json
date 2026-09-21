@@ -1,0 +1,484 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-001",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-001-FR-001-INITIAL-STATE",
+      "fr_ref": "FR-001",
+      "fr_text": "Project key must consist of uppercase alphanumeric characters, be globally unique, and immutable after creation.",
+      "description": "Initial state for FR-001",
+      "type": "initial-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-001-FR-001-POSITIVE",
+      "fr_ref": "FR-001",
+      "fr_text": "Project key must consist of uppercase alphanumeric characters, be globally unique, and immutable after creation.",
+      "description": "Happy path for FR-001",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-001-TERMINAL-STATE",
+      "fr_ref": "FR-001",
+      "fr_text": "Project key must consist of uppercase alphanumeric characters, be globally unique, and immutable after creation.",
+      "description": "Terminal state for FR-001",
+      "type": "terminal-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-001-FR-001-TRANSITION",
+      "fr_ref": "FR-001",
+      "fr_text": "Project key must consist of uppercase alphanumeric characters, be globally unique, and immutable after creation.",
+      "description": "Transition state for FR-001",
+      "type": "transition",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-001-FR-002-POSITIVE",
+      "fr_ref": "FR-002",
+      "fr_text": "Each project must atomically increment next_sequence per created issue, guaranteeing contiguous sequence numbering.",
+      "description": "Happy path for FR-002",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-003-NEGATIVE",
+      "fr_ref": "FR-003",
+      "fr_text": "Disabling a project feature flag (e.g., initiativesEnabled) must hide UI elements and reject corresponding API endpoints with 403 without deleting database rows.",
+      "description": "Invalid input rejection for FR-003",
+      "type": "negative",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "disabling"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-001-FR-003-POSITIVE",
+      "fr_ref": "FR-003",
+      "fr_text": "Disabling a project feature flag (e.g., initiativesEnabled) must hide UI elements and reject corresponding API endpoints with 403 without deleting database rows.",
+      "description": "Happy path for FR-003",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "disabling"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-004-POSITIVE",
+      "fr_ref": "FR-004",
+      "fr_text": "Non-owner project members must be evaluated strictly against team_role permissions for the requested resource and CRUD action.",
+      "description": "Happy path for FR-004",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "non-owner"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-004-UNAUTHORIZED",
+      "fr_ref": "FR-004",
+      "fr_text": "Non-owner project members must be evaluated strictly against team_role permissions for the requested resource and CRUD action.",
+      "description": "Unauthorized access attempt for FR-004",
+      "type": "unauthorized",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "no_permission",
+        "params": {
+          "authenticated": false,
+          "role": "guest",
+          "feature": "non-owner"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "PermissionError"
+      }
+    },
+    {
+      "id": "UC-001-FR-005-POSITIVE",
+      "fr_ref": "FR-005",
+      "fr_text": "Project members with role owner must bypass all role permission checks and have unrestricted access to project settings.",
+      "description": "Happy path for FR-005",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-005-UNAUTHORIZED",
+      "fr_ref": "FR-005",
+      "fr_text": "Project members with role owner must bypass all role permission checks and have unrestricted access to project settings.",
+      "description": "Unauthorized access attempt for FR-005",
+      "type": "unauthorized",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "no_permission",
+        "params": {
+          "authenticated": false,
+          "role": "guest",
+          "feature": "project"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "PermissionError"
+      }
+    },
+    {
+      "id": "UC-001-FR-006-BOUNDARY-HIGH",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Upper boundary value for FR-006",
+      "type": "boundary-high",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "boundary_high",
+        "params": {
+          "value": 999999,
+          "limit_test": true,
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-001-FR-006-BOUNDARY-LOW",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Lower boundary value for FR-006",
+      "type": "boundary-low",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "boundary_low",
+        "params": {
+          "value": 0,
+          "limit_test": true,
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-001-FR-006-INITIAL-STATE",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Initial state for FR-006",
+      "type": "initial-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-001-FR-006-OVERFLOW",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Overflow/exceeds-limit value for FR-006",
+      "type": "overflow",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "exceeds_limit",
+        "params": {
+          "value": 999999999,
+          "limit_test": true,
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "OverflowError"
+      }
+    },
+    {
+      "id": "UC-001-FR-006-POSITIVE",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Happy path for FR-006",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-006-TERMINAL-STATE",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Terminal state for FR-006",
+      "type": "terminal-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-001-FR-006-TRANSITION",
+      "fr_ref": "FR-006",
+      "fr_text": "Each project must maintain at least one column for each required state_type: backlog, unstarted, started, completed, canceled.",
+      "description": "Transition state for FR-006",
+      "type": "transition",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "each"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-001-FR-007-INITIAL-STATE",
+      "fr_ref": "FR-007",
+      "fr_text": "When wip_mode = 'hard', the API must reject any issue transition into a column whose active issue count equals or exceeds wip_limit.",
+      "description": "Initial state for FR-007",
+      "type": "initial-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-001-FR-007-NEGATIVE",
+      "fr_ref": "FR-007",
+      "fr_text": "When wip_mode = 'hard', the API must reject any issue transition into a column whose active issue count equals or exceeds wip_limit.",
+      "description": "Invalid input rejection for FR-007",
+      "type": "negative",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-001-FR-007-POSITIVE",
+      "fr_ref": "FR-007",
+      "fr_text": "When wip_mode = 'hard', the API must reject any issue transition into a column whose active issue count equals or exceeds wip_limit.",
+      "description": "Happy path for FR-007",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-007-TERMINAL-STATE",
+      "fr_ref": "FR-007",
+      "fr_text": "When wip_mode = 'hard', the API must reject any issue transition into a column whose active issue count equals or exceeds wip_limit.",
+      "description": "Terminal state for FR-007",
+      "type": "terminal-state",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-001-FR-007-TRANSITION",
+      "fr_ref": "FR-007",
+      "fr_text": "When wip_mode = 'hard', the API must reject any issue transition into a column whose active issue count equals or exceeds wip_limit.",
+      "description": "Transition state for FR-007",
+      "type": "transition",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-001-FR-008-POSITIVE",
+      "fr_ref": "FR-008",
+      "fr_text": "When wip_mode = 'soft', issue transitions exceeding wip_limit must succeed but surface a warning payload to the client.",
+      "description": "Happy path for FR-008",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-001-FR-009-POSITIVE",
+      "fr_ref": "FR-009",
+      "fr_text": "Entering a column with configured auto_assign_user_id must automatically overwrite the issue's assigneeUserId.",
+      "description": "Happy path for FR-009",
+      "type": "positive",
+      "scenario_ref": "UC-001",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "entering"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    }
+  ]
+}

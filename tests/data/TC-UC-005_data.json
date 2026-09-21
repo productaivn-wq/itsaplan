@@ -1,0 +1,259 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-005",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-005-FR-025-BOUNDARY-HIGH",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Upper boundary value for FR-025",
+      "type": "boundary-high",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "boundary_high",
+        "params": {
+          "value": 999999,
+          "limit_test": true,
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-005-FR-025-BOUNDARY-LOW",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Lower boundary value for FR-025",
+      "type": "boundary-low",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "boundary_low",
+        "params": {
+          "value": 0,
+          "limit_test": true,
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-005-FR-025-INITIAL-STATE",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Initial state for FR-025",
+      "type": "initial-state",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-005-FR-025-NEGATIVE",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Invalid input rejection for FR-025",
+      "type": "negative",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-005-FR-025-OVERFLOW",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Overflow/exceeds-limit value for FR-025",
+      "type": "overflow",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "exceeds_limit",
+        "params": {
+          "value": 999999999,
+          "limit_test": true,
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "OverflowError"
+      }
+    },
+    {
+      "id": "UC-005-FR-025-POSITIVE",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Happy path for FR-025",
+      "type": "positive",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-005-FR-025-TERMINAL-STATE",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Terminal state for FR-025",
+      "type": "terminal-state",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-005-FR-025-TRANSITION",
+      "fr_ref": "FR-025",
+      "fr_text": "Cycles within a project must not have overlapping startDate and endDate windows, guaranteeing at most one active cycle at any given time.",
+      "description": "Transition state for FR-025",
+      "type": "transition",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "cycles"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-005-FR-026-POSITIVE",
+      "fr_ref": "FR-026",
+      "fr_text": "Finishing a cycle early or closing it must allow transferring incomplete issues to the next upcoming cycle or backlog atomically.",
+      "description": "Happy path for FR-026",
+      "type": "positive",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "finishing"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-005-FR-027-INITIAL-STATE",
+      "fr_ref": "FR-027",
+      "fr_text": "Initiative completion metrics must roll up child issue status types completed vs total in real time.",
+      "description": "Initial state for FR-027",
+      "type": "initial-state",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "initiative"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-005-FR-027-POSITIVE",
+      "fr_ref": "FR-027",
+      "fr_text": "Initiative completion metrics must roll up child issue status types completed vs total in real time.",
+      "description": "Happy path for FR-027",
+      "type": "positive",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "initiative"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-005-FR-027-TERMINAL-STATE",
+      "fr_ref": "FR-027",
+      "fr_text": "Initiative completion metrics must roll up child issue status types completed vs total in real time.",
+      "description": "Terminal state for FR-027",
+      "type": "terminal-state",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "initiative"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-005-FR-027-TRANSITION",
+      "fr_ref": "FR-027",
+      "fr_text": "Initiative completion metrics must roll up child issue status types completed vs total in real time.",
+      "description": "Transition state for FR-027",
+      "type": "transition",
+      "scenario_ref": "UC-005",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "initiative"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    }
+  ]
+}

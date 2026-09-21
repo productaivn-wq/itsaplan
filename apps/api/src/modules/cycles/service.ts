@@ -342,7 +342,7 @@ export async function startNextCycle(id: number): Promise<CycleRow | null> {
   await markFinished(id);
   await db
     .update(cycle)
-    .set({ startDate: TODAY as unknown as string, updatedAt: NOW })
+    .set({ startDate: TODAY as unknown as Date, updatedAt: NOW })
     .where(eq(cycle.id, next.id));
   return getCycle(next.id);
 }

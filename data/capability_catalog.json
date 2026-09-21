@@ -1,0 +1,221 @@
+{
+  "meta": {
+    "project": "58_ITSAPLAN",
+    "version": "1.0.0",
+    "last_updated": "2026-09-21",
+    "total_capabilities": 10,
+    "framework": "ItsAPlan Enterprise Capability Architecture"
+  },
+  "capabilities": [
+    {
+      "id": "CAP-AUTH",
+      "name": "Identity, Authentication & Access Control",
+      "description": "Multi-method authentication (password, passkey, Google OAuth), session lifecycle management, SCIM 2.0 enterprise user provisioning, and fine-grained 21-resource RBAC permission matrix.",
+      "maturity_level": 4,
+      "maturity_label": "Mature",
+      "owner_layer": "packages/auth, packages/db, apps/api/src/modules/scim, apps/api/src/modules/roles",
+      "dependent_entities": [
+        "user",
+        "session",
+        "account",
+        "team_role",
+        "team_member",
+        "scim_token",
+        "scim_user"
+      ],
+      "interfaces": [
+        "REST (/api/auth/*, /api/teams/:id/roles)",
+        "SCIM 2.0 (/api/scim/v2/*)",
+        "better-auth client"
+      ],
+      "strategic_alignment": "GOAL-SOVEREIGNTY"
+    },
+    {
+      "id": "CAP-PROJ",
+      "name": "Project & Team Hierarchy Governance",
+      "description": "Multi-team workspace structure, project lifecycle management, cloning, project preferences, danger zone governance, and email/token invitation workflows.",
+      "maturity_level": 5,
+      "maturity_label": "Production",
+      "owner_layer": "apps/api/src/modules/projects, apps/api/src/modules/teams, apps/api/src/modules/invites, apps/web/src/app/project",
+      "dependent_entities": [
+        "project",
+        "team",
+        "team_member",
+        "project_member",
+        "project_preference",
+        "team_invite"
+      ],
+      "interfaces": [
+        "REST (/api/projects, /api/teams)",
+        "Web UI (/project/[projectKey], /account)"
+      ],
+      "strategic_alignment": "GOAL-DEVELOPER-VELOCITY"
+    },
+    {
+      "id": "CAP-ISSUE",
+      "name": "Work Item & Workflow Lifecycle Engine",
+      "description": "Comprehensive issue tracking with custom types, dynamic custom fields (text, number, date, select), parent-subtask trees, checklists, worklogs, issue relationships (blocks, relates, duplicates), activity logs, and threaded comments with @mentions.",
+      "maturity_level": 5,
+      "maturity_label": "Production",
+      "owner_layer": "apps/api/src/modules/issues, apps/api/src/modules/custom-fields, apps/api/src/modules/issue-types, apps/api/src/modules/issue-templates",
+      "dependent_entities": [
+        "issue",
+        "issue_type",
+        "custom_field",
+        "custom_field_value",
+        "issue_checklist",
+        "issue_checklist_item",
+        "issue_relation",
+        "issue_worklog",
+        "issue_activity",
+        "issue_comment"
+      ],
+      "interfaces": [
+        "REST (/api/projects/:key/issues)",
+        "MCP (create_issue, search_issues, update_issue)",
+        "Web UI Kanban/Table/Detail"
+      ],
+      "strategic_alignment": "GOAL-DEVELOPER-VELOCITY"
+    },
+    {
+      "id": "CAP-AGENT",
+      "name": "Native AI Agent Teammate Orchestration",
+      "description": "Autonomous agents registered as full team members with RBAC permissions, customizable system prompts, multi-model execution via Mastra, reusable skill catalogs, tool whitelisting, and triggering via @mention, assignment, or cron schedules.",
+      "maturity_level": 4,
+      "maturity_label": "Mature",
+      "owner_layer": "apps/api/src/modules/agents, apps/worker/src/agent-worker.ts, apps/worker/src/schedules.ts, packages/agent-tools",
+      "dependent_entities": [
+        "ai_agent",
+        "agent_skill",
+        "agent_tool",
+        "agent_schedule",
+        "agent_run",
+        "agent_conversation",
+        "agent_conversation_message"
+      ],
+      "interfaces": [
+        "REST (/api/projects/:key/ai-agents)",
+        "MCP (run_ai_agent, list_ai_agents)",
+        "Agent Chat UI",
+        "Mastra Engine"
+      ],
+      "strategic_alignment": "GOAL-AGENTIC-PARITY"
+    },
+    {
+      "id": "CAP-BOARD",
+      "name": "Agile Visualization & Multi-Perspective Views Engine",
+      "description": "Flexible work visualization featuring Kanban boards, Tables, Timelines, and Calendars with two-level grouping, WIP limits, saved filter tabs, time-boxed sprint cycles with auto-rollover, and freeform canvas note boards.",
+      "maturity_level": 5,
+      "maturity_label": "Production",
+      "owner_layer": "apps/api/src/modules/views, apps/api/src/modules/columns, apps/api/src/modules/cycles, apps/api/src/modules/note-boards, apps/web/src/app/project/[projectKey]/view",
+      "dependent_entities": [
+        "view",
+        "column",
+        "cycle",
+        "cycle_issue",
+        "note_board",
+        "note_board_card",
+        "note_board_connection"
+      ],
+      "interfaces": [
+        "REST (/api/projects/:key/views, /columns, /cycles)",
+        "MCP (create_cycle, create_column)",
+        "Interactive Web UI"
+      ],
+      "strategic_alignment": "GOAL-DEVELOPER-VELOCITY"
+    },
+    {
+      "id": "CAP-DOC",
+      "name": "Hierarchical Knowledge & Revision Engine",
+      "description": "Shared tree-structured Markdown documentation with page locking, ownership transfers, versioned immutable revisions with diff visualization, embedded media attachments, and bi-directional linking to issues and initiatives.",
+      "maturity_level": 5,
+      "maturity_label": "Production",
+      "owner_layer": "apps/api/src/modules/documents, docs/dev/revision-engine.md, apps/web/src/app/project/[projectKey]/docs",
+      "dependent_entities": [
+        "document",
+        "document_revision",
+        "document_asset",
+        "document_issue_link",
+        "document_initiative_link"
+      ],
+      "interfaces": [
+        "REST (/api/projects/:key/documents)",
+        "MCP (create_document, export_document)",
+        "Next.js Markdown Editor"
+      ],
+      "strategic_alignment": "GOAL-SOVEREIGNTY"
+    },
+    {
+      "id": "CAP-MCP",
+      "name": "Model Context Protocol (MCP) Server Interface",
+      "description": "Native Model Context Protocol HTTP/SSE server endpoint exposing 100+ project management tools, enabling external AI assistants and IDE extensions to discover, query, create, and update all entities over standardized protocol.",
+      "maturity_level": 4,
+      "maturity_label": "Mature",
+      "owner_layer": "apps/api/src/mcp, apps/api/src/openapi.ts",
+      "dependent_entities": ["api_key", "project_mcp_setting", "ai_agent_configured_tool"],
+      "interfaces": [
+        "MCP Protocol (/mcp)",
+        "OpenAPI Specification (/api/openapi.json)",
+        "Bearer API Token Auth"
+      ],
+      "strategic_alignment": "GOAL-AGENTIC-PARITY"
+    },
+    {
+      "id": "CAP-NOTIF",
+      "name": "Multi-Channel Event Notification Dispatcher",
+      "description": "Asynchronous event-driven notification hub routing mentions, assignments, and cycle alerts to in-app notification inboxes, transactional emails (SMTP/Resend), and Telegram bot chats based on per-member matrix preferences.",
+      "maturity_level": 4,
+      "maturity_label": "Mature",
+      "owner_layer": "apps/api/src/modules/notifications, apps/worker/src/notification-delivery.ts, apps/bot, packages/mailer, packages/db/src/domains/notification-settings.ts",
+      "dependent_entities": [
+        "notification",
+        "notification_preference",
+        "notification_delivery",
+        "telegram_binding",
+        "app_setting"
+      ],
+      "interfaces": [
+        "REST (/api/notifications)",
+        "Telegram Long-Polling Bot",
+        "SMTP/Resend Transport",
+        "In-App Drawer"
+      ],
+      "strategic_alignment": "GOAL-DEVELOPER-VELOCITY"
+    },
+    {
+      "id": "CAP-RUNNER",
+      "name": "External Coding Agent CLI Bridge (@itsaplan/runner)",
+      "description": "Standalone Node/Bun CLI runner (Apache-2.0) that polls task queues from the instance, executes local coding agent CLIs (Claude Code, Antigravity CLI, Codex, Copilot CLI, opencode) in the operator's workspace, and streams token-by-token logs and tool executions back to the web UI.",
+      "maturity_level": 4,
+      "maturity_label": "Mature",
+      "owner_layer": "packages/runner, docs/runner.md, apps/api/src/modules/agents/runs",
+      "dependent_entities": ["agent_run", "agent_run_event", "ai_agent", "api_key"],
+      "interfaces": [
+        "CLI Command (`npx @itsaplan/runner`)",
+        "REST Run Queue Polling",
+        "JSON Event Stream"
+      ],
+      "strategic_alignment": "GOAL-AGENTIC-PARITY"
+    },
+    {
+      "id": "CAP-INTEG",
+      "name": "Webhooks & Git Forge Automation",
+      "description": "Inbound Git forge integrations (GitHub, GitLab, Gitea, Forgejo, Bitbucket) for automatic PR-to-issue linking and workflow transitions, and outbound cryptographically signed webhooks with exponential backoff retries and delivery logs.",
+      "maturity_level": 5,
+      "maturity_label": "Production",
+      "owner_layer": "apps/api/src/modules/git, apps/api/src/modules/webhooks, apps/worker/src/delivery.ts, packages/net",
+      "dependent_entities": [
+        "webhook",
+        "webhook_delivery",
+        "git_integration",
+        "git_pull_request_link"
+      ],
+      "interfaces": [
+        "Inbound Git Webhooks (/api/git/webhook/*)",
+        "Outbound Signed HTTP POST",
+        "REST Webhook Management"
+      ],
+      "strategic_alignment": "GOAL-DEVELOPER-VELOCITY"
+    }
+  ]
+}

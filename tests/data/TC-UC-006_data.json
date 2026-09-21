@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-006",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-006-FR-028-POSITIVE",
+      "fr_ref": "FR-028",
+      "fr_text": "Document updates must provide matching version numbers; stale writes must be rejected with HTTP 409 Conflict.",
+      "description": "Happy path for FR-028",
+      "type": "positive",
+      "scenario_ref": "UC-006",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "document"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-006-FR-029-POSITIVE",
+      "fr_ref": "FR-029",
+      "fr_text": "Every successful document write must create an immutable version snapshot in project_document_revision via database trigger.",
+      "description": "Happy path for FR-029",
+      "type": "positive",
+      "scenario_ref": "UC-006",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-006-FR-030-POSITIVE",
+      "fr_ref": "FR-030",
+      "fr_text": "Documents with isPrivate = true must only be queryable and accessible by their creator/owner ownerUserId.",
+      "description": "Happy path for FR-030",
+      "type": "positive",
+      "scenario_ref": "UC-006",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "documents"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-006-FR-030-UNAUTHORIZED",
+      "fr_ref": "FR-030",
+      "fr_text": "Documents with isPrivate = true must only be queryable and accessible by their creator/owner ownerUserId.",
+      "description": "Unauthorized access attempt for FR-030",
+      "type": "unauthorized",
+      "scenario_ref": "UC-006",
+      "input": {
+        "scenario": "no_permission",
+        "params": {
+          "authenticated": false,
+          "role": "guest",
+          "feature": "documents"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "PermissionError"
+      }
+    }
+  ]
+}

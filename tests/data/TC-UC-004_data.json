@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-004",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-004-FR-022-POSITIVE",
+      "fr_ref": "FR-022",
+      "fr_text": "Mutations to project entities must bump the corresponding revision rev bigint counter via PostgreSQL database triggers.",
+      "description": "Happy path for FR-022",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "mutations"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-FR-023-POSITIVE",
+      "fr_ref": "FR-023",
+      "fr_text": "Outgoing webhook HTTP POST dispatches must compute and include an HMAC-SHA256 signature in the request headers using the webhook secret.",
+      "description": "Happy path for FR-023",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "outgoing"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-FR-024-POSITIVE",
+      "fr_ref": "FR-024",
+      "fr_text": "Webhooks failing repeatedly must back off exponentially and auto-disable isActive = false upon exceeding consecutive failure limits.",
+      "description": "Happy path for FR-024",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "webhooks"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-NFR-002-POSITIVE",
+      "fr_ref": "NFR-002",
+      "fr_text": "Realtime streaming: log updates and AG-UI events must stream unbuffered in real time.",
+      "description": "Happy path for NFR-002",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "realtime"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    }
+  ]
+}

@@ -1,6 +1,5 @@
 import { t } from 'elysia';
 import { pageQueryFields, pageResponse } from '#shared/pagination';
-import { isoDate } from '#shared/schemas';
 
 const IsoDateTimeOrDate = t.String({
   description: "Date 'YYYY-MM-DD' or ISO timestamp.",

@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "project": "58_ITSAPLAN",
+    "product_name": "It's a Plan (ItsAPlan)",
+    "version": "1.0.0",
+    "last_updated": "2026-09-21",
+    "owner": "croffasia / Antigravity Architect",
+    "license": "AGPL-3.0 (Core) / Apache-2.0 (@itsaplan/runner) / Commercial Dual-License",
+    "status": "enriched",
+    "linked_goals": ["GOAL-SOVEREIGNTY", "GOAL-AGENTIC-PARITY", "GOAL-DEVELOPER-VELOCITY"]
+  },
+  "blocks": {
+    "value_propositions": [
+      "Self-hosted data sovereignty with zero per-seat tax: Full ownership of PostgreSQL database, secrets, and attachments on private servers or cloud (GOAL-SOVEREIGNTY)",
+      "First-class AI agent teammates: Internal (Mastra) and external coding agents (Claude Code, Antigravity CLI, Codex) get roles, board slots, @mentions, and scheduled runs (GOAL-AGENTIC-PARITY)",
+      "Product-grade Linear/Raycast register UI: Ultra-snappy Next.js SSR + Tailwind v4 OKLCH monochrome tokens, borderless-first design, keyboard-driven navigation (GOAL-DEVELOPER-VELOCITY)",
+      "Native Model Context Protocol (MCP) server & REST API: Full bi-directional programmatic control exposing 100+ native PM tools over HTTP/SSE (GOAL-AGENTIC-PARITY)",
+      "Enterprise workflow flexibility: Cycles with auto-rollover, custom fields, 21-resource RBAC permission matrix, markdown doc trees with revision diffs, and freeform canvas note boards (GOAL-SOVEREIGNTY)"
+    ],
+    "customer_segments": [
+      "High-velocity software engineering teams and startups seeking Linear-quality UX without per-seat licensing penalties (GOAL-DEVELOPER-VELOCITY)",
+      "Enterprise IT, DevSecOps, and regulated industries (FinTech, Healthcare, Gov) requiring on-premise air-gapped data residency and SOC2 compliance (GOAL-SOVEREIGNTY)",
+      "Autonomous agentic engineering teams employing external coding agents (Claude Code, Codex, Antigravity CLI) for automated issue resolution (GOAL-AGENTIC-PARITY)",
+      "Cross-functional agile teams (Product, Design, Marketing, Support, Operations) needing unified issue tracking, cycles, and shared doc knowledgebases (GOAL-DEVELOPER-VELOCITY)",
+      "Open-source homelab & self-hosting DevOps community (Railway, Coolify, Docker, Helm/Kubernetes adopters) (GOAL-SOVEREIGNTY)"
+    ],
+    "channels": [
+      "Open-source distribution: GitHub repository (stars, releases, discussions, issue trackers)",
+      "One-click deployment marketplaces: Railway template, Coolify community service, Docker Hub / GHCR multi-arch images, Helm charts",
+      "Developer package ecosystems: npm registry (@itsaplan/runner), MCP server registries, Antigravity/Claude tool catalogs",
+      "Developer content & social channels: Product Hunt, Hacker News, X (Twitter), Reddit (r/selfhosted, r/devops), Telegram community",
+      "Enterprise direct channels: Commercial dual-licensing inquiries, enterprise support contracts"
+    ],
+    "customer_relationships": [
+      "Self-serve automated onboarding: `bun run setup` interactive CLI ('Try it', 'Develop', 'Generate env'), zero-config Docker Compose stack",
+      "Open-source community collaboration: Transparent GitHub roadmaps, discussions, pull requests, and Telegram developer chat",
+      "In-product frictionless operations: Pre-migration automated database backups (`migrate.ts`), anonymous opt-in telemetry, real-time update notifications",
+      "High-touch enterprise support: Dedicated SLA channels, migration assistance from Jira/Linear, custom RBAC/SAML configuration consulting"
+    ],
+    "revenue_streams": [
+      "Commercial dual-licensing: Proprietary/closed-source exemptions for enterprise deployments unable to adopt AGPL-3.0 copyleft terms",
+      "Enterprise support & SLA subscriptions: Guaranteed response times, priority bug remediation, white-glove upgrade assistance",
+      "Enterprise add-on modules: Enterprise SAML 2.0 / Okta / Azure AD SSO, SCIM 2.0 directory sync, immutable compliance audit logging",
+      "Managed Cloud SaaS (Roadmap): Fully hosted multi-tenant / dedicated cloud instances with automated zero-ops maintenance",
+      "Community sponsorships & crypto grants: GitHub Sponsors, USDT donations (ERC-20, TON, TRC-20)"
+    ],
+    "key_resources": [
+      "Monorepo codebase & architecture: Bun runtime, Turborepo, Elysia backend, Next.js SSR frontend, Drizzle ORM, @repo/auth, @repo/crypto",
+      "Agent execution runtime & protocols: Mastra AI integration, @itsaplan/runner CLI engine, native MCP HTTP/SSE server implementation",
+      "Multi-arch container infrastructure: GHCR Docker images (amd64/arm64), Coolify/Railway templates, Kubernetes Helm charts",
+      "Security & data contracts: AES-256-GCM encrypted secret store (`app_secret`), 21-resource x 4-action RBAC permission matrix engine",
+      "Core maintainer & open-source contributor network: Engineering talent, community translators (9 languages)"
+    ],
+    "key_activities": [
+      "Core feature development: Engineering Elysia API endpoints, Next.js components, Drizzle schema evolutions, and UI refinement",
+      "Agent ecosystem & MCP maintenance: Expanding @itsaplan/runner CLI presets, updating agent tool bindings (Notion, Telegram, Jina, Firecrawl)",
+      "Release & packaging governance: Automated Conventional Commit tracking via release-please, Docker compose test-gate validation",
+      "Security & vulnerability remediation: Private GitHub Security Advisory triage, secret hygiene, dependency audits",
+      "Documentation & community evangelism: Self-hosting guides, video demos, i18n localization maintenance"
+    ],
+    "key_partners": [
+      "AI & LLM providers: Anthropic (Claude Code), OpenAI (Codex), Google (Gemini/Antigravity), Mastra AI, OpenRouter",
+      "Deployment & hosting platforms: Coolify, Railway, Docker, GitHub Actions, Cloudflare, MinIO S3 object storage",
+      "Git forge ecosystems: GitHub, GitLab, Gitea, Forgejo, Bitbucket (webhooks & PR automation)",
+      "Communication & notification gateways: Resend, SMTP relays, Telegram Bot API",
+      "Enterprise identity providers: Google OAuth, WebAuthn Passkey authenticators, enterprise SCIM directories"
+    ],
+    "cost_structure": [
+      "Core software engineering & maintainer compensation",
+      "CI/CD compute & container registry infrastructure: GitHub Actions multi-arch runner minutes, GHCR storage",
+      "Reference deployment hosting: Coolify/Railway production nodes, MinIO storage clusters, test databases",
+      "Legal, trademark & licensing compliance: AGPL-3.0 compliance auditing, trademark registration, commercial contracts",
+      "Domain infrastructure & communication relays: `itsaplan.dev`, DNS, transactional email relays (Resend/SMTP)"
+    ]
+  },
+  "cjm_touchpoints": {
+    "stage_1_awareness_discovery": {
+      "channels": [
+        "GitHub Trending",
+        "r/selfhosted",
+        "Product Hunt",
+        "X/Twitter agent demos",
+        "Coolify/Railway app stores"
+      ],
+      "touchpoint": "Discover ItsAPlan as the modern open-source alternative to Linear/Jira with built-in AI agent teammates",
+      "key_action": "Star GitHub repo, read README.md, watch demo tour GIF"
+    },
+    "stage_2_evaluation_trial": {
+      "channels": ["Local CLI", "Docker", "Railway 1-click", "Public read-only share links"],
+      "touchpoint": "Zero-friction spin-up via `bun run setup` ('Try it') in under 2 minutes or instant Railway test deploy",
+      "key_action": "Explore kanban board, test custom fields, invite teammate, inspect MCP tools"
+    },
+    "stage_3_purchase_onboarding": {
+      "channels": ["Web UI Settings", "CLI Config", "Telegram Bot Setup", "SCIM Directory Sync"],
+      "touchpoint": "Configure instance settings, connect Telegram bot, configure team roles/permissions, install @itsaplan/runner",
+      "key_action": "Setup project key, import issues from Jira/Linear, assign first issue to Claude Code or internal agent"
+    },
+    "stage_4_usage_retention": {
+      "channels": [
+        "Daily Web UI",
+        "External Coding CLI",
+        "Email/Telegram Alerts",
+        "MCP Agent Integrations"
+      ],
+      "touchpoint": "Daily agile standups, cycles rollover, @mentioning agents on tasks, automated PR status updates ('Fixes KEY-42')",
+      "key_action": "Sprint execution, automated external agent code delivery, doc collaboration with revision history"
+    },
+    "stage_5_advocacy_expansion": {
+      "channels": [
+        "Social Media",
+        "GitHub Discussions",
+        "Telegram Community",
+        "Enterprise Procurement"
+      ],
+      "touchpoint": "Advocate for company-wide rollout, contribute new tool integrations/skills, purchase commercial dual-license",
+      "key_action": "Contribute PRs, sponsor on GitHub, negotiate enterprise support SLA contract"
+    }
+  },
+  "clv_alignment": {
+    "front_office": {
+      "departments": ["Developer Relations", "Community Management", "Commercial Sales"],
+      "mandate": "Maximize developer adoption, drive community growth, and convert commercial license prospects",
+      "kpis": [
+        "GitHub stars growth (>15%/month)",
+        "Active self-hosted instances",
+        "Commercial license pipeline conversion",
+        "CAC reduction"
+      ]
+    },
+    "back_office": {
+      "departments": ["Core Platform Engineering", "DevSecOps", "Infrastructure"],
+      "mandate": "Ensure rock-solid uptime, zero-data-loss migrations, AES-256-GCM secret encryption, and sub-50ms API responses",
+      "kpis": [
+        "API P95 latency < 50ms",
+        "Zero migration failures via pre-dump protection",
+        "Docker test gate pass rate (100%)",
+        "Security vulnerability MTTR < 48h"
+      ]
+    },
+    "customer_value_proposition_cvp": {
+      "departments": ["Product Management", "AI/Agent R&D", "UI/UX Design"],
+      "mandate": "Deepen human-agent collaboration primitives, maintain Linear-grade UX quality, and eliminate project friction",
+      "kpis": [
+        "Daily Active Users (DAU) retention (>70%)",
+        "Agent task completion rate (>85%)",
+        "Cycle rollover velocity",
+        "User NPS > 65"
+      ]
+    }
+  },
+  "porter_5_forces_moats": {
+    "threat_of_new_entrants": {
+      "threat_level": "Low-to-Moderate",
+      "defensive_moats": [
+        "High barrier to replicate full-suite project management (38 API modules, cycles, custom fields, revisions, note boards)",
+        "Deeply integrated MCP server exposing 100+ native tools that third-party LLMs already integrate with",
+        "Proprietary ergonomics of @itsaplan/runner supporting Claude Code, Codex, Antigravity CLI, and Copilot CLI out of the box"
+      ]
+    },
+    "bargaining_power_of_buyers": {
+      "threat_level": "Low",
+      "defensive_moats": [
+        "Zero vendor lock-in with open-source AGPL-3.0 licensing and self-hosted PostgreSQL database neutralizes buyer resistance",
+        "High switching costs once team workflows, custom fields, cycle histories, and agent skills are established in ItsAPlan",
+        "Affordable commercial licensing vs exorbitant SaaS per-seat pricing of Jira and Linear"
+      ]
+    },
+    "threat_of_substitutes": {
+      "threat_level": "Moderate",
+      "defensive_moats": [
+        "Jira/Linear lack native local coding agent execution via CLI runner and charge aggressive per-seat fees",
+        "Plane.so has heavier infrastructure overhead and lacks native MCP-first agent member architecture",
+        "ItsAPlan provides the sweet spot: Linear-grade SSR speed + private sovereign hosting + native agent teammates"
+      ]
+    },
+    "bargaining_power_of_suppliers": {
+      "threat_level": "Very Low",
+      "defensive_moats": [
+        "Multi-provider LLM abstraction: Mastra framework and @itsaplan/runner work with any provider (Anthropic, OpenAI, Gemini, Local models)",
+        "Zero infrastructure dependency: Standard Linux, Bun, Docker, PostgreSQL, and S3/MinIO run anywhere (bare metal, VPS, cloud)"
+      ]
+    },
+    "rivalry_among_existing_competitors": {
+      "threat_level": "High",
+      "defensive_moats": [
+        "First-mover advantage in AI-Agent-First Project Management with native MCP server integration",
+        "Hybrid agent model: supports both light in-instance internal agents and heavy local workstation coding swarms",
+        "Strict adherence to high aesthetic standards (Tailwind v4 OKLCH monochrome register, borderless layout, sub-second SSR)"
+      ]
+    }
+  }
+}

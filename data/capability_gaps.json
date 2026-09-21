@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "project": "58_ITSAPLAN",
+    "version": "1.0.0",
+    "last_updated": "2026-09-21",
+    "auditor": "Antigravity Architecture Auditor",
+    "governing_standard": "Enterprise Readiness & GW-GENESIS-01 Baseline"
+  },
+  "gaps": [
+    {
+      "id": "GAP-TENANT-01",
+      "capability_id": "CAP-PROJ",
+      "title": "Absence of Hard Multi-Tenant Schema Partitioning / Row-Level Security (RLS)",
+      "current_state": "Single-tenant architecture where teams exist in a shared PostgreSQL schema. All rows are filtered in code via `teamId` and `projectId` queries. No database-level RLS policies or isolated tenant schemas exist.",
+      "target_state": "Enforce PostgreSQL Row-Level Security (RLS) policies tied to the authenticated tenant session or optional schema-per-tenant isolation for multi-tenant SaaS hosting.",
+      "severity": "High",
+      "business_risk": "Potential data leak across teams if application-layer SQL filters miss a tenant predicate in complex joins or custom queries.",
+      "remediation_strategy": "Implement Drizzle RLS helper policies setting `app.current_team_id` session variable on each transaction and enforce DB-level constraints.",
+      "implementation_effort": "Medium-High",
+      "priority": "P2"
+    },
+    {
+      "id": "GAP-SEC-SAML",
+      "capability_id": "CAP-AUTH",
+      "title": "Incomplete Enterprise SAML 2.0 / OIDC IdP Single Sign-On",
+      "current_state": "Authentication supports Google OAuth, username/password, and WebAuthn Passkeys via better-auth, with SCIM 2.0 user provisioning. Direct SAML 2.0 / OIDC enterprise connectors (Okta, Microsoft Entra ID, PingIdentity) are not plugged into the auth configuration.",
+      "target_state": "Turnkey Enterprise SSO supporting SAML 2.0 SP/IdP-initiated flows, automatic JIT account provisioning, and IdP group-to-RBAC role mapping.",
+      "severity": "High",
+      "business_risk": "Blocks procurement and adoption by Fortune 500 and heavily regulated enterprise customers mandating centralized SAML SSO.",
+      "remediation_strategy": "Integrate `@better-auth/sso` or custom Passport/SAML adapter in `packages/auth` and expose SAML metadata upload in instance settings.",
+      "implementation_effort": "Medium",
+      "priority": "P1"
+    },
+    {
+      "id": "GAP-OPS-ROLLBACK",
+      "capability_id": "CAP-PROJ",
+      "title": "Manual Rollback Protocol & Missing Down-Migration Mechanics",
+      "current_state": "The API dumps the PostgreSQL database to a volume prior to running migrations on startup (`migrate.ts`). However, if an upgrade introduces runtime regression after migration, rollback requires manual operator intervention (pg_restore + container image downgrade). No automated down-migrations exist in Drizzle.",
+      "target_state": "Automated canary healthcheck with automated rollback triggering, paired with bidirectional Drizzle migration scripts (`down.sql`) and verified snapshot restore drills.",
+      "severity": "Medium",
+      "business_risk": "Extended MTTR (Mean Time to Recovery) during enterprise version upgrades if database migration regressions occur.",
+      "remediation_strategy": "Generate reversible SQL migrations, integrate health-check-based automatic rollbacks into Coolify/Helm deployments, and add pre-flight validation.",
+      "implementation_effort": "Medium",
+      "priority": "P2"
+    },
+    {
+      "id": "GAP-AUDIT-RETENTION",
+      "capability_id": "CAP-ISSUE",
+      "title": "Mutable Activity Logs & Lack of Immutable Cryptographic Audit Retention",
+      "current_state": "Issue changes and webhook dispatches are logged to `issue_activity` and `webhook_delivery`, but rows are mutable by DB superusers, lack cryptographic tamper-evidence (SHA-256 chaining), and lack configurable cold-storage archival (e.g. S3 WORM / Glacier 7-year retention).",
+      "target_state": "Tamper-evident append-only audit ledger with cryptographic event chaining, automated export to immutable S3 storage, and configurable retention compliance policies.",
+      "severity": "High",
+      "business_risk": "Failure to satisfy SOC2 Type II, ISO 27001, and HIPAA compliance requirements regarding immutable audit trails.",
+      "remediation_strategy": "Build an append-only audit log module in `packages/db` with SHA-256 signature chains and a background worker job exporting archived audit chunks to S3.",
+      "implementation_effort": "Medium",
+      "priority": "P1"
+    },
+    {
+      "id": "GAP-AGENT-SANDBOX",
+      "capability_id": "CAP-AGENT",
+      "title": "Internal Agent Tool Execution in Shared Process Memory",
+      "current_state": "While @itsaplan/runner executes external agents in the user's host environment with CLI sandboxing, internal Mastra agents execute tool calls directly inside the `apps/api` or `apps/worker` Node/Bun process context.",
+      "target_state": "Isolated ephemeral sandbox containers (e.g. Docker-in-Docker, gVisor, or WASM microVM) for internal agent tool execution, with CPU/memory cgroups and strict SSRF egress filters.",
+      "severity": "Medium-High",
+      "business_risk": "Malicious or hallucinatory agent scripts/skills executing untrusted code could exhaust host resources or attempt local port scans.",
+      "remediation_strategy": "Enforce strict `@repo/net` egress validation on all HTTP tool calls and delegate arbitrary code execution to disposable sandbox containers.",
+      "implementation_effort": "High",
+      "priority": "P2"
+    }
+  ]
+}

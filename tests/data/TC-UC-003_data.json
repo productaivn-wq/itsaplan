@@ -1,0 +1,236 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-003",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-003-FR-018-POSITIVE",
+      "fr_ref": "FR-018",
+      "fr_text": "All LLM and integration credential secrets must be encrypted at rest using AES-256-GCM ciphertext, iv, and auth_tag.",
+      "description": "Happy path for FR-018",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "all"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-003-FR-018-UNAUTHORIZED",
+      "fr_ref": "FR-018",
+      "fr_text": "All LLM and integration credential secrets must be encrypted at rest using AES-256-GCM ciphertext, iv, and auth_tag.",
+      "description": "Unauthorized access attempt for FR-018",
+      "type": "unauthorized",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "no_permission",
+        "params": {
+          "authenticated": false,
+          "role": "guest",
+          "feature": "all"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "PermissionError"
+      }
+    },
+    {
+      "id": "UC-003-FR-019-INITIAL-STATE",
+      "fr_ref": "FR-019",
+      "fr_text": "External runner claims must set an exclusive lease window on agent_run; unrenewed leases must reset to pending state upon expiry.",
+      "description": "Initial state for FR-019",
+      "type": "initial-state",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "external"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-003-FR-019-POSITIVE",
+      "fr_ref": "FR-019",
+      "fr_text": "External runner claims must set an exclusive lease window on agent_run; unrenewed leases must reset to pending state upon expiry.",
+      "description": "Happy path for FR-019",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "external"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-003-FR-019-TERMINAL-STATE",
+      "fr_ref": "FR-019",
+      "fr_text": "External runner claims must set an exclusive lease window on agent_run; unrenewed leases must reset to pending state upon expiry.",
+      "description": "Terminal state for FR-019",
+      "type": "terminal-state",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "external"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-003-FR-019-TRANSITION",
+      "fr_ref": "FR-019",
+      "fr_text": "External runner claims must set an exclusive lease window on agent_run; unrenewed leases must reset to pending state upon expiry.",
+      "description": "Transition state for FR-019",
+      "type": "transition",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "external"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-003-FR-020-NEGATIVE",
+      "fr_ref": "FR-020",
+      "fr_text": "Invoking an MCP tool via POST /mcp must enforce the caller's project membership role and verify project mcp_enabled = true.",
+      "description": "Invalid input rejection for FR-020",
+      "type": "negative",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "invoking"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-003-FR-020-POSITIVE",
+      "fr_ref": "FR-020",
+      "fr_text": "Invoking an MCP tool via POST /mcp must enforce the caller's project membership role and verify project mcp_enabled = true.",
+      "description": "Happy path for FR-020",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "invoking"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-003-FR-020-UNAUTHORIZED",
+      "fr_ref": "FR-020",
+      "fr_text": "Invoking an MCP tool via POST /mcp must enforce the caller's project membership role and verify project mcp_enabled = true.",
+      "description": "Unauthorized access attempt for FR-020",
+      "type": "unauthorized",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "no_permission",
+        "params": {
+          "authenticated": false,
+          "role": "guest",
+          "feature": "invoking"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "PermissionError"
+      }
+    },
+    {
+      "id": "UC-003-FR-021-POSITIVE",
+      "fr_ref": "FR-021",
+      "fr_text": "Incremental AG-UI delta events emitted by runners must be appended to agent_chat_event to enable live reconnects.",
+      "description": "Happy path for FR-021",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "incremental"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-003-NFR-001-POSITIVE",
+      "fr_ref": "NFR-001",
+      "fr_text": "Headless execution invariant: all background processes must execute with no visible window popups or stealing focus.",
+      "description": "Happy path for NFR-001",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "headless"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-003-NFR-003-POSITIVE",
+      "fr_ref": "NFR-003",
+      "fr_text": "Database multi-replica concurrency: FOR UPDATE SKIP LOCKED on queues to avoid worker race conditions.",
+      "description": "Happy path for NFR-003",
+      "type": "positive",
+      "scenario_ref": "UC-003",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "database"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    }
+  ]
+}

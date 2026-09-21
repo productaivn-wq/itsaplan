@@ -1,0 +1,452 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-002",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-002-FR-010-BOUNDARY-HIGH",
+      "fr_ref": "FR-010",
+      "fr_text": "An issue may have at most one parent (parentId), and an issue that is already a subtask cannot become a parent with depth limit = 1.",
+      "description": "Upper boundary value for FR-010",
+      "type": "boundary-high",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_high",
+        "params": {
+          "value": 999999,
+          "limit_test": true,
+          "feature": "issue"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-010-BOUNDARY-LOW",
+      "fr_ref": "FR-010",
+      "fr_text": "An issue may have at most one parent (parentId), and an issue that is already a subtask cannot become a parent with depth limit = 1.",
+      "description": "Lower boundary value for FR-010",
+      "type": "boundary-low",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_low",
+        "params": {
+          "value": 0,
+          "limit_test": true,
+          "feature": "issue"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-010-NEGATIVE",
+      "fr_ref": "FR-010",
+      "fr_text": "An issue may have at most one parent (parentId), and an issue that is already a subtask cannot become a parent with depth limit = 1.",
+      "description": "Invalid input rejection for FR-010",
+      "type": "negative",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "issue"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-002-FR-010-OVERFLOW",
+      "fr_ref": "FR-010",
+      "fr_text": "An issue may have at most one parent (parentId), and an issue that is already a subtask cannot become a parent with depth limit = 1.",
+      "description": "Overflow/exceeds-limit value for FR-010",
+      "type": "overflow",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "exceeds_limit",
+        "params": {
+          "value": 999999999,
+          "limit_test": true,
+          "feature": "issue"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "OverflowError"
+      }
+    },
+    {
+      "id": "UC-002-FR-010-POSITIVE",
+      "fr_ref": "FR-010",
+      "fr_text": "An issue may have at most one parent (parentId), and an issue that is already a subtask cannot become a parent with depth limit = 1.",
+      "description": "Happy path for FR-010",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "issue"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-011-BOUNDARY-HIGH",
+      "fr_ref": "FR-011",
+      "fr_text": "estimatePoints and estimateMinutes must be non-negative numeric values greater than or equal to 0.",
+      "description": "Upper boundary value for FR-011",
+      "type": "boundary-high",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_high",
+        "params": {
+          "value": 999999,
+          "limit_test": true,
+          "feature": "estimatepoints"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-011-BOUNDARY-LOW",
+      "fr_ref": "FR-011",
+      "fr_text": "estimatePoints and estimateMinutes must be non-negative numeric values greater than or equal to 0.",
+      "description": "Lower boundary value for FR-011",
+      "type": "boundary-low",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_low",
+        "params": {
+          "value": 0,
+          "limit_test": true,
+          "feature": "estimatepoints"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-011-NEGATIVE",
+      "fr_ref": "FR-011",
+      "fr_text": "estimatePoints and estimateMinutes must be non-negative numeric values greater than or equal to 0.",
+      "description": "Invalid input rejection for FR-011",
+      "type": "negative",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "estimatepoints"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-002-FR-011-OVERFLOW",
+      "fr_ref": "FR-011",
+      "fr_text": "estimatePoints and estimateMinutes must be non-negative numeric values greater than or equal to 0.",
+      "description": "Overflow/exceeds-limit value for FR-011",
+      "type": "overflow",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "exceeds_limit",
+        "params": {
+          "value": 999999999,
+          "limit_test": true,
+          "feature": "estimatepoints"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "OverflowError"
+      }
+    },
+    {
+      "id": "UC-002-FR-011-POSITIVE",
+      "fr_ref": "FR-011",
+      "fr_text": "estimatePoints and estimateMinutes must be non-negative numeric values greater than or equal to 0.",
+      "description": "Happy path for FR-011",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "estimatepoints"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-012-POSITIVE",
+      "fr_ref": "FR-012",
+      "fr_text": "Transitioning an issue across columns must automatically close the current issue_status duration record and create a new open record.",
+      "description": "Happy path for FR-012",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "transitioning"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-013-POSITIVE",
+      "fr_ref": "FR-013",
+      "fr_text": "Every update to an issue (title, description, assignee, column, estimate) must generate an immutable issue_activity record with kind = 'activity'.",
+      "description": "Happy path for FR-013",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-014-POSITIVE",
+      "fr_ref": "FR-014",
+      "fr_text": "When user_preference autoWatch is true, the user must automatically be added as an issue_watcher upon creating, editing, commenting, or being assigned.",
+      "description": "Happy path for FR-014",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "when"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-015-BOUNDARY-HIGH",
+      "fr_ref": "FR-015",
+      "fr_text": "Every issue_worklog entry must have minutes greater than 0 and a valid spentOn date.",
+      "description": "Upper boundary value for FR-015",
+      "type": "boundary-high",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_high",
+        "params": {
+          "value": 999999,
+          "limit_test": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-015-BOUNDARY-LOW",
+      "fr_ref": "FR-015",
+      "fr_text": "Every issue_worklog entry must have minutes greater than 0 and a valid spentOn date.",
+      "description": "Lower boundary value for FR-015",
+      "type": "boundary-low",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "boundary_low",
+        "params": {
+          "value": 0,
+          "limit_test": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "boundary_handled": true
+      }
+    },
+    {
+      "id": "UC-002-FR-015-NEGATIVE",
+      "fr_ref": "FR-015",
+      "fr_text": "Every issue_worklog entry must have minutes greater than 0 and a valid spentOn date.",
+      "description": "Invalid input rejection for FR-015",
+      "type": "negative",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "invalid_input",
+        "params": {
+          "invalid": true,
+          "reason": "bad_input",
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "ValidationError"
+      }
+    },
+    {
+      "id": "UC-002-FR-015-OVERFLOW",
+      "fr_ref": "FR-015",
+      "fr_text": "Every issue_worklog entry must have minutes greater than 0 and a valid spentOn date.",
+      "description": "Overflow/exceeds-limit value for FR-015",
+      "type": "overflow",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "exceeds_limit",
+        "params": {
+          "value": 999999999,
+          "limit_test": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "error",
+        "error_type": "OverflowError"
+      }
+    },
+    {
+      "id": "UC-002-FR-015-POSITIVE",
+      "fr_ref": "FR-015",
+      "fr_text": "Every issue_worklog entry must have minutes greater than 0 and a valid spentOn date.",
+      "description": "Happy path for FR-015",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "every"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-016-INITIAL-STATE",
+      "fr_ref": "FR-016",
+      "fr_text": "An issue's checklist items must maintain distinct fractional positions and allow toggling done state independently.",
+      "description": "Initial state for FR-016",
+      "type": "initial-state",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "initial_state",
+        "params": {
+          "state": "initial",
+          "feature": "issue's"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "initial"
+      }
+    },
+    {
+      "id": "UC-002-FR-016-POSITIVE",
+      "fr_ref": "FR-016",
+      "fr_text": "An issue's checklist items must maintain distinct fractional positions and allow toggling done state independently.",
+      "description": "Happy path for FR-016",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "issue's"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-002-FR-016-TERMINAL-STATE",
+      "fr_ref": "FR-016",
+      "fr_text": "An issue's checklist items must maintain distinct fractional positions and allow toggling done state independently.",
+      "description": "Terminal state for FR-016",
+      "type": "terminal-state",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "terminal_state",
+        "params": {
+          "state": "terminal",
+          "feature": "issue's"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "terminal"
+      }
+    },
+    {
+      "id": "UC-002-FR-016-TRANSITION",
+      "fr_ref": "FR-016",
+      "fr_text": "An issue's checklist items must maintain distinct fractional positions and allow toggling done state independently.",
+      "description": "Transition state for FR-016",
+      "type": "transition",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "transition_state",
+        "params": {
+          "state": "transition",
+          "feature": "issue's"
+        }
+      },
+      "expected": {
+        "status": "success",
+        "state": "transition"
+      }
+    },
+    {
+      "id": "UC-002-FR-017-POSITIVE",
+      "fr_ref": "FR-017",
+      "fr_text": "The remaining time of an issue must be dynamically derived as estimateMinutes minus sum of issue_worklog minutes.",
+      "description": "Happy path for FR-017",
+      "type": "positive",
+      "scenario_ref": "UC-002",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "remaining"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    }
+  ]
+}
