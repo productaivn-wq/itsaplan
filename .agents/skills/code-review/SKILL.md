@@ -1,9 +1,14 @@
 ---
 name: code-review
 description: Use when reviewing code — a diff, a merge request, a file, a directory, or a feature. Produces structured code-review findings, filters out false positives and nitpicks, and prints a concise verdict report. Trigger when the user asks to review a diff, review an MR, or check code for bugs, security issues, or rule violations.
+version: 1.0.0
+status: ACTIVE
+last_updated: 2026-09-24
 ---
 
 # Code Review
+
+`[STATUS: ACTIVE]` · **Version**: 1.0.0 · **Updated**: 2026-09-24
 
 Three-stage method: produce findings, filter them, report verdict.
 

@@ -183,31 +183,41 @@ export async function listProjects(
         )
       : undefined,
   );
-  const latestActivity = db
-    .selectDistinctOn([issue.projectId], {
-      projectId: issue.projectId,
-      createdAt: issueActivity.createdAt,
-    })
-    .from(issueActivity)
-    .innerJoin(issue, eq(issue.id, issueActivity.issueId))
-    .innerJoin(project, eq(project.id, issue.projectId))
-    .innerJoin(team, eq(team.id, project.teamId))
-    .innerJoin(projectMember, eq(projectMember.projectId, project.id))
-    .leftJoin(teamRole, eq(teamRole.id, projectMember.roleId))
-    .where(
-      and(
-        where,
-        or(
-          eq(projectMember.role, 'owner'),
-          isNull(teamRole.permissions),
-          sql`${teamRole.permissions} -> 'work_items' -> 'read' = 'true'::jsonb`,
-        ),
-      ),
-    )
-    .orderBy(issue.projectId, desc(issueActivity.createdAt))
-    .as('latest_activity');
+  const workItemsReadable = or(
+    eq(projectMember.role, 'owner'),
+    isNull(teamRole.permissions),
+    sql`${teamRole.permissions} -> 'work_items' -> 'read' = 'true'::jsonb`,
+  );
+  const documentsReadable = and(
+    eq(project.documentsEnabled, true),
+    or(
+      eq(projectMember.role, 'owner'),
+      isNull(teamRole.permissions),
+      sql`${teamRole.permissions} -> 'documents' -> 'read' = 'true'::jsonb`,
+    ),
+  );
+  const lastActivityAt = sql<Date | string | null>`greatest(
+    case when ${workItemsReadable} then (
+      select max(${issueActivity.createdAt})
+        from ${issueActivity}
+        inner join ${issue} on ${issue.id} = ${issueActivity.issueId}
+       where ${issue.projectId} = ${project.id}
+    ) end,
+    case when ${workItemsReadable} then (
+      select max(${issue.updatedAt})
+        from ${issue}
+       where ${issue.projectId} = ${project.id}
+    ) end,
+    case when ${documentsReadable} then (
+      select max(${projectDocument.updatedAt})
+        from ${projectDocument}
+       where ${projectDocument.projectId} = ${project.id}
+         and ${projectDocument.isPrivate} = false
+         and ${projectDocument.archivedAt} is null
+    ) end
+  )`;
   const order: SQL[] = [];
-  if (opts.sort === 'activity') order.push(sql`${latestActivity.createdAt} desc nulls last`);
+  if (opts.sort === 'activity') order.push(sql`${lastActivityAt} desc nulls last`);
   else if (opts.sort === 'created') order.push(desc(project.createdAt));
   else if (opts.sort === 'name') order.push(sql`lower(${project.name})`);
   const rows = await db
@@ -215,7 +225,7 @@ export async function listProjects(
       ...projectWithTeam,
       memberRole: projectMember.role,
       rolePermissions: teamRole.permissions,
-      lastActivityAt: latestActivity.createdAt,
+      lastActivityAt,
       isFavorite: projectMember.isFavorite,
       isHidden: projectMember.isHidden,
     })
@@ -223,7 +233,6 @@ export async function listProjects(
     .innerJoin(team, eq(team.id, project.teamId))
     .innerJoin(projectMember, eq(projectMember.projectId, project.id))
     .leftJoin(teamRole, eq(teamRole.id, projectMember.roleId))
-    .leftJoin(latestActivity, eq(latestActivity.projectId, project.id))
     .where(where)
     .orderBy(...order, project.key, project.id);
   return Promise.all(
@@ -233,7 +242,9 @@ export async function listProjects(
         const item: ProjectListItem = {
           ...(await mapProject(row)),
           role,
-          lastActivityAt: lastActivityAt ? iso(lastActivityAt) : null,
+          lastActivityAt: lastActivityAt
+            ? (lastActivityAt instanceof Date ? iso(lastActivityAt) : iso(new Date(lastActivityAt)))
+            : null,
           isFavorite,
           isHidden,
         };
