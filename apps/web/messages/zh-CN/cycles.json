@@ -72,5 +72,8 @@
   "dragFailed": "无法移动周期",
   "notFound": "未找到周期。",
   "defaultName": "迭代 {n}",
-  "issuesDone": "已完成工作项"
+  "issuesDone": "已完成工作项",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left"
 }

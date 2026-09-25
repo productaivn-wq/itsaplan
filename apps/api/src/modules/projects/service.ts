@@ -243,7 +243,9 @@ export async function listProjects(
           ...(await mapProject(row)),
           role,
           lastActivityAt: lastActivityAt
-            ? (lastActivityAt instanceof Date ? iso(lastActivityAt) : iso(new Date(lastActivityAt)))
+            ? lastActivityAt instanceof Date
+              ? iso(lastActivityAt)
+              : iso(new Date(lastActivityAt))
             : null,
           isFavorite,
           isHidden,

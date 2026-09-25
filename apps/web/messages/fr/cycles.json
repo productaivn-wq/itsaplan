@@ -72,5 +72,8 @@
   "dragFailed": "Impossible de déplacer le cycle",
   "notFound": "Cycle introuvable.",
   "defaultName": "Sprint {n}",
-  "issuesDone": "Tickets terminés"
+  "issuesDone": "Tickets terminés",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left"
 }

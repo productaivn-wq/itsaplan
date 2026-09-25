@@ -47,6 +47,13 @@ const nextConfig: NextConfig = {
   // a local image unless its path is listed here; the attachments panel stamps a
   // replaced attachment's URL with one so the optimizer refetches it.
   images: { localPatterns: [{ pathname: '/media/**' }] },
+  redirects: async () => [
+    {
+      source: '/projects/:path*',
+      destination: '/project/:path*',
+      permanent: true,
+    },
+  ],
   ...(cloudUiEntry ? { turbopack: { resolveAlias: { '@/cloud': cloudUiEntry } } } : {}),
 };
 
