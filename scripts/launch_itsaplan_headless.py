@@ -99,6 +99,9 @@ def ensure_single_instance() -> bool:
                             LOCK_FILE.unlink(missing_ok=True)
                     except Exception:
                         pass
+        except PermissionError:
+            log("Active launcher lock held by running supervisor instance. Exiting redundant launch.")
+            return False
         except Exception as e:
             log(f"Warning reading lockfile: {e}")
 
@@ -158,10 +161,29 @@ def is_bridge_running() -> bool:
 
 
 def get_bun_executable() -> str:
-    winget_bun = Path(r"C:\Users\thanb\AppData\Local\Microsoft\WinGet\Packages\Oven-sh.Bun_Microsoft.Winget.Source_8wekyb3d8bbwe\bun-windows-x64\bun.exe")
-    if winget_bun.exists():
-        return str(winget_bun)
+    import shutil
+    found = shutil.which("bun")
+    if found:
+        return found
+    localappdata = os.environ.get("LOCALAPPDATA")
+    if localappdata:
+        winget_bun = Path(localappdata) / r"Microsoft\WinGet\Packages\Oven-sh.Bun_Microsoft.Winget.Source_8wekyb3d8bbwe\bun-windows-x64\bun.exe"
+        if winget_bun.exists():
+            return str(winget_bun)
     return "bun"
+
+
+def is_bun_dev_running() -> bool:
+    for p in psutil.process_iter(["pid", "name", "cmdline"]):
+        try:
+            cmd = " ".join(p.info.get("cmdline") or []).lower()
+            name = (p.info.get("name") or "").lower()
+            if "bun" in name or "bun.exe" in name or "turbo" in name:
+                if "dev" in cmd or "turbo" in cmd or "58_itsaplan" in cmd:
+                    return True
+        except Exception:
+            pass
+    return False
 
 
 def launch_bun_dev():
@@ -170,7 +192,9 @@ def launch_bun_dev():
     dev_log_fd = open(DEV_LOG, "a", encoding="utf-8")
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
+    env["PYTHONUNBUFFERED"] = "1"
     popen_kwargs = {
+        "stdin": subprocess.DEVNULL,
         "stdout": dev_log_fd,
         "stderr": subprocess.STDOUT,
         "cwd": str(ITSAPLAN_ROOT),
@@ -179,9 +203,12 @@ def launch_bun_dev():
     if os.name == "nt":
         popen_kwargs["creationflags"] = DAEMON_CREATION_FLAGS
 
-    proc = subprocess.Popen([bun_exe, "run", "dev"], **popen_kwargs)
-    log(f"'bun run dev' spawned with PID {proc.pid}. Logs redirected to {DEV_LOG}.")
-    return proc
+    try:
+        proc = subprocess.Popen([bun_exe, "run", "dev"], **popen_kwargs)
+        log(f"'bun run dev' spawned with PID {proc.pid}. Logs redirected to {DEV_LOG}.")
+        return proc
+    finally:
+        dev_log_fd.close()
 
 
 def launch_bridge_daemon():
@@ -197,6 +224,7 @@ def launch_bridge_daemon():
     log(f"Spawning bridge daemon supervisor via {pythonw}...")
     env = os.environ.copy()
     env["PYTHONUTF8"] = "1"
+    env["PYTHONUNBUFFERED"] = "1"
     env["ANTIGRAVITY_DAEMON"] = "1"
     popen_kwargs = {
         "cwd": str(PM_ROOT),
@@ -218,8 +246,11 @@ def run_cycle():
     api_ok = probe_http(3000, "/auth-config") or probe_http(3000, "/")
     web_ok = probe_http(3001, "/project/PM") or probe_http(3001, "/login")
     if not (api_ok and web_ok):
-        log(f"Dev server check failed (API 3000: {api_ok}, Web 3001: {web_ok}). Initiating spawn...")
-        launch_bun_dev()
+        if is_bun_dev_running():
+            log("Dev server process active but still compiling/binding ports... awaiting readiness.")
+        else:
+            log(f"Dev server check failed (API 3000: {api_ok}, Web 3001: {web_ok}). Initiating spawn...")
+            launch_bun_dev()
     else:
         # Healthy
         pass
