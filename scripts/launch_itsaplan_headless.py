@@ -118,7 +118,26 @@ def ensure_single_instance() -> bool:
         return False
 
 
-def wait_for_postgres(host="127.0.0.1", port=5432, timeout_s=45, check_interval_s=2) -> bool:
+LOCAL_DB_BIN = Path(r"D:\WORK\_archive\antigravity\local_db\pgsql\bin\pg_ctl.exe")
+LOCAL_DB_DATA = Path(r"D:\WORK\_archive\antigravity\local_db\data")
+LOCAL_DB_LOG = Path(r"D:\WORK\_archive\antigravity\local_db\pg_log.txt")
+
+
+def ensure_postgres_running(host="127.0.0.1", port=5432, timeout_s=30) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=1.0):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        pass
+
+    if LOCAL_DB_BIN.exists() and LOCAL_DB_DATA.exists():
+        log(f"PostgreSQL port {port} offline. Spawning host PostgreSQL via {LOCAL_DB_BIN}...")
+        try:
+            cmd = [str(LOCAL_DB_BIN), "-D", str(LOCAL_DB_DATA), "-l", str(LOCAL_DB_LOG), "start"]
+            subprocess.run(cmd, capture_output=True, timeout=15)
+        except Exception as e:
+            log(f"Error launching pg_ctl: {e}")
+
     start = time.time()
     attempt = 1
     while time.time() - start < timeout_s:
@@ -127,8 +146,9 @@ def wait_for_postgres(host="127.0.0.1", port=5432, timeout_s=45, check_interval_
                 log(f"PostgreSQL is online and responsive on {host}:{port} (attempt {attempt}).")
                 return True
         except (socket.timeout, ConnectionRefusedError, OSError):
-            time.sleep(check_interval_s)
+            time.sleep(2)
             attempt += 1
+
     log(f"WARNING: PostgreSQL port {port} unresponsive after {timeout_s}s. Proceeding with caution.")
     return False
 
@@ -161,15 +181,20 @@ def is_bridge_running() -> bool:
 
 
 def get_bun_executable() -> str:
-    import shutil
-    found = shutil.which("bun")
-    if found:
-        return found
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        npm_bun = Path(appdata) / r"npm\node_modules\bun\bin\bun.exe"
+        if npm_bun.exists():
+            return str(npm_bun)
     localappdata = os.environ.get("LOCALAPPDATA")
     if localappdata:
         winget_bun = Path(localappdata) / r"Microsoft\WinGet\Packages\Oven-sh.Bun_Microsoft.Winget.Source_8wekyb3d8bbwe\bun-windows-x64\bun.exe"
         if winget_bun.exists():
             return str(winget_bun)
+    import shutil
+    found = shutil.which("bun")
+    if found:
+        return found
     return "bun"
 
 
@@ -242,6 +267,9 @@ def launch_bridge_daemon():
 
 
 def run_cycle():
+    # 0. Ensure PostgreSQL is up
+    ensure_postgres_running()
+
     # 1. Check Dev Server (Ports 3000 & 3001)
     api_ok = probe_http(3000, "/auth-config") or probe_http(3000, "/")
     web_ok = probe_http(3001, "/project/PM") or probe_http(3001, "/login")
@@ -273,7 +301,7 @@ def main():
         if not ensure_single_instance():
             sys.exit(0)
 
-    wait_for_postgres()
+    ensure_postgres_running()
     run_cycle()
 
     if args.once:

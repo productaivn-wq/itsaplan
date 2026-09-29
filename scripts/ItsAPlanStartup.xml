@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Date>2026-09-25T13:45:00</Date>
-    <Author>JOHN_Z13\thanb</Author>
-    <Description>Auto-start ItsAPlan dev server and Bridge Daemon headlessly with Highest Privileges on User Logon</Description>
+    <Date>2026-09-29T17:00:00</Date>
+    <Author>LINES-Z13\Lines</Author>
+    <Description>Auto-start ItsAPlan dev server, PostgreSQL, and Bridge Daemon headlessly on User Logon</Description>
     <URI>\ItsAPlanStartup</URI>
   </RegistrationInfo>
   <Triggers>
     <LogonTrigger>
       <Enabled>true</Enabled>
-      <Delay>PT15S</Delay>
+      <Delay>PT10S</Delay>
     </LogonTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">
       <LogonType>InteractiveToken</LogonType>
-      <RunLevel>HighestAvailable</RunLevel>
+      <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
   </Principals>
   <Settings>
@@ -36,7 +36,7 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>C:\Users\thanb\AppData\Local\Programs\Python\Python312\pythonw.exe</Command>
+      <Command>C:\Users\Lines\AppData\Local\Programs\Python\Python312\pythonw.exe</Command>
       <Arguments>"d:\WORK\01_PROJECTS\58_ITSAPLAN\scripts\launch_itsaplan_headless.py"</Arguments>
       <WorkingDirectory>d:\WORK\01_PROJECTS\58_ITSAPLAN</WorkingDirectory>
     </Exec>
