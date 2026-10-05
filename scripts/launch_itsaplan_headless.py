@@ -134,7 +134,13 @@ def ensure_postgres_running(host="127.0.0.1", port=5432, timeout_s=30) -> bool:
         log(f"PostgreSQL port {port} offline. Spawning host PostgreSQL via {LOCAL_DB_BIN}...")
         try:
             cmd = [str(LOCAL_DB_BIN), "-D", str(LOCAL_DB_DATA), "-l", str(LOCAL_DB_LOG), "start"]
-            subprocess.run(cmd, capture_output=True, timeout=15)
+            subprocess.run(
+                cmd,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=15,
+            )
         except Exception as e:
             log(f"Error launching pg_ctl: {e}")
 
