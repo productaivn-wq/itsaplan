@@ -31,7 +31,7 @@ export function contentSecurityPolicy(): string {
     "img-src 'self' data: blob: https: http:",
     "media-src 'self' data: blob: https: http:",
     "font-src 'self' data:",
-    `connect-src 'self' blob: ${apiOrigin()}`.trimEnd(),
+    `connect-src 'self' blob: ${apiOrigin()} http://127.0.0.1:8765 http://localhost:8765`.trimEnd(),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

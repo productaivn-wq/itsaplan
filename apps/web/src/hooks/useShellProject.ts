@@ -61,7 +61,14 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
     scope: projectId ? revScope.project(projectId) : null,
     targets: [
       qk.projects,
-      ...(projectKey ? [qk.project(projectKey)] : []),
+      ...(projectKey ? [qk.project(projectKey), qk.boardIssues(projectKey)] : []),
+    ],
+  });
+
+  useLiveRefresh({
+    scope: projectId ? revScope.board(projectId) : null,
+    targets: [
+      ...(projectKey ? [qk.boardIssues(projectKey)] : []),
     ],
   });
 

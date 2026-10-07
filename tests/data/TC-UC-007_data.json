@@ -1,0 +1,136 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-007",
+    "fr_source": "docs/UC-044_itsaplan_vibe_working_canvas_native_merge.md",
+    "generated": "2026-10-07",
+    "generator": "TestDataCraft v1.0",
+    "governing_rules": ["53.REF.100", "53.REF.28", "53.REF.69", "GW-UTOP-01", "GW-UTOP-02", "GW-HEADLESS-01", "GW-LOG-01", "GW-PROOF-01"]
+  },
+  "test_cases": [
+    {
+      "id": "TC-ITP-VIBE-01",
+      "fr_ref": "FR-ITP-VIBE-01",
+      "fr_text": "Native Next.js 15 Shell route mounts under /[teamRef]/(shell)/[projectKey]/vibe/page.tsx.",
+      "type": "positive",
+      "scenario_ref": "Navigation",
+      "input": {
+        "teamRef": "thanb",
+        "projectKey": "PM",
+        "route": "/thanb/PM/vibe"
+      },
+      "expected": {
+        "status": "mounted",
+        "has_shell": true,
+        "has_sidebar": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-02",
+      "fr_ref": "FR-ITP-VIBE-02",
+      "fr_text": "Sidebar navigation item for Vibe Canvas exists and indicates active status when on /vibe.",
+      "type": "positive",
+      "scenario_ref": "Navigation",
+      "input": {
+        "pathname": "/thanb/PM/vibe"
+      },
+      "expected": {
+        "label": "Vibe Canvas",
+        "active": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-03",
+      "fr_ref": "FR-ITP-VIBE-03",
+      "fr_text": "Clicking Start on a TODO issue headlessly dispatches worker and mutates PostgreSQL status to IN_PROGRESS.",
+      "type": "positive",
+      "scenario_ref": "DatabaseSync",
+      "input": {
+        "issue_id": "PM-12",
+        "current_status": "TODO",
+        "action": "START_AGENT"
+      },
+      "expected": {
+        "new_status": "IN_PROGRESS",
+        "db_updated": true,
+        "radar_pulsing": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-04",
+      "fr_ref": "FR-ITP-VIBE-04",
+      "fr_text": "Spatial Finder columns display MECE zones and perform deterministic file slicing <= 200 lines.",
+      "type": "positive",
+      "scenario_ref": "SpatialFinder",
+      "input": {
+        "zone": "10_ACTIVE_TIMEBOUND",
+        "file": "sprint_191_tasks.md"
+      },
+      "expected": {
+        "max_slice_lines": 200,
+        "gw_eff_01_compliant": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-05",
+      "fr_ref": "FR-ITP-VIBE-05",
+      "fr_text": "3D Galaxy Canvas renders spherical nodes with 60 FPS CSS 3D transforms.",
+      "type": "positive",
+      "scenario_ref": "GalaxyCanvas",
+      "input": {
+        "view_mode": "galaxy",
+        "node_count": 24
+      },
+      "expected": {
+        "render_mode": "preserve-3d",
+        "interactive": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-06",
+      "fr_ref": "FR-ITP-VIBE-06",
+      "fr_text": "Grounded Split Reader renders line gutters and scrolls to exact citation range with amber highlight.",
+      "type": "positive",
+      "scenario_ref": "GroundedReader",
+      "input": {
+        "citation": "[L37-L40]"
+      },
+      "expected": {
+        "start_line": 37,
+        "end_line": 40,
+        "highlight_class": "bg-amber-500/20",
+        "scrolled": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-07",
+      "fr_ref": "FR-ITP-VIBE-07",
+      "fr_text": "Zip archive manifest viewer parses zip headers without file extraction and normalizes encodings.",
+      "type": "positive",
+      "scenario_ref": "ArchiveManifest",
+      "input": {
+        "archive_path": "00_INBOX/sample_archive.zip"
+      },
+      "expected": {
+        "extracted_to_disk": false,
+        "mojibake_detected": false,
+        "tree_rendered": true
+      }
+    },
+    {
+      "id": "TC-ITP-VIBE-08",
+      "fr_ref": "FR-ITP-VIBE-08",
+      "fr_text": "Multi-threaded conversation session creation assigns discrete thread IDs without message leakage.",
+      "type": "positive",
+      "scenario_ref": "MultiThreading",
+      "input": {
+        "action": "CREATE_THREAD",
+        "title": "Architecture Review"
+      },
+      "expected": {
+        "session_id_created": true,
+        "isolated": true
+      }
+    }
+  ]
+}

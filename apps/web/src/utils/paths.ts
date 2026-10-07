@@ -24,6 +24,8 @@ export const viewPath = (ref: string, viewId: number | null) =>
 
 export const dashboardsPath = (ref: string) => `${projectPath(ref)}/dashboards`;
 
+export const vibePath = (ref: string) => `${projectPath(ref)}/vibe`;
+
 // Public read-only share pages (no auth). The token is the unguessable share key.
 export const shareIssuePath = (token: string) => `/share/issue/${token}`;
 export const shareViewPath = (token: string) => `/share/view/${token}`;

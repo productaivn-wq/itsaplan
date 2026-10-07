@@ -3,6 +3,7 @@ import { useShellRoute } from '@/hooks/useShellRoute';
 import { useTranslations } from 'next-intl';
 import {
   BookOpenText,
+  Compass,
   Inbox,
   LayoutDashboard,
   RefreshCw,
@@ -19,6 +20,7 @@ import {
   notesPath,
   projectPath,
   viewPath,
+  vibePath,
 } from '@/utils/paths';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectFeatures } from '@/hooks/useProjectFeatures';
@@ -116,6 +118,13 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
+          <SidebarNavItem
+            href={projectKey ? vibePath(projectKey) : '#'}
+            icon={Compass}
+            label={t('vibeCanvas')}
+            active={pathname.includes('/vibe')}
+            disabled={disabled}
+          />
           {features.initiatives && can('initiatives', 'read') && (
             <SidebarNavItem
               href={projectKey ? initiativesPath(projectKey) : '#'}
