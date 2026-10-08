@@ -26,8 +26,12 @@
 3. **Move Card Across Columns**: The Contributor drags the issue card to a target workflow column.
 4. **Enforce Column Policies**: The system checks column WIP limit rules. If valid, updates `column_id`, adjusts fractional `position`, executes `auto_assign_user_id` if defined, closes the preceding `issue_status` duration record, and opens a new active status record.
 5. **Manage Checklists**: The Contributor adds an `issue_checklist`, populates `issue_checklist_item` rows, and toggles items to `done = true`.
-6. **Log Work Time**: The Contributor logs an `issue_worklog` entry with `minutes > 0`, `spentOn` date, and optional notes. The system computes remaining time as `estimateMinutes - sum(minutes)`.
-7. **Record Activity & Trigger Watchers**: The system writes an `issue_activity` log entry (`kind = 'activity'`), auto-subscribes actors if `user_preference.autoWatch = true`, bumps the `board:<projectId>` and `issue:<issueId>` revision counters, and emits `notification` rows for all active watchers.
+6. **Log Work Time & Sprints**: The system records time investments through three aligned modalities:
+   - **15-Minute Sprints**: Deep execution intervals synchronized from desktop Focus To-Do sessions (or native stopwatch).
+   - **2-Minute Micro-Tasks & 5-Minute Subtasks**: Fine-grained task/subtask steps and autonomous agent phase runs recorded with structured audit attribution (`source: 'agent' | 'pomodoro' | 'manual'`).
+   - **Manual Retroactive Entries**: The Contributor logs an `issue_worklog` entry with `minutes > 0`, `spentOn` date, and optional notes.
+   The system dynamically computes remaining time as `estimateMinutes - sum(minutes)` without storing drifting redundant counters.
+7. **Record Activity & Trigger Watchers**: The system writes an `issue_activity` log entry (`kind = 'activity'`, `action = 'worklog'`), auto-subscribes actors if `user_preference.autoWatch = true`, bumps the `board:<projectId>` and `issue:<issueId>` revision counters, and emits `notification` rows for all active watchers.
 
 ---
 
@@ -57,8 +61,12 @@
 - **Slice S03: Checklists & Atomic Worklog Logging**  
   *Scope*: Checklist item completion, worklog aggregation, remaining estimate derivation.  
   *Traceability*: → TC: `TC-UC-002 Scenario G03` (Log worklog minutes and verify remaining time computation).
+- **Slice S04: 15-Minute Sprint & Micro-Task Automated Telemetry**  
+  *Scope*: Automated 15-minute sprint synchronization from Focus To-Do LevelDB, 2-minute and 5-minute task/subtask timeboxing, agent run execution telemetry, and reactive revision triggers (`board:<id>`, `issue:<id>`).  
+  *Traceability*: → TC: `TC-UC-002 Scenario G04` (Automated Focus To-Do sync and agent execution attribution).
 
 ---
 
 ## 5. Revision History
+- **2026-10-08**: Version 2.0.0 — Upgraded with 15-minute sprint cadence, 2-minute micro-tasks, 5-minute subtasks, Focus To-Do LevelDB synchronization, and autonomous agent execution telemetry (`scripts/focustodo_itsaplan_syncer.py`, `scripts/agent_worklog_telemetry.py`).
 - **2026-09-21**: Version 1.0.0 — Derived from `apps/api/src/modules/issues`, `checklists`, `worklogs`, and `packages/db/src/schema/app.ts`.
