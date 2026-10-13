@@ -86,7 +86,8 @@ export default function NotesPage() {
     }
   }, [isError, error, activeBoardId, removeMru, qc, router, projectKey]);
 
-  if (!project || seedQuery.isLoading) {
+  const isInitialLoading = !project || (mru.length === 0 && seedQuery.isLoading);
+  if (isInitialLoading) {
     return (
       <div className="flex-1 space-y-4 p-6">
         <Skeleton className="h-8 w-full max-w-md" />

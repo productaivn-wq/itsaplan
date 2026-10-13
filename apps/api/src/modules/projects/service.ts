@@ -197,12 +197,7 @@ export async function listProjects(
     ),
   );
   const lastActivityAt = sql<Date | string | null>`greatest(
-    case when ${workItemsReadable} then (
-      select max(${issueActivity.createdAt})
-        from ${issueActivity}
-        inner join ${issue} on ${issue.id} = ${issueActivity.issueId}
-       where ${issue.projectId} = ${project.id}
-    ) end,
+    ${project.createdAt},
     case when ${workItemsReadable} then (
       select max(${issue.updatedAt})
         from ${issue}

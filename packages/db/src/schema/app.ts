@@ -1350,6 +1350,8 @@ export const issue = pgTable(
     index('issue_cycle_idx')
       .on(t.cycleId)
       .where(sql`${t.cycleId} IS NOT NULL`),
+    // Backs listProjects and activity sorting across projects.
+    index('issue_project_updated_idx').on(t.projectId, t.updatedAt.desc()),
   ],
 );
 

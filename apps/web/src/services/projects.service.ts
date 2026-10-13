@@ -49,11 +49,12 @@ export function useProjectQuery(projectKey: string | null) {
 }
 
 // The board's issues plus its change marker, loaded alongside the scaffold.
-export function useBoardIssuesQuery(projectKey: string | null) {
+export function useBoardIssuesQuery(projectKey: string | null, enabled: boolean = true) {
   return useQuery({
     queryKey: qk.boardIssues(projectKey ?? ''),
     queryFn: () => getBoardIssues(projectKey!),
-    enabled: projectKey != null,
+    enabled: projectKey != null && enabled,
+    staleTime: 60_000,
   });
 }
 

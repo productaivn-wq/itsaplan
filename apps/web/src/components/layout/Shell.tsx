@@ -56,7 +56,7 @@ export default function Shell({
     canCreateIssue,
     errorMsg,
     forbidden,
-  } = useShellProject(projectKey, route.activeViewId);
+  } = useShellProject(projectKey, route.activeViewId, route.onBoard);
   const teamId = project?.project.teamId;
   const issueRefs = useMemo(
     () => projects.filter((item) => item.teamId === teamId).map((item) => item.ref),

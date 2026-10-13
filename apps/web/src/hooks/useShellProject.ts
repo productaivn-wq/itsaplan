@@ -24,7 +24,7 @@ function errorMessage(error: unknown): string | null {
 // The project state behind the Shell: the project list, the composed project, the
 // saved views and the view editor, plus the load/error flags the Shell renders
 // from. Kept out of the Shell so it stays a composition of chrome and overlays.
-export function useShellProject(projectKey: string | null, activeViewId: number | null) {
+export function useShellProject(projectKey: string | null, activeViewId: number | null, onBoard: boolean = true) {
   const router = useRouter();
 
   const projectsQuery = useProjectsQuery();
@@ -34,7 +34,7 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
   // viewer) and the issues. They are composed into one project object here so every
   // child reads project.issues as before.
   const projectQuery = useProjectQuery(projectKey);
-  const boardIssuesQuery = useBoardIssuesQuery(projectKey);
+  const boardIssuesQuery = useBoardIssuesQuery(projectKey, onBoard);
   const scaffold = projectQuery.data ?? null;
   // The cycle options join the composite so grouping by cycle can lay out a lane
   // per cycle a board plans into, not only per cycle an issue is already in. The
@@ -61,14 +61,15 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
     scope: projectId ? revScope.project(projectId) : null,
     targets: [
       qk.projects,
-      ...(projectKey ? [qk.project(projectKey), qk.boardIssues(projectKey)] : []),
+      ...(projectKey ? [qk.project(projectKey)] : []),
+      ...(projectKey && onBoard ? [qk.boardIssues(projectKey)] : []),
     ],
   });
 
   useLiveRefresh({
-    scope: projectId ? revScope.board(projectId) : null,
+    scope: projectId && onBoard ? revScope.board(projectId) : null,
     targets: [
-      ...(projectKey ? [qk.boardIssues(projectKey)] : []),
+      ...(projectKey && onBoard ? [qk.boardIssues(projectKey)] : []),
     ],
   });
 
