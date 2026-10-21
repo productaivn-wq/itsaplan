@@ -41,6 +41,14 @@ import {
 const EXTENSION_TYPES: Record<string, string> = {
   md: 'text/markdown',
   txt: 'text/plain',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  svg: 'image/svg+xml',
 };
 
 // Object keys are grouped by project so a project's bytes sit under one prefix in

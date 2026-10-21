@@ -6,6 +6,7 @@ import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
 import { Message, MessageContent, MessageFooter } from '@/components/ui/message';
 import { MessageScrollerItem } from '@/components/ui/message-scroller';
+import AgentChatUserText from './AgentChatUserText';
 import { useTranslations } from 'next-intl';
 
 export default function AgentChatPendingMessage({
@@ -26,9 +27,9 @@ export default function AgentChatPendingMessage({
         <MessageContent>
           <Bubble variant="muted" className="gap-2 opacity-60">
             <BubbleContent>
-              <span className="whitespace-pre-wrap" dir="auto">
-                {message.text}
-              </span>
+              <div dir="auto">
+                <AgentChatUserText text={message.text} />
+              </div>
             </BubbleContent>
           </Bubble>
           <MessageFooter className="gap-1">

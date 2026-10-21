@@ -61,9 +61,20 @@ export function fileMarkerUrl(id: string): string {
   return mediaUrl(`/chat-attachments/${id}/raw?download=1`);
 }
 
+export function fileMarkerInlineUrl(id: string): string {
+  return mediaUrl(`/chat-attachments/${id}/raw`);
+}
+
+export function isImageAttachmentFilename(filename: string): boolean {
+  return /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test((filename || '').trim());
+}
+
 function linkFileMarkers(text: string): string {
   return text.replace(FILE_MARKER, (_, name: string, id: string) => {
     const label = name.replace(/[[\]\\]/g, '\\$&');
+    if (isImageAttachmentFilename(name)) {
+      return `![${label}](${fileMarkerInlineUrl(id)})`;
+    }
     return `[${label}](${fileMarkerUrl(id)})`;
   });
 }
