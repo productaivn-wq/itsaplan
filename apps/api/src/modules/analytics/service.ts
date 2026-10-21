@@ -267,16 +267,20 @@ export function pulseRows(unit: PulseUnit): number {
 // renders the returned order directly — no client-side date math or timezone
 // reconciliation. projectId and columns are validated numbers and the unit tokens
 // are whitelisted, so the interpolation is injection-safe.
+const pulseCache = new Map<string, { ts: number; data: PulseBucket[] }>();
+
 export async function getPulse(
   projectId: number,
   unit: PulseUnit,
   columns: number,
   actorUserId?: string,
 ): Promise<PulseBucket[]> {
+  const cacheKey = `${projectId}:${unit}:${columns}:${actorUserId ?? ''}`;
+  const cached = pulseCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < 15000) {
+    return cached.data;
+  }
   const u = PULSE_UNIT[unit];
-  // Both branches yield exactly columns*rows buckets. Aligned: start at the super
-  // boundary `columns-1` supers back, end at the current super plus its remaining
-  // cells. Unaligned: just columns*rows base units back from the current bucket.
   const range = u.aligned
     ? {
         start: `date_trunc('${u.super}', now()) - make_interval(${u.superField} => ${columns - 1})`,
@@ -287,19 +291,29 @@ export async function getPulse(
         end: `date_trunc('${u.trunc}', now())`,
       };
   const q = sql`${sql.raw(`
-    SELECT to_char(s.bucket, '${u.fmt}') AS label,
-           COALESCE(count(a.id), 0)::int AS count
-    FROM generate_series(${range.start}, ${range.end}, interval '1 ${u.trunc}') AS s(bucket)
-    LEFT JOIN issue_activity a
-      ON date_trunc('${u.trunc}', a.created_at) = s.bucket
-      AND a.issue_id IN (SELECT id FROM issue WHERE project_id = ${projectId})
+    WITH agg AS (
+      SELECT date_trunc('${u.trunc}', a.created_at) AS bucket,
+             count(a.id)::int AS cnt
+      FROM issue_activity a
+      JOIN issue i ON i.id = a.issue_id
+      WHERE i.project_id = ${projectId}
+        AND a.created_at >= ${range.start}
+        AND a.created_at < (${range.end}) + interval '1 ${u.trunc}'
   `)}
-    ${actorUserId == null ? sql`` : sql`AND a.actor_user_id = ${actorUserId}`}
-    GROUP BY s.bucket
+        ${actorUserId == null ? sql`` : sql`AND a.actor_user_id = ${actorUserId}`}
+  ${sql.raw(`
+      GROUP BY 1
+    )
+    SELECT to_char(s.bucket, '${u.fmt}') AS label,
+           COALESCE(agg.cnt, 0)::int AS count
+    FROM generate_series(${range.start}, ${range.end}, interval '1 ${u.trunc}') AS s(bucket)
+    LEFT JOIN agg ON agg.bucket = s.bucket
     ORDER BY s.bucket
-  `;
+  `)}`;
   const rows = (await db.execute(q)) as unknown as { label: string; count: number }[];
-  return rows.map((r) => ({ label: r.label, count: Number(r.count) }));
+  const result = rows.map((r) => ({ label: r.label, count: Number(r.count) }));
+  pulseCache.set(cacheKey, { ts: Date.now(), data: result });
+  return result;
 }
 
 // --- Throughput (created vs closed per week) -------------------------------------

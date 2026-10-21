@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import {
   BookOpen,
   BookOpenText,
@@ -58,7 +58,7 @@ function resolveDefaultMode(
 
 export default function VibeCanvasPage({ initialMode }: VibeCanvasPageProps = {}) {
   const { projectKey } = useShellRoute();
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
 
   const [activeTab, setActiveTab] = React.useState<string>(() =>
     resolveDefaultMode(pathname, initialMode),
@@ -293,16 +293,26 @@ export default function VibeCanvasPage({ initialMode }: VibeCanvasPageProps = {}
   }, []);
 
   React.useEffect(() => {
-    fetchZones();
-    fetchConversations();
-    fetchWeKnoraMemory();
-    fetchTasks();
-    fetchAgents();
-  }, [fetchZones, fetchConversations, fetchWeKnoraMemory, fetchTasks, fetchAgents]);
+    if (activeTab === 'finder' || activeTab === 'galaxy' || activeTab === 'reader') {
+      fetchZones();
+    } else if (activeTab === 'swarm') {
+      fetchTasks();
+      fetchAgents();
+    }
+  }, [activeTab, fetchZones, fetchTasks, fetchAgents]);
 
   React.useEffect(() => {
-    fetchFiles(activeZone);
-  }, [activeZone, fetchFiles]);
+    if (showWeKnoraDock) {
+      fetchConversations();
+      fetchWeKnoraMemory();
+    }
+  }, [showWeKnoraDock, fetchConversations, fetchWeKnoraMemory]);
+
+  React.useEffect(() => {
+    if (activeTab === 'finder' || activeTab === 'galaxy' || activeTab === 'reader') {
+      fetchFiles(activeZone);
+    }
+  }, [activeTab, activeZone, fetchFiles]);
 
   React.useEffect(() => {
     if (activeFile) {

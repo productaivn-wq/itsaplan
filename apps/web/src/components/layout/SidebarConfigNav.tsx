@@ -1,4 +1,4 @@
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { useTranslations } from 'next-intl';
 import { Users } from 'lucide-react';
 import { membersPath } from '@/utils/paths';
@@ -14,7 +14,7 @@ import SidebarNavItem from '@/components/layout/SidebarNavItem';
 // SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284: Project settings entry is cut entirely to speed up UI/UX.
 export default function SidebarConfigNav({ projectKey }: { projectKey: string | null }) {
   const t = useTranslations('nav');
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const disabled = !projectKey;
   const { can } = usePermissions();
 

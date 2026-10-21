@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { WorkItemsViewProps } from "../../types";
 
 export type TimelineViewProps = WorkItemsViewProps;
@@ -767,10 +767,23 @@ export function TimelineView(props: TimelineViewProps) {
     return items.filter((it) => !isHidden(it) && (!humFilter || (it.hum && !it.approved)));
   }, [items, collapsed, humFilter]);
 
-  const selItem =
-    items.find((x) => x.id === selectedId || x.aliasKey === selectedId) ||
-    items.find((x) => x.id === "T4.1") ||
-    null;
+  const selItem = selectedId
+    ? items.find((x) => x.id === selectedId || x.aliasKey === selectedId) || null
+    : null;
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (modalId) {
+          setModalId(null);
+        } else {
+          setSelectedId(null);
+          setBcExpanded(false);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [modalId]);
   const modItem = items.find((x) => x.id === modalId || x.aliasKey === modalId) || null;
   const humCount = items.filter((x) => x.hum && !x.approved).length;
 
@@ -1383,8 +1396,17 @@ export function TimelineView(props: TimelineViewProps) {
               )}
             </div>
             <button
-              onClick={() => setSelectedId(null)}
-              style={{ background: "#1e293b", color: "#cbd5e1", border: "1px solid #334155", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 13 }}
+              id="btn-close-drawer"
+              type="button"
+              aria-label="Close detail drawer"
+              title="Close detail drawer (Esc)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setSelectedId(null);
+                setBcExpanded(false);
+              }}
+              style={{ background: "#1e293b", color: "#cbd5e1", border: "1px solid #334155", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 13, flexShrink: 0, position: "relative", zIndex: 5 }}
             >
               ✕
             </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { KeyRound } from 'lucide-react';
 import type { Project } from '@/lib/api/endpoints/projects';
 import { vaultPath } from '@/utils/paths';
@@ -30,7 +30,7 @@ export default function AppSidebar({
   currentProjectKey: string | null;
   onSelectProject: (key: string) => void;
 }) {
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const disabled = !currentProjectKey;
   const projectId = projects.find((p) => p.ref === currentProjectKey)?.id ?? null;
   const onVault = pathname.endsWith('/vault');

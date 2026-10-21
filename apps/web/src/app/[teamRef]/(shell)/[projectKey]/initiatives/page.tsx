@@ -1,11 +1,10 @@
 import RequireFeature from '@/components/common/permissions/RequireFeature';
-import InitiativesRedirect from '@/features/initiatives/InitiativesRedirect';
+import InitiativesPage from '@/features/initiatives/InitiativesPage';
 
-// The list path carries no tab of its own; it redirects to one.
 export default function Page() {
   return (
     <RequireFeature feature="initiatives">
-      <InitiativesRedirect />
+      <InitiativesPage tab="active" />
     </RequireFeature>
   );
 }

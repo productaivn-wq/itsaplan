@@ -1,4 +1,4 @@
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { useTranslations } from 'next-intl';
 import { aiAgentsPath, aiTeamPath } from '@/utils/paths';
 import { AI_AGENTS_SECTION, AI_TEAM_SECTIONS } from '@/utils/settingsSections';
@@ -17,7 +17,7 @@ import SidebarNavItem from '@/components/layout/SidebarNavItem';
 export default function SidebarAiTeamNav({ projectKey }: { projectKey: string | null }) {
   const t = useTranslations('nav');
   const sectionText = useSettingsSectionText();
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const { can } = usePermissions();
   const disabled = !projectKey;
 

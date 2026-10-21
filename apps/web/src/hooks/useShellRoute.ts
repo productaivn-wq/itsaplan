@@ -1,4 +1,5 @@
-import { useParams, usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { parseIssueIdentifier, projectRefOf } from '@/utils/paths';
 
 export type ShellRoute = {
@@ -28,7 +29,7 @@ const numericSegment = (value: string | undefined) =>
 // (/acme/issue/MKT-42), so its project comes from the identifier.
 export function useShellRoute(): ShellRoute {
   const params = useParams<{ teamRef?: string; projectKey?: string; identifier?: string }>();
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const teamRef = params.teamRef ? decodeURIComponent(params.teamRef) : null;
 
   const issue = params.identifier

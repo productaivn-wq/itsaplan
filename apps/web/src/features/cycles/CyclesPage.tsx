@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useShell } from '@/context/shellContext';
@@ -49,7 +50,7 @@ export default function CyclesPage({ view }: { view: CyclesView }) {
 
   const changeView = (next: CyclesView) => {
     rememberCyclesView(projectKey, next);
-    router.push(cyclesViewPath(projectKey, next));
+    navigateFeatureInstant(cyclesViewPath(projectKey, next));
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
 import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
@@ -75,7 +76,7 @@ export default function InitiativesPage({ tab }: { tab: InitiativesTab }) {
   // A tab is its own route and carries no query, so switching one drops the page and
   // the sorting of the tab left behind.
   const changeTab = (next: InitiativesTab) => {
-    router.push(initiativesTabPath(project.project.ref, next));
+    navigateFeatureInstant(initiativesTabPath(project.project.ref, next));
   };
 
   const changePage = (next: number) => {

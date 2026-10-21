@@ -1,10 +1,22 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import PageSkeleton from '@/components/common/skeleton/PageSkeleton';
+import RequireFeature from '@/components/common/permissions/RequireFeature';
+import WorkItemsPage from '@/features/work-items/WorkItemsPage';
+import InboxPage from '@/features/inbox/InboxPage';
+import DashboardsPage from '@/features/dashboards/DashboardsPage';
+import InitiativesPage from '@/features/initiatives/InitiativesPage';
+import CyclesPage from '@/features/cycles/CyclesPage';
+import VibeCanvasPage from '@/features/vibe-canvas/VibeCanvasPage';
+import SettingsSchedulesPage from '@/features/settings/SettingsSchedulesPage';
+import ProjectAiAgentsSection from '@/features/teams/components/ai-agents/ProjectAiAgentsSection';
+import MembersPage from '@/features/members/MembersPage';
+import SecretVaultPage from '@/app/[teamRef]/(shell)/[projectKey]/vault/page';
 
-// The Shell's content area. It renders the routed page once the project is
-// loaded, and stands in for it while loading, when the account has no projects
-// yet, or when this project is not readable by the viewer.
+const INITIATIVE_TABS = ['all', 'planned', 'active', 'completed', 'canceled'];
+const CYCLE_VIEWS = ['table', 'timeline'];
+
 export default function ShellBody({
   forbidden,
   hasProject,
@@ -21,6 +33,8 @@ export default function ShellBody({
   children: ReactNode;
 }) {
   const t = useTranslations('shell');
+  const pathname = useInstantPathname();
+
   if (forbidden) {
     return (
       <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
@@ -28,10 +42,6 @@ export default function ShellBody({
       </div>
     );
   }
-  // The routed page reads the project from the Shell context, so it is mounted
-  // only once the project is there. A failed project keeps the body on a message;
-  // the error itself is shown by the banner above. A loading one gets a skeleton of
-  // the page it will become.
   if (!hasProject) {
     if (hasError)
       return (
@@ -47,5 +57,70 @@ export default function ShellBody({
       );
     return <PageSkeleton />;
   }
+
+  const segs = pathname.split('/').filter(Boolean);
+  if (segs.length === 2 || (segs.length === 3 && segs[2] === 'timeline')) {
+    return <WorkItemsPage />;
+  }
+  if (segs.length === 3 && segs[2] === 'inbox') {
+    return <InboxPage />;
+  }
+  if (segs.length === 3 && segs[2] === 'dashboards') {
+    return (
+      <RequireFeature feature="dashboards">
+        <DashboardsPage />
+      </RequireFeature>
+    );
+  }
+  if (
+    segs[2] === 'initiatives' &&
+    (segs.length === 3 || (segs.length === 4 && INITIATIVE_TABS.includes(segs[3]!)))
+  ) {
+    return (
+      <RequireFeature feature="initiatives">
+        <InitiativesPage tab={(segs[3] as any) || 'active'} />
+      </RequireFeature>
+    );
+  }
+  if (
+    segs[2] === 'cycles' &&
+    (segs.length === 3 || (segs.length === 4 && CYCLE_VIEWS.includes(segs[3]!)))
+  ) {
+    return (
+      <RequireFeature feature="cycles">
+        <CyclesPage view={(segs[3] as any) || 'table'} />
+      </RequireFeature>
+    );
+  }
+  if (segs.length === 3 && segs[2] === 'docs') {
+    return (
+      <RequireFeature feature="documents">
+        <VibeCanvasPage initialMode="docs" />
+      </RequireFeature>
+    );
+  }
+  if (segs.length === 3 && segs[2] === 'notes') {
+    return (
+      <RequireFeature feature="notes">
+        <VibeCanvasPage initialMode="notes" />
+      </RequireFeature>
+    );
+  }
+  if (segs.length === 3 && segs[2] === 'vibe') {
+    return <VibeCanvasPage initialMode="finder" />;
+  }
+  if (segs.length === 4 && segs[2] === 'agents' && segs[3] === 'schedules') {
+    return <SettingsSchedulesPage />;
+  }
+  if (segs.length === 3 && segs[2] === 'agents') {
+    return <ProjectAiAgentsSection />;
+  }
+  if (segs.length === 3 && segs[2] === 'members') {
+    return <MembersPage />;
+  }
+  if (segs.length === 3 && segs[2] === 'vault') {
+    return <SecretVaultPage />;
+  }
+
   return <>{children}</>;
 }

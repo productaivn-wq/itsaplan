@@ -1,4 +1,4 @@
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { useShellRoute } from '@/hooks/useShellRoute';
 import { useTranslations } from 'next-intl';
 import {
@@ -37,7 +37,7 @@ export default function SidebarWorkNav({
   projectId: number | null;
 }) {
   const t = useTranslations('nav');
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const routeSub = useShellRoute().sub;
   const { can } = usePermissions();
   const features = useProjectFeatures();
