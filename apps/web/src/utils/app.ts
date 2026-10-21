@@ -1,15 +1,12 @@
 import { runtimeEnv } from './runtimeEnv';
 
-// The product name shown to users: the login panel, the passkey label in the OS
-// picker, and the account page. It is defined once, so a rebrand is one edit.
-export const APP_NAME = "It's a Plan";
+// Official Project Brand Identity (SPEC-DESIGN-SYSTEM-LOGO-263 / SPEC-ITSAPLAN-BRAND-DESIGN-SYSTEM-282)
+export const APP_NAME = 'ACCORD';
+export const APP_TAGLINE = 'AI Speed. Deterministic Proof. Zero Babysitting.';
 
 // The product site. The product mark on the public share pages links to it.
-export const APP_SITE_URL = 'https://itsaplan.dev/';
+export const APP_SITE_URL = 'https://accord.sovereign.os/';
 
-// The legal document URLs, linked from the logged-out screens: Google requires the
-// privacy policy and terms registered for the OAuth client to be reachable before
-// consent is given. Each instance points these at its own documents through its
-// environment (see runtimeEnv); when unset, the legal notice is hidden.
+// The legal document URLs, linked from the logged-out screens.
 export const PRIVACY_POLICY_URL = runtimeEnv().privacyUrl;
 export const TERMS_URL = runtimeEnv().termsUrl;

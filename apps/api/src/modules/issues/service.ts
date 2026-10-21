@@ -222,11 +222,17 @@ function snapshot(row: IssueRow): IssueSnapshot {
 
 export async function listIssues(project: ProjectRow): Promise<IssueRow[]> {
   const rows = await db
-    .select()
+    .select({ issue })
     .from(issue)
+    .innerJoin(projectColumn, eq(projectColumn.id, issue.columnId))
     .where(and(eq(issue.projectId, project.id), isNull(issue.archivedAt)))
-    .orderBy(issue.columnId, issue.position);
-  const issues = rows.map((row) => mapIssue(row, project.key));
+    .orderBy(
+      sql`case when ${projectColumn.stateType} in ('completed', 'canceled') then 1 else 0 end`,
+      issue.columnId,
+      issue.position,
+    )
+    .limit(800);
+  const issues = rows.map((row) => mapIssue(row.issue, project.key));
   await attachLabels(issues);
   await attachFieldValues(issues);
   await attachStatusSince(issues);

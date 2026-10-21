@@ -1,0 +1,25 @@
+{
+  "editAction": "Chỉnh sửa dự án",
+  "copyAction": "Copy dự án",
+  "deleteAction": "Xóa dự án",
+  "leaveAction": "Leave dự án",
+  "deleteDialog": {
+    "title": "Xóa {name}?",
+    "confirm": "Xóa permanently",
+    "description": "This permanently deletes <strong>{name}</strong> and everything in it: issues, bình luận, tệp đính kèm, and cài đặt. This cannot be undone.",
+    "typeToConfirm": "Type <code>{key}</code> to confirm."
+  },
+  "leaveDialog": {
+    "title": "Leave {name}?",
+    "confirm": "Leave dự án",
+    "description": "You will lose access to <strong>{name}</strong> and its hạng mục công việc. To join again you need a new invite from an owner."
+  },
+  "editDialog": {
+    "title": "Chỉnh sửa dự án",
+    "key": "Key",
+    "keyHint": "Issue links need a key of capital letters and digits that starts with a letter. After you lưu it, the key cannot change.",
+    "name": "Tên",
+    "description": "Mô tả",
+    "submit": "Lưu"
+  }
+}

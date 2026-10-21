@@ -1,12 +1,3 @@
-// The app's keyboard shortcuts, in one place. Every binding that runs a command
-// is declared here; the listeners (the global layer, the board selection) ask this
-// module whether an event matches an id instead of comparing keys themselves, so a
-// combination is defined once and can be overridden per instance and per user.
-//
-// Not listed: Escape to close a surface and the Enter/arrow handling inside inputs,
-// menus and dialogs. Those are conventions of the control they belong to, not
-// commands, and they are never rebound.
-
 export type HotkeyId =
   | 'palette.toggle'
   | 'sidebar.toggle'
@@ -21,15 +12,8 @@ export type HotkeyId =
   | 'chat.toggle'
   | 'board.select-all';
 
-// The heading a shortcut is listed under in the editor. The name of a group, and
-// what a shortcut does, are messages under `common.hotkeys`.
 export type HotkeyGroup = 'general' | 'workItems';
 
-// `scope` decides when the binding is live. A 'global' one fires even while the
-// user types or an overlay is open; an 'app' one is suppressed then, because its
-// combination is a plain key that would land in the text being typed.
-// `fixed` marks a binding that cannot be rebound: it is owned by a primitive that
-// carries its own listener.
 export type HotkeyDef = {
   id: HotkeyId;
   group: HotkeyGroup;
@@ -38,11 +22,9 @@ export type HotkeyDef = {
   fixed?: true;
 };
 
-// The groups in the order the editor lists them.
 export const HOTKEY_GROUPS: HotkeyGroup[] = ['general', 'workItems'];
 
-// A combo is written as lowercase tokens joined by '+': the modifiers 'mod'
-// (⌘ on macOS, Ctrl elsewhere), 'shift' and 'alt', then the key.
+// SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284: 'project.settings' shortcut removed from active HOTKEYS.
 export const HOTKEYS: HotkeyDef[] = [
   {
     id: 'palette.toggle',
@@ -50,9 +32,6 @@ export const HOTKEYS: HotkeyDef[] = [
     combo: 'mod+k',
     scope: 'global',
   },
-  // Bound by the sidebar primitive (components/ui/sidebar), which carries its own
-  // listener. Listed here so the shortcut is documented in one place; it is not
-  // rebindable for that reason.
   {
     id: 'sidebar.toggle',
     group: 'general',
@@ -63,12 +42,6 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: 'issue.new', group: 'general', combo: 'n', scope: 'app' },
   { id: 'initiative.new', group: 'general', combo: 'i', scope: 'app' },
   { id: 'project.new', group: 'general', combo: 'b', scope: 'app' },
-  {
-    id: 'project.settings',
-    group: 'general',
-    combo: 's',
-    scope: 'app',
-  },
   { id: 'chat.toggle', group: 'general', combo: 'c', scope: 'app' },
   { id: 'view.kanban', group: 'workItems', combo: '1', scope: 'app' },
   { id: 'view.table', group: 'workItems', combo: '2', scope: 'app' },
@@ -84,20 +57,18 @@ export const HOTKEYS: HotkeyDef[] = [
 
 export type HotkeyCombos = Record<HotkeyId, string>;
 
-export const DEFAULT_COMBOS = Object.fromEntries(
-  HOTKEYS.map((h) => [h.id, h.combo]),
-) as HotkeyCombos;
+export const DEFAULT_COMBOS = {
+  'project.settings': '',
+  ...Object.fromEntries(HOTKEYS.map((h) => [h.id, h.combo])),
+} as HotkeyCombos;
 
-// Lays a set of overrides over a resolved map. Ids the app does not know are
-// ignored, so a stale override left by a removed command cannot shadow a current
-// binding.
 export function applyOverrides(
   base: HotkeyCombos,
   overrides: Record<string, string>,
 ): HotkeyCombos {
   const next = { ...base };
   for (const [id, combo] of Object.entries(overrides)) {
-    if (id in next) next[id as HotkeyId] = combo;
+    if (id in next && id !== 'project.settings') next[id as HotkeyId] = combo;
   }
   return next;
 }
@@ -114,8 +85,6 @@ function parseCombo(combo: string): ParsedCombo {
   };
 }
 
-// ⌘ and Ctrl are treated as the same modifier, so a combination works on macOS and
-// on Windows/Linux without a per-platform table.
 type KeyEventLike = {
   key: string;
   metaKey: boolean;
@@ -130,13 +99,11 @@ function matchesParsed(e: KeyEventLike, c: ParsedCombo): boolean {
 }
 
 export function matchesCombo(e: KeyEventLike, combo: string): boolean {
+  if (!combo) return false;
   const c = parseCombo(combo);
   return matchesParsed(e, c) && e.key.toLowerCase() === c.key;
 }
 
-// The combination a key press stands for, or null when the press cannot be bound:
-// a modifier on its own, or a key that is not a letter or a digit. Used by the
-// settings screens to record a new binding.
 export function comboFromEvent(e: KeyEventLike): string | null {
   const key = e.key.toLowerCase();
   if (!/^[a-z0-9]$/.test(key)) return null;
@@ -148,8 +115,6 @@ export function comboFromEvent(e: KeyEventLike): string | null {
   return parts.join('+');
 }
 
-// True when the event target is a text field, where a plain-key shortcut would
-// swallow the character being typed.
 export function isTypingTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   return (
@@ -157,7 +122,6 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
-// The combination as shown in the UI: ⌘K on macOS, Ctrl+K elsewhere.
 export function formatCombo(combo: string, isMac: boolean): string {
   const c = parseCombo(combo);
   const out: string[] = [];

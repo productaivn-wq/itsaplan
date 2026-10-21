@@ -19,7 +19,7 @@ import { getRevs } from '@/lib/api/endpoints/sync';
 //
 // Polling pauses while the tab is in the background — TanStack does not refetch on
 // an interval there — and stops when nothing is registered.
-const POLL_MS = 2000;
+const POLL_MS = 5000;
 
 export interface ScopeWatcher {
   scope: string;
@@ -51,7 +51,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     queryFn: () => getRevs(scopes),
     enabled: scopes.length > 0,
     refetchInterval: POLL_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
     // Never served as fresh, but kept for one interval: with gcTime 0 a remount in
     // the same tick drops the in-flight read and fires a second one.
     staleTime: 0,
@@ -70,8 +70,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       for (const watcher of watchers.current) {
         if (watcher.scope !== scope) continue;
         for (const key of watcher.targets) {
-          void qc.invalidateQueries({ queryKey: key, refetchType: 'all' });
-          void qc.refetchQueries({ queryKey: key });
+          void qc.invalidateQueries({ queryKey: key, refetchType: 'active' });
         }
       }
     }

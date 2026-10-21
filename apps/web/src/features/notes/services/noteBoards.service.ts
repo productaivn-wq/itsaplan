@@ -29,6 +29,7 @@ export function useNoteBoardSearch(projectKey: string | null, q: string) {
     queryKey: qk.noteBoardsSearch(projectKey ?? '', q),
     queryFn: () => listNoteBoards(projectKey!, { q: q || undefined }),
     enabled: projectKey != null,
+    staleTime: 60_000,
   });
 }
 
@@ -39,7 +40,7 @@ export function useNoteBoardQuery(projectKey: string | null, boardId: number | n
     queryKey: qk.noteBoard(projectKey ?? '', boardId ?? 0),
     queryFn: () => getNoteBoard(projectKey!, boardId!),
     enabled: projectKey != null && boardId != null,
-    refetchOnMount: 'always',
+    staleTime: 30_000,
   });
 }
 

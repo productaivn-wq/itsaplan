@@ -1,10 +1,10 @@
 import RequireFeature from '@/components/common/permissions/RequireFeature';
-import DocumentsPage from '@/features/documents/DocumentsPage';
+import VibeCanvasPage from '@/features/vibe-canvas/VibeCanvasPage';
 
 export default function Page() {
   return (
     <RequireFeature feature="documents">
-      <DocumentsPage />
+      <VibeCanvasPage initialMode="docs" />
     </RequireFeature>
   );
 }

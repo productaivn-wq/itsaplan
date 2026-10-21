@@ -10,7 +10,6 @@ import type { IssueOpenMode } from '@/lib/api/endpoints/userPreferences';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useOverlays } from '@/hooks/useOverlays';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useSettingsNavGroups } from '@/hooks/useSettingsNavGroups';
 import { useShellProject } from '@/hooks/useShellProject';
 import { useShellRoute } from '@/hooks/useShellRoute';
 import { useProjectRouteSync } from '@/hooks/useProjectRouteSync';
@@ -56,7 +55,7 @@ export default function Shell({
     canCreateIssue,
     errorMsg,
     forbidden,
-  } = useShellProject(projectKey, route.activeViewId);
+  } = useShellProject(projectKey, route.activeViewId, route.onBoard);
   const teamId = project?.project.teamId;
   const issueRefs = useMemo(
     () => projects.filter((item) => item.teamId === teamId).map((item) => item.ref),
@@ -82,10 +81,6 @@ export default function Shell({
   const openNewProject = newProjectTeamId != null ? () => overlays.setShowNewProject(true) : null;
 
   useProjectRouteSync({ projects, projectsLoaded, projectKey });
-
-  // The settings sections the member may open; the hotkey lands on the first of
-  // them, the same entry the sidebar links to.
-  const { firstHref: firstSettingsHref } = useSettingsNavGroups(projectKey, project);
 
   // Only the work items routes: a cycle or an initiative board carries its own
   // filters and merges them itself.
@@ -119,7 +114,7 @@ export default function Shell({
     onNewIssue: () => canCreateIssue && openNewIssue(),
     onNewInitiative: () => canCreateInitiative && overlays.setShowNewInitiative(true),
     onNewProject: () => openNewProject?.(),
-    onSettings: () => firstSettingsHref && router.push(firstSettingsHref),
+    onSettings: () => {},
     onToggleChat: chatPanel.toggle,
   });
 

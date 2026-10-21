@@ -1,5 +1,5 @@
-import SettingsGitPage from '@/features/settings/SettingsGitPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsGitPage />;
+  return <ProjectSettingsCutRedirect />;
 }

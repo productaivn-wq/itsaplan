@@ -1,5 +1,5 @@
 import { db, initiative, initiativeLabel, issue, label, projectColumn, user } from '@repo/db';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql, isNull } from 'drizzle-orm';
 import { labelNames, rowSide } from '#modules/issues/activity';
 import { getMembership } from '#modules/members/service';
 import { HttpError, iso, num } from '#shared/lib';
@@ -49,7 +49,7 @@ async function countsFor(initiativeIds: number[]): Promise<Map<number, Initiativ
     })
     .from(issue)
     .innerJoin(projectColumn, eq(projectColumn.id, issue.columnId))
-    .where(inArray(issue.initiativeId, initiativeIds))
+    .where(and(inArray(issue.initiativeId, initiativeIds), isNull(issue.archivedAt)))
     .groupBy(issue.initiativeId);
   for (const r of rows) {
     if (r.initiativeId == null) continue;

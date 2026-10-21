@@ -11,6 +11,17 @@ export interface VibeFile {
   size: number;
   modified: string;
   type: 'doc' | 'code' | 'image' | 'archive' | 'data';
+  openjev_score?: number;
+}
+
+export interface VibeDocProfiler {
+  words: number;
+  lines: number;
+  headings: number;
+  tables: number;
+  figures: number;
+  openjev_score: number;
+  compute_ms: number;
 }
 
 export interface VibeDocContent {
@@ -24,6 +35,7 @@ export interface VibeDocContent {
   slice_content: string;
   total_lines: number;
   displayed_lines: number;
+  profiler?: VibeDocProfiler;
 }
 
 export interface VibeAgent {
@@ -46,10 +58,13 @@ export interface VibeTask {
 }
 
 export interface VibeCitation {
-  raw: string;
+  raw?: string;
+  document_name: string;
   file_path: string;
   start_line: number;
   end_line: number;
+  confidence_score: number;
+  snippet: string;
 }
 
 export interface VibeChatMessage {
@@ -62,9 +77,29 @@ export interface VibeChatMessage {
 
 export interface VibeConversation {
   id: string;
+  thread_id?: string;
   title: string;
   created_at: string;
   message_count: number;
+}
+
+export interface WeKnoraMemoryPayload {
+  engine: string;
+  cpu_latency_ms: number;
+  openjev_ece: number;
+  contradiction_reconciliation_rate: string;
+  buckets: {
+    profile: string[];
+    preference: string[];
+    fact: string[];
+    task: string[];
+    interest: string[];
+  };
+  wikigraph_links: Array<{
+    slug: string;
+    title: string;
+    path: string;
+  }>;
 }
 
 export interface ArchiveManifestNode {

@@ -1,0 +1,168 @@
+{
+  "title": "Sáng kiến",
+  "newInitiative": "New sáng kiến",
+  "notFound": "Sáng kiến not found.",
+  "options": "Sáng kiến options",
+  "showDescription": "Show mô tả",
+  "noDescription": "No mô tả.",
+  "noOwner": "No owner",
+  "startDate": "Ngày bắt đầu",
+  "targetDate": "Target date",
+  "progress": "Progress",
+  "activity": "Hoạt động",
+  "noActivity": "No activity yet.",
+  "noIssuesLinked": "No issues linked yet.",
+  "inProgress": "Đang thực hiện",
+  "emptyTitle": "No sáng kiến yet",
+  "emptyDescription": "An sáng kiến groups related issues under one goal.",
+  "emptyTabDescription": "Sáng kiến move between tabs as their trạng thái changes.",
+  "emptyTab": {
+    "active": "No active sáng kiến",
+    "planned": "No planned sáng kiến",
+    "proposed": "No proposed sáng kiến",
+    "completed": "No completed sáng kiến"
+  },
+  "tabs": {
+    "active": "Đang hoạt động",
+    "planned": "Planned",
+    "proposed": "Proposed",
+    "completed": "Đã hoàn thành",
+    "all": "All sáng kiến"
+  },
+  "detailTabs": {
+    "overview": "Tổng quan",
+    "progress": "Progress",
+    "issues": "Issues"
+  },
+  "columns": {
+    "name": "Tên",
+    "priority": "Độ ưu tiên",
+    "owner": "Chủ sở hữu",
+    "target": "Target",
+    "progress": "Progress",
+    "health": "Health"
+  },
+  "status": {
+    "proposed": "Proposed",
+    "planned": "Planned",
+    "active": "Đang hoạt động",
+    "completed": "Đã hoàn thành",
+    "canceled": "Đã hủy"
+  },
+  "stateGroups": {
+    "backlog": "Tồn đọng",
+    "unstarted": "Cần làm",
+    "started": "Đang thực hiện",
+    "completed": "Xong",
+    "canceled": "Đã hủy"
+  },
+  "health": {
+    "on_track": "On track",
+    "at_risk": "At risk",
+    "off_track": "Off track",
+    "unknown": "No cập nhật"
+  },
+  "healthInfo": {
+    "trigger": "How is health calculated?",
+    "title": "Health",
+    "description": "Compares work done against time elapsed. Updates automatically.",
+    "legend": {
+      "on_track": "Work is keeping pace with the schedule.",
+      "at_risk": "Work is slipping behind the schedule.",
+      "off_track": "Work is well behind, or the target date has passed.",
+      "unknown": "Not enough data yet: no issues or no target date."
+    },
+    "howCalculated": "How it's calculated",
+    "workDone": "Work done",
+    "timeElapsed": "Time elapsed",
+    "trail": "How far work trails time",
+    "trailOnTrack": "up to 10% behind",
+    "trailAtRisk": "10-25% behind",
+    "trailOffTrack": "over 25% behind"
+  },
+  "timeline": {
+    "title": "Dòng thời gian",
+    "started": "Started",
+    "target": "Target",
+    "remaining": "Remaining",
+    "overdue": "{days}d overdue",
+    "dueToday": "Due today",
+    "left": "{days}d left",
+    "timeElapsed": "Time elapsed",
+    "workDone": "Work done",
+    "noTargetDate": "Set a target date to track pace."
+  },
+  "form": {
+    "titlePlaceholder": "Q3 Launch",
+    "descriptionPlaceholder": "What is this sáng kiến about?",
+    "create": "Tạo sáng kiến",
+    "creating": "Creating…",
+    "editTitle": "Chỉnh sửa sáng kiến",
+    "save": "Lưu thay đổi"
+  },
+  "pagination": {
+    "range": "{from}–{to} of {total}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "select": {
+    "label": "Sáng kiến",
+    "search": "Link to sáng kiến…",
+    "empty": "No sáng kiến.",
+    "none": "No sáng kiến",
+    "create": "Tạo sáng kiến"
+  },
+  "feed": {
+    "system": "Hệ thống",
+    "createdInitiative": "created the sáng kiến",
+    "createdIssue": "created the issue",
+    "renamed": "renamed to “{title}”",
+    "descriptionUpdated": "updated the mô tả",
+    "descriptionCleared": "cleared the mô tả",
+    "statusSet": "set trạng thái to {status}",
+    "statusMoved": "moved from {from} to {to}",
+    "prioritySet": "set độ ưu tiên to {priority}",
+    "priorityRemoved": "removed độ ưu tiên",
+    "ownerSet": "set owner to {name}",
+    "ownerRemoved": "removed owner {name}",
+    "assigneeSet": "assigned to {name}",
+    "assigneeRemoved": "removed người thực hiện {name}",
+    "delegateSet": "delegated to {name}",
+    "delegateRemoved": "removed delegate {name}",
+    "targetDateSet": "set target date to {date}",
+    "targetDateRemoved": "removed target date",
+    "startDateSet": "set ngày bắt đầu to {date}",
+    "startDateRemoved": "removed ngày bắt đầu",
+    "dueDateSet": "set ngày đến hạn to {date}",
+    "dueDateRemoved": "removed ngày đến hạn",
+    "labelAdded": "added label {label}",
+    "labelRemoved": "removed label {label}",
+    "typeSet": "set type to {type}",
+    "typeRemoved": "removed type",
+    "linked": "linked to {name}",
+    "unlinked": "unlinked from the sáng kiến"
+  },
+  "attachments": {
+    "title": "Tệp đính kèm",
+    "add": "Thêm",
+    "uploading": "Uploading…",
+    "empty": "No tệp đính kèm yet.",
+    "emptyHint": "Drop files here, or use Add to upload.",
+    "dropToUpload": "Drop files to upload",
+    "uploadFailed": "Upload failed",
+    "open": "Open {name}",
+    "download": "Tải xuống",
+    "downloadFile": "Tải xuống {name}",
+    "deleteFile": "Xóa {name}",
+    "deleteTitle": "Xóa attachment",
+    "deleteConfirmation": "Xóa {name}? It is also removed from the mô tả wherever it is embedded. This cannot be undone."
+  },
+  "documents": {
+    "title": "Docs",
+    "add": "Link a Doc",
+    "empty": "No linked Docs yet.",
+    "loadFailed": "Could not load the linked Docs. Retry.",
+    "untitled": "Untitled",
+    "remove": "Unlink {title}"
+  }
+}

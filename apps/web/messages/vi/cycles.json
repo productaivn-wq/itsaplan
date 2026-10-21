@@ -1,0 +1,79 @@
+{
+  "title": "Chu kỳ",
+  "newCycle": "New chu kỳ",
+  "status": {
+    "upcoming": "Sắp tới",
+    "active": "Đang hoạt động",
+    "completed": "Đã hoàn thành"
+  },
+  "views": {
+    "table": "Bảng",
+    "timeline": "Dòng thời gian"
+  },
+  "columns": {
+    "name": "Tên",
+    "dates": "Dates",
+    "length": "Length",
+    "issues": "Issues",
+    "progress": "Progress"
+  },
+  "emptyTitle": "No chu kỳ yet",
+  "emptyDescription": "A chu kỳ is a time-boxed period the team plans its issues into.",
+  "nothingPlannedTitle": "Nothing planned",
+  "nothingPlannedDescription": "The timeline shows active and upcoming chu kỳ. Finished ones are in the table.",
+  "options": "Chu kỳ options",
+  "transferIssues": "{count, plural, one {Move # unfinished issue} other {Move # unfinished issues}}",
+  "finishedEarly": "Finished early, planned to end {date}",
+  "form": {
+    "editTitle": "Chỉnh sửa chu kỳ",
+    "newTitle": "New chu kỳ",
+    "name": "Tên",
+    "goal": "Goal",
+    "goalPlaceholder": "What should this chu kỳ deliver?",
+    "length": "Length",
+    "starts": "Starts",
+    "ends": "Ends",
+    "create": "Tạo chu kỳ",
+    "saveFailed": "Could not lưu the chu kỳ"
+  },
+  "weeks": "{count, plural, one {# week} other {# weeks}}",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left",
+  "transfer": {
+    "title": "Move unfinished issues",
+    "description": "Unfinished issues move to the chu kỳ you pick. Finished and canceled ones stay here.",
+    "moveTo": "Move to",
+    "noCycle": "No chu kỳ",
+    "submit": "Move issues",
+    "moving": "Moving…",
+    "moved": "{count, plural, one {# issue moved} other {# issues moved}}",
+    "failed": "Could not move the issues"
+  },
+  "finish": {
+    "action": "Finish chu kỳ",
+    "title": "Finish chu kỳ early",
+    "description": "{cycle} closes today instead of {date}. You can't reopen it. {count, plural, =0 {Nothing is left unfinished.} one {# unfinished issue stays on it.} other {# unfinished issues stay on it.}}",
+    "submit": "Finish chu kỳ"
+  },
+  "startNext": {
+    "action": "Start next chu kỳ today",
+    "title": "Start the next chu kỳ today",
+    "description": "{cycle} closes today and you can't reopen it. {next} starts today and still ends on {date}. {count, plural, =0 {Nothing carries over.} one {# unfinished issue moves to it.} other {# unfinished issues move to it.}} Finished and canceled issues stay on {cycle}.",
+    "submit": "Start next chu kỳ",
+    "started": "{cycle} started. {count, plural, =0 {No issues carried over.} one {# issue carried over.} other {# issues carried over.}}"
+  },
+  "delete": {
+    "title": "Xóa chu kỳ",
+    "description": "{cycle} is deleted for good. {count, plural, =0 {It holds no issues.} one {# issue stays in the project, without a cycle.} other {# issues stay in the project, without a cycle.}}"
+  },
+  "details": "Chu kỳ details",
+  "goal": "Goal",
+  "noGoal": "No goal set.",
+  "progress": "Progress",
+  "openCycle": "Open chu kỳ",
+  "dragFailed": "Could not move the chu kỳ",
+  "notFound": "Chu kỳ not found.",
+  "defaultName": "Sprint {n}",
+  "issuesDone": "Issues done"
+}

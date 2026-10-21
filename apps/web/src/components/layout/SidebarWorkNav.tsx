@@ -3,12 +3,10 @@ import { useShellRoute } from '@/hooks/useShellRoute';
 import { useTranslations } from 'next-intl';
 import {
   BookOpenText,
-  Compass,
   Inbox,
   LayoutDashboard,
   RefreshCw,
   SquareKanban,
-  StickyNote,
   Target,
 } from 'lucide-react';
 import {
@@ -17,10 +15,8 @@ import {
   documentsPath,
   inboxPath,
   initiativesPath,
-  notesPath,
   projectPath,
   viewPath,
-  vibePath,
 } from '@/utils/paths';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectFeatures } from '@/hooks/useProjectFeatures';
@@ -31,8 +27,8 @@ import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '@/components/ui/
 import SidebarNavItem from '@/components/layout/SidebarNavItem';
 import SidebarNavSubmenu from '@/components/layout/SidebarNavSubmenu';
 
-// The top sidebar group. An entry appears only when its project feature is on and
-// the user may read the section.
+// The top sidebar group. Vibe Canvas, Docs, and Notes are consolidated into a
+// single unified Knowledge & Canvas workspace entry (SPEC-ITSAPLAN-VIBE-DOCS-NOTES-CONSOLIDATION-278).
 export default function SidebarWorkNav({
   projectKey,
   projectId,
@@ -50,16 +46,20 @@ export default function SidebarWorkNav({
   const { data: views } = useViewsQuery(projectKey);
   const favorites = views?.filter((v) => v.favorite) ?? [];
 
-  // "Work items" is the default view: active on the project root and any segment
-  // that is not one of the other top-level destinations.
   const onWorkItems =
     !!projectKey &&
     (pathname === projectPath(projectKey) ||
       pathname.startsWith(`${projectPath(projectKey)}/view`) ||
       routeSub === 'issue');
 
-  // With favorites, Work items becomes a sub-list: the unfiltered board plus one
-  // entry per favorite view.
+  const onUnifiedKnowledgeHub =
+    pathname.includes('/docs') || pathname.includes('/notes') || pathname.includes('/vibe');
+
+  const canAccessKnowledgeHub =
+    (features.documents && can('documents', 'read')) ||
+    (features.notes && can('note_boards', 'read')) ||
+    !!projectKey;
+
   const workItemsSubmenu =
     projectKey && favorites.length > 0
       ? [
@@ -68,8 +68,6 @@ export default function SidebarWorkNav({
             href: projectPath(projectKey),
             icon: SquareKanban,
             label: t('allWorkItems'),
-            // Also the entry for a saved view that is not a favorite: it has no
-            // row of its own, and the group would otherwise show nothing active.
             active: onWorkItems && !favorites.some((v) => pathname === viewPath(projectKey, v.id)),
           },
           ...favorites.map((v) => ({
@@ -118,13 +116,6 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
-          <SidebarNavItem
-            href={projectKey ? vibePath(projectKey) : '#'}
-            icon={Compass}
-            label={t('vibeCanvas')}
-            active={pathname.includes('/vibe')}
-            disabled={disabled}
-          />
           {features.initiatives && can('initiatives', 'read') && (
             <SidebarNavItem
               href={projectKey ? initiativesPath(projectKey) : '#'}
@@ -143,21 +134,12 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
-          {features.documents && can('documents', 'read') && (
+          {canAccessKnowledgeHub && (
             <SidebarNavItem
               href={projectKey ? documentsPath(projectKey) : '#'}
               icon={BookOpenText}
               label={t('documents')}
-              active={pathname.includes('/docs')}
-              disabled={disabled}
-            />
-          )}
-          {features.notes && can('note_boards', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? notesPath(projectKey) : '#'}
-              icon={StickyNote}
-              label={t('notes')}
-              active={pathname.includes('/notes')}
+              active={onUnifiedKnowledgeHub}
               disabled={disabled}
             />
           )}

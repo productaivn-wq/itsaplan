@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
-  Bell,
   BookText,
   Bot,
   ChevronRight,
   FolderKanban,
-  GitBranch,
   Info,
   Plug,
-  Radio,
   ShieldCheck,
   Users,
   Wrench,
@@ -82,11 +79,7 @@ export default function TeamSectionNav({ team }: { team: Team }) {
       : []),
   ];
   // The notification providers are the owner's: nobody else reads or writes them.
-  const bottom = [
-    ...(team.role === 'owner' || team.role === 'manager' ? [section('git', 'Git', GitBranch)] : []),
-    section('mcp', t('mcp.title'), Radio),
-    ...(team.role === 'owner' ? [section('notifications', t('notifications.title'), Bell)] : []),
-  ];
+  const bottom: SectionNavItem[] = [];
 
   const activeId = [...top, ...ai, ...bottom].find((entry) => entry.href === pathname)?.id ?? null;
   const aiActive = ai.some((entry) => entry.id === activeId);

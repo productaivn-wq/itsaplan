@@ -27,6 +27,7 @@ const LOCALES: Record<string, DateFnsLocale> = {
   'pt-BR': ptBR,
   id,
   'es-ES': es,
+  vi,
 };
 
 export function useDateFnsLocale(): DateFnsLocale {

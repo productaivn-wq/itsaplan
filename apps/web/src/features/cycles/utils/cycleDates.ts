@@ -71,3 +71,34 @@ export function dateWindow(cycles: Cycle[], cycle: Cycle): { from: Date | null; 
     to: nextStart ? addDays(nextStart, -1) : null,
   };
 }
+
+export function formatCycleDuration(cycle: Pick<Cycle, 'startDate' | 'endDate'>): string {
+  const days = cycleLength(cycle);
+  const mins = cycleLengthMinutes(cycle);
+  if (days >= 2 || mins >= 1440) {
+    if (days >= 7 && days % 7 === 0) {
+      return `${days / 7}w (${days}d)`;
+    }
+    return `${days}d`;
+  }
+  return `${mins}m`;
+}
+
+export function formatCycleTimeLeft(
+  cycle: Pick<Cycle, 'startDate' | 'endDate'> & { completedAt?: string | null },
+  today = new Date(),
+): string {
+  if (cycle.completedAt) {
+    return 'Completed';
+  }
+  const days = cycleLength(cycle);
+  const mins = cycleLengthMinutes(cycle);
+  if (days >= 2 || mins >= 1440) {
+    const remDays = daysLeft(cycle, today);
+    if (remDays > 0) return `${remDays}d left`;
+    if (remDays === 0) return 'Ends today';
+    return `${Math.abs(remDays)}d overdue`;
+  }
+  const remMins = minutesLeft(cycle, today);
+  return remMins > 0 ? `${remMins}m left` : 'Ended';
+}

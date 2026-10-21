@@ -1,123 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Braces, Server, Shield } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { Project } from '@/lib/api/endpoints/projects';
-import { useSession } from '@/lib/auth-client';
-import { apiDocsPath, godPath, mcpServerPath } from '@/utils/paths';
-import { GOD_SECTIONS } from '@/utils/godSections';
-import { useSettingsNavGroups } from '@/hooks/useSettingsNavGroups';
-import { useSidebarSide } from '@/hooks/useSidebarSide';
+import { usePathname } from 'next/navigation';
+import SidebarBrandFooter from '@/components/brand/SidebarBrandFooter';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarRail,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
-import ProjectSwitcher from '@/components/layout/ProjectSwitcher';
-import SidebarNavItem from '@/components/layout/SidebarNavItem';
-import SidebarMainNav from '@/components/layout/SidebarMainNav';
-import SidebarSettingsNav from '@/components/layout/SidebarSettingsNav';
-import SidebarBrandFooter from '@/components/brand/SidebarBrandFooter';
+import { secretsVaultPath } from '@/utils/routes';
+import ProjectSwitcher from './ProjectSwitcher';
+import SidebarMainNav from './SidebarMainNav';
+import SidebarNavItem from './SidebarNavItem';
+import SidebarSettingsNav from './SidebarSettingsNav';
 
-// The app sidebar. It has two modes driven by the route: the main work
-// navigation, and the project settings navigation reached through the "Project
-// settings" entry. The project switcher header and the footer (API docs, MCP
-// server, brand mark) are shared by both modes. Creating and deleting a project
-// live in the team panel on Manage teams, not here.
-export default function AppSidebar({
-  projects,
-  currentProjectKey,
-  onSelectProject,
-}: {
-  projects: Project[];
-  currentProjectKey: string | null;
-  onSelectProject: (key: string) => void;
-}) {
-  const t = useTranslations('nav');
+interface AppSidebarProps {
+  variant?: 'main' | 'settings';
+}
+
+export default function AppSidebar({ variant = 'main' }: AppSidebarProps) {
+  const t = useTranslations('sidebar');
   const pathname = usePathname();
-  const disabled = !currentProjectKey;
-  const projectId = projects.find((p) => p.ref === currentProjectKey)?.id ?? null;
-
-  const { data: session } = useSession();
-  // The session store can already be filled by the time React hydrates, while the
-  // server rendered without it. Reading it only after mount keeps the server and
-  // the first client render identical, so the God mode entry does not break
-  // hydration.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const isGod = mounted && session?.user.role === 'god';
-
-  // Settings mode is on whenever the route matches one of the settings nav items.
-  // Members and the AI Team pages are not in those groups, so they keep the main
-  // sidebar.
-  const settingsNav = useSettingsNavGroups(currentProjectKey);
-  const settingsMode = settingsNav.groups.some((g) => g.items.some((i) => i.active));
-  const onApiDocs = pathname.endsWith('/api');
-  const onMcp = pathname.endsWith('/mcp');
-  const side = useSidebarSide();
+  const isSettings = variant === 'settings';
 
   return (
-    <Sidebar collapsible="icon" side={side}>
-      <SidebarHeader>
-        <ProjectSwitcher
-          projects={projects}
-          currentProjectKey={currentProjectKey}
-          onSelectProject={onSelectProject}
-        />
-      </SidebarHeader>
-
-      <SidebarContent>
-        {settingsMode ? (
-          <SidebarSettingsNav projectKey={currentProjectKey} />
-        ) : (
-          <SidebarMainNav projectKey={currentProjectKey} projectId={projectId} />
-        )}
-      </SidebarContent>
-
+    <Sidebar collapsible="icon">
+      {!isSettings && (
+        <SidebarHeader>
+          <ProjectSwitcher />
+        </SidebarHeader>
+      )}
+      <SidebarContent>{isSettings ? <SidebarSettingsNav /> : <SidebarMainNav />}</SidebarContent>
       <SidebarFooter>
-        {!settingsMode && (
-          <>
-            <SidebarMenu>
-              <SidebarNavItem
-                href={currentProjectKey ? apiDocsPath(currentProjectKey) : '#'}
-                icon={Braces}
-                label={t('apiDocs')}
-                active={onApiDocs}
-                disabled={disabled}
-              />
-              <SidebarNavItem
-                href={currentProjectKey ? mcpServerPath(currentProjectKey) : '#'}
-                icon={Server}
-                label={t('mcpServer')}
-                active={onMcp}
-                disabled={disabled}
-              />
-              {/* Instance administration, only for the owner account. The API
-                  enforces the same, so hiding it here is about noise, not access. */}
-              {isGod && (
-                <SidebarNavItem
-                  href={godPath(GOD_SECTIONS[0]!.slug)}
-                  icon={Shield}
-                  label={t('godMode')}
-                  active={false}
-                  disabled={false}
-                />
-              )}
-            </SidebarMenu>
-
-            <SidebarSeparator />
-          </>
-        )}
-
+        <SidebarGroup className="p-0">
+          <SidebarMenu>
+            <SidebarNavItem
+              href={secretsVaultPath()}
+              icon={KeyRound}
+              label="Secret Vault"
+              isActive={pathname.startsWith('/secrets')}
+            />
+          </SidebarMenu>
+        </SidebarGroup>
         <SidebarBrandFooter />
       </SidebarFooter>
-
       <SidebarRail />
     </Sidebar>
   );

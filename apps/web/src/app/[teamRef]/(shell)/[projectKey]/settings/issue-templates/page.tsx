@@ -1,5 +1,5 @@
-import SettingsIssueTemplatesPage from '@/features/settings/SettingsIssueTemplatesPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsIssueTemplatesPage />;
+  return <ProjectSettingsCutRedirect />;
 }

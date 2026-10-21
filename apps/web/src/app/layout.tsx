@@ -10,7 +10,11 @@ import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('meta');
-  return { title: t('title'), description: t('description') };
+  return {
+    title: t('title'),
+    description: t('description'),
+    icons: { icon: [{ url: '/design_system/assets/favicon.svg?v=accord-3.3.14', type: 'image/svg+xml' }, { url: '/favicon.svg?v=accord-3.3.14', type: 'image/svg+xml' }, { url: '/favicon.ico?v=accord-3.3.14', sizes: '32x32', type: 'image/x-icon' }], shortcut: '/design_system/assets/favicon.svg?v=accord-3.3.14', apple: '/design_system/assets/favicon.svg?v=accord-3.3.14' },
+  };
 }
 
 export default async function RootLayout({
@@ -22,16 +26,13 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={localeDirection(locale as Locale)} suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased" data-design-system="accord-milled-carbon-v3.3.0">
         <RuntimeEnvScript />
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
-          // A distinct key: next-themes defaults to "theme", which collides with any
-          // other app sharing the same localhost origin. A shared key makes two such
-          // apps fight over the value through cross-tab storage events.
           storageKey="itsaplan-theme"
         >
           <NextIntlClientProvider>

@@ -1,0 +1,107 @@
+{
+  "title": "Thành viên",
+  "description": "People with access to this dự án.",
+  "add": {
+    "action": "Add thành viên",
+    "title": "Add thành viên",
+    "personLabel": "Team thành viên or email",
+    "pickPlaceholder": "Select someone",
+    "searchPlaceholder": "Tìm kiếm the team or type an email",
+    "searchTeamPlaceholder": "Tìm kiếm the team",
+    "fromTeam": "From the team",
+    "byEmail": "Invite by email",
+    "inviteEmail": "Mời {email}",
+    "alreadyInvited": "{email} is already invited",
+    "alreadyMember": "{email} is already in this dự án",
+    "alreadyInTeam": "{email} is already in the team — pick them from the list above",
+    "refused": "{email} could not be added",
+    "typeEmail": "Nobody found. Type a full email address to invite them.",
+    "noCandidates": "Everyone in the team is already in this dự án.",
+    "willJoinTeam": "Joins the {teamName} team and this dự án",
+    "roleLabel": "Role in the dự án",
+    "rolePlaceholder": "Vai trò",
+    "submit": "Add to dự án",
+    "sendInvite": "Send invite"
+  },
+  "columns": {
+    "member": "Thành viên",
+    "role": "Vai trò",
+    "timezone": "Timezone",
+    "joined": "Joined",
+    "actions": "Actions"
+  },
+  "profileHeading": "Hồ sơ",
+  "you": "(you)",
+  "aiAgent": "AI Agent",
+  "tabs": {
+    "all": "Tất cả",
+    "people": "People",
+    "agents": "AI agents",
+    "label": "Show"
+  },
+  "leaveProject": "Leave dự án",
+  "revokeAccess": "Revoke access",
+  "lastOwner": "A dự án must keep at least one owner",
+  "leaveTitle": "Leave this dự án",
+  "leaveDescription": "You will lose access to this dự án and its issues. An owner can invite you quay lại later.",
+  "revokeTitle": "Revoke access for {name}",
+  "revokeDescription": "{name} will lose access to this dự án. They can be invited quay lại later.",
+  "selectRole": "Select role",
+  "editDescription": "Chỉnh sửa mô tả",
+  "descriptionQuestionSelf": "What do you do in this dự án?",
+  "descriptionQuestionOther": "What does this person do in this dự án?",
+  "descriptionPlaceholder": "e.g. Backend engineer, owns the API and integrations",
+  "invites": {
+    "pendingCount": "{count, plural, one {# pending invite} other {# pending invites}}",
+    "copyLink": "Sao chép liên kết",
+    "copied": "Copied",
+    "emailQueued": "Invitation email queued",
+    "emailUnavailable": "Invite created, but email was not queued. Copy the link to share it.",
+    "resendUnavailable": "Email is not configured. Copy the invitation link to share it.",
+    "resendEmail": "Send email",
+    "resendingEmail": "Queueing…",
+    "revokeAction": "Revoke invite",
+    "removeAction": "Gỡ bỏ invite",
+    "invitedBy": "Invited by {name} · ",
+    "createdAt": "created {date}",
+    "respondedAt": "{status, select, accepted {accepted} rejected {rejected} other {updated}} {date}",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "revokeTitle": "Revoke invite for {email}",
+    "revokeConfirm": "Revoke invite",
+    "revokeDescription": "The invite link will stop working. You can invite this email again later."
+  },
+  "promoted": "Thành viên promoted to owner",
+  "roleUpdated": "Thành viên role updated",
+  "descriptionUpdated": "Thành viên mô tả updated",
+  "added": "Thành viên added",
+  "provisioned": "Managed by SCIM",
+  "search": {
+    "all": "Tìm kiếm thành viên",
+    "people": "Tìm kiếm people",
+    "agents": "Tìm kiếm AI agents"
+  },
+  "empty": {
+    "all": {
+      "title": "No thành viên yet",
+      "description": "People and AI agents appear here once they join."
+    },
+    "human": {
+      "title": "No people yet",
+      "description": "People appear here once they join."
+    },
+    "agent": {
+      "title": "No AI agents yet",
+      "description": "AI agents appear here once they are added."
+    },
+    "search": {
+      "title": "Nothing found",
+      "all": "No thành viên matches this tìm kiếm.",
+      "human": "No person matches this tìm kiếm.",
+      "agent": "No AI agent matches this tìm kiếm."
+    }
+  }
+}

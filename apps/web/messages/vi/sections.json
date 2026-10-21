@@ -1,0 +1,113 @@
+{
+  "account": {
+    "profile": "Hồ sơ",
+    "preferences": "Preferences",
+    "accounts": "Accounts",
+    "security": "Bảo mật",
+    "api-keys": "API keys"
+  },
+  "godGroups": {
+    "management": "Management",
+    "instance": "Instance"
+  },
+  "god": {
+    "users": {
+      "label": "Users",
+      "description": "Every account on this instance: the global role, whether the address is confirmed, and the dự án each user can reach."
+    },
+    "teams": {
+      "label": "Teams",
+      "description": "Every team on this instance: the dự án it owns and who belongs to it."
+    },
+    "projects": {
+      "label": "Dự án",
+      "description": "Every dự án on this instance: what each one holds, when it was last active, and who can reach it."
+    },
+    "general": {
+      "label": "Chung",
+      "description": "Defaults for new dự án."
+    },
+    "authentication": {
+      "label": "Authentication",
+      "description": "Who may register on this instance, how accounts are confirmed, and the providers people đăng nhập with."
+    },
+    "hotkeys": {
+      "label": "Keyboard shortcuts",
+      "description": "The key each command is bound to for everyone on this instance. Each person can rebind a shortcut for their own account in their preferences."
+    },
+    "storage": {
+      "label": "Storage",
+      "description": "How much people may upload: the size of a single file, the attachment types accepted, and the storage each dự án gets."
+    },
+    "telegram": {
+      "label": "Telegram",
+      "description": "The bot people connect their Telegram account to, and the one that delivers Telegram thông báo for dự án that set no bot of their own."
+    },
+    "email": {
+      "label": "Email provider",
+      "description": "The mail provider the instance sends through: password resets, address confirmation, and sign-in links."
+    },
+    "auth-provider": {
+      "label": "Auth provider",
+      "description": "The external accounts people may đăng nhập with."
+    },
+    "scim": {
+      "label": "SCIM",
+      "description": "Let an identity provider tạo, cập nhật and deactivate accounts on this instance, and grant dự án access through its groups."
+    }
+  },
+  "settings": {
+    "general": {
+      "label": "Chung",
+      "description": "The dự án's name, mô tả, and the sections it shows."
+    },
+    "states": {
+      "label": "States",
+      "description": "The workflow states issues move through, each shown as a column."
+    },
+    "issue-types": {
+      "label": "Issue types",
+      "description": "The kinds of issues this dự án can hold, each with its own fields."
+    },
+    "labels": {
+      "label": "Nhãn",
+      "description": "Tags for organizing and filtering issues across the dự án."
+    },
+    "custom-fields": {
+      "label": "Custom fields",
+      "description": "Extra fields shown on issues, global or scoped to an issue type."
+    },
+    "issue-templates": {
+      "label": "Issue templates",
+      "description": "Presets a new issue can be created from: its title, mô tả, and properties."
+    },
+    "configuration": {
+      "label": "Configuration",
+      "description": "How subtasks đóng with their parent, and when stale issues are archived."
+    },
+    "actions": {
+      "label": "Actions",
+      "description": "Buttons on an issue that set fields in one click."
+    },
+    "schedules": {
+      "label": "Schedules",
+      "description": "Run agent tasks on a recurring schedule."
+    },
+    "webhooks": {
+      "label": "Webhooks",
+      "description": "Send dự án events to external URLs, signed with a per-webhook secret."
+    },
+    "git": {
+      "label": "Repositories",
+      "description": "Đóng issues when their pull requests merge on GitHub, GitLab, Gitea, Forgejo, or Bitbucket."
+    },
+    "import-export": {
+      "label": "Import/Export",
+      "description": "Bring issues, bình luận, and labels in from a self-hosted Plane instance, or export this dự án's data as JSON."
+    },
+    "ai-agents": {
+      "label": "AI Agents",
+      "description": "AI agents working in this dự án."
+    }
+  }
+}

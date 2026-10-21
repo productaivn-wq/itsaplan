@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+:root, [data-theme="dark"] {
+  --ag-void: #07080A; --ag-obsidian: #0C0E12; --ag-slate: #12151C; --ag-raised: #191D26;
+  --ag-bg-canvas: #07080A; --ag-bg-surface-1: #0C0E12; --ag-bg-surface-2: #12151C; --ag-bg-surface-3: #191D26;
+  --ag-titanium: #F4F4F0; --ag-platinum: #B8C0CC; --ag-anodized: #5E6878;
+  --ag-amber: #E5A93C; --ag-amber-soft: rgba(229, 169, 60, 0.14);
+  --ag-emerald: #2AC38A; --ag-emerald-soft: rgba(42, 195, 138, 0.14);
+  --ag-cyan: #56C2F6; --ag-cyan-soft: rgba(86, 194, 246, 0.14);
+  --ag-indigo: #9B8AFB; --ag-indigo-soft: rgba(155, 138, 251, 0.14);
+  --ag-rose: #E55368; --ag-rose-soft: rgba(229, 83, 104, 0.14);
+  --ag-node-hum: #E5A93C; --ag-node-det: #2AC38A; --ag-node-agt: #56C2F6;
+  --ag-horizon-h1: #E5A93C; --ag-horizon-h2: #E06C88; --ag-horizon-h3: #9B8AFB; --ag-horizon-h4: #738AF8;
+  --ag-horizon-h5: #56C2F6; --ag-horizon-h6: #38C6B4; --ag-horizon-h7: #2AC38A;
+  --ag-text-primary: #F4F4F0; --ag-text-secondary: #B8C0CC; --ag-text-muted: #7D8796;
+  --ag-border-subtle: #222734; --ag-border-strong: #F4F4F0;
+  --ag-shadow-panel: none;
+  --ag-font-display: 'Chakra Petch', 'IBM Plex Sans', sans-serif;
+  --ag-font-sans: 'IBM Plex Sans', sans-serif;
+  --ag-font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --ag-space-1: 4px; --ag-space-2: 8px; --ag-space-3: 12px; --ag-space-4: 16px;
+  --ag-space-6: 24px; --ag-space-8: 32px; --ag-space-11: 44px; --ag-space-12: 48px;
+  --bg: var(--ag-void); --surface: var(--ag-obsidian); --surface-2: var(--ag-slate); --surface-3: var(--ag-raised);
+  --surface-raised: var(--ag-slate); --text: var(--ag-text-primary); --text-muted: var(--ag-text-secondary);
+  --muted: var(--ag-text-secondary); --border: var(--ag-border-subtle); --sky: var(--ag-cyan); --accent: var(--ag-cyan);
+  --emerald: var(--ag-emerald); --amber: var(--ag-amber); --indigo: var(--ag-indigo); --rose: var(--ag-rose);
+}
+[data-theme="light"] {
+  --ag-void: #F5F3EE; --ag-obsidian: #FDFCF9; --ag-slate: #EAE6DF; --ag-raised: #DFDBD2;
+  --ag-bg-canvas: #F5F3EE; --ag-bg-surface-1: #FDFCF9; --ag-bg-surface-2: #EAE6DF; --ag-bg-surface-3: #DFDBD2;
+  --ag-amber: #8C5E00; --ag-emerald: #087443; --ag-cyan: #026AA2; --ag-indigo: #5925DC; --ag-rose: #B42318;
+  --ag-node-hum: #8C5E00; --ag-node-det: #087443; --ag-node-agt: #026AA2;
+  --ag-text-primary: #111318; --ag-text-secondary: #343A46; --ag-text-muted: #5A6270;
+  --ag-border-subtle: #CFC9BE; --ag-border-strong: #111318;
+  --ag-shadow-panel: none;
+}
+.ag-brand-lockup { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.ag-brand-mark { display: inline-block; flex-shrink: 0; }

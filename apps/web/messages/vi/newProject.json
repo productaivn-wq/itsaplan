@@ -1,0 +1,51 @@
+{
+  "name": "Tên",
+  "key": "Key (short, e.g. MKT)",
+  "copyKey": "Key",
+  "description": "Mô tả",
+  "issueTypes": "Issue types",
+  "typesCreated": "{count, plural, one {# issue type} other {# issue types}} will be created",
+  "defaultType": "New issues get {type} by default. Types are editable in cài đặt.",
+  "presets": {
+    "general": "Chung",
+    "software": "Software",
+    "product": "Product",
+    "content": "Content",
+    "marketing": "Marketing",
+    "design": "Design",
+    "sales": "Sales",
+    "operations": "Operations",
+    "support": "Support",
+    "recruiting": "Recruiting"
+  },
+  "copyConfiguration": "Copy configuration",
+  "selectAll": "Select all",
+  "clearAll": "Clear all",
+  "copyGroups": {
+    "workflow": "Workflow",
+    "automation": "Automation",
+    "views": "Chế độ xem",
+    "aiTeam": "AI Team",
+    "knowledge": "Knowledge"
+  },
+  "copyItems": {
+    "states": "States",
+    "issueTypes": "Issue types",
+    "labels": "Nhãn",
+    "customFields": "Custom fields",
+    "views": "Chế độ xem",
+    "dashboards": "Bảng điều khiển",
+    "documents": "Docs",
+    "actions": "Actions",
+    "configuration": "Configuration",
+    "webhooks": "Webhooks",
+    "agents": "Agents",
+    "schedules": "Schedules"
+  },
+  "title": "New dự án",
+  "copyTitle": "Copy dự án \"{name}\"",
+  "create": "Tạo dự án",
+  "copyAction": "Copy dự án",
+  "defaultAgents": "Agents joining this dự án: {names}",
+  "copyName": "{name} copy"
+}

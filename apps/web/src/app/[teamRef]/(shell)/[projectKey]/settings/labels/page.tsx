@@ -1,5 +1,5 @@
-import SettingsLabelsPage from '@/features/settings/SettingsLabelsPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsLabelsPage />;
+  return <ProjectSettingsCutRedirect />;
 }

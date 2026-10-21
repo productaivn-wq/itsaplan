@@ -1,5 +1,5 @@
-import SettingsGeneralPage from '@/features/settings/SettingsGeneralPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsGeneralPage />;
+  return <ProjectSettingsCutRedirect />;
 }

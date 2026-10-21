@@ -1,16 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
-/* The upstream Inter build, not the Fontsource one: Google Fonts strips the
-   character variants, and cv05/cv08/zero are what make l, I, 1 and 0 tell
-   apart at the 12–14px this UI is mostly set in. It also carries the opsz
-   axis, so small text gets the wider-spaced optical master. */
 @import 'inter-ui/inter-variable.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'InterVariable', sans-serif;
+  --font-heading: var(--ag-font-display);
+  --font-display: var(--ag-font-display);
+  --font-sans: var(--ag-font-sans);
+  --font-mono: var(--ag-font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -54,9 +53,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* Tailwind's default line-heights are tuned for prose at 16px; the app runs on
-     text-xs/text-sm, where they leave multi-line text cramped. Body sizes get 1.5+,
-     headings tighten as they grow. */
   --text-xs--line-height: 1.5;
   --text-sm--line-height: 1.5;
   --text-base--line-height: 1.6;
@@ -70,116 +66,217 @@
   --text-4xl--letter-spacing: -0.025em;
 }
 
-/* Grayscale ramps with no hue, and the page never sits on pure white or pure black.
-   Text pairs are measured with APCA, not eyeballed: see DESIGN.md for the thresholds. */
-:root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.18 0 0);
-  --card: oklch(0.998 0 0);
-  --card-foreground: oklch(0.18 0 0);
-  --popover: oklch(0.998 0 0);
-  --popover-foreground: oklch(0.18 0 0);
-  --primary: oklch(0.22 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.22 0 0);
-  --muted: oklch(0.965 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.955 0 0);
-  --accent-foreground: oklch(0.22 0 0);
-  --destructive: oklch(0.505 0.21 27);
-  --warning: oklch(0.56 0.13 75);
-  --border: oklch(0.905 0 0);
-  --input: oklch(0.88 0 0);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.972 0 0);
-  --sidebar-foreground: oklch(0.18 0 0);
-  --sidebar-primary: oklch(0.22 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.22 0 0);
-  --sidebar-border: oklch(0.905 0 0);
-  --sidebar-ring: oklch(0.62 0 0);
-  --priority-low: #6b7280;
-  --priority-medium: #eab308;
-  --priority-high: #f97316;
-  --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.945 0 0);
-  --kanban-column-raised: oklch(0.958 0 0);
-  --kanban-column-wip-destructive: oklch(0.923 0.011 27);
-  --kanban-column-wip-warning: oklch(0.926 0.007 75);
-  --kanban-card: oklch(0.972 0 0);
-  --kanban-card-hover: oklch(0.995 0 0);
-  --kanban-card-blocked: oklch(0.969 0.008 25);
-  --kanban-card-blocked-hover: oklch(0.99 0.013 25);
-  --row-blocked: oklch(0.982 0.008 25);
-  --row-blocked-hover: oklch(0.968 0.013 25);
-  --kanban-card-selected: oklch(0.925 0.04 265);
+/* ============================================================================
+ * Sovereign Agentic OS Design System ("Milled Carbon & Swiss Vellum" v3.3.0)
+ * Authoritative SSOT: 20_ACTIVE_CONTINUOUS/design_system/design-tokens.css
+ * Spec: SPEC-DESIGN-SYSTEM-LOGO-263 & SPEC-ITSAPLAN-BRAND-DESIGN-SYSTEM-282
+ * ============================================================================ */
+:root, [data-theme="light"] {
+  --ag-void: #F5F3EE;
+  --ag-obsidian: #FDFCF9;
+  --ag-slate: #EAE6DF;
+  --ag-raised: #DFDBD2;
+  --ag-bg-canvas: #F5F3EE;
+  --ag-bg-surface-1: #FDFCF9;
+  --ag-bg-surface-2: #EAE6DF;
+  --ag-bg-surface-3: #DFDBD2;
+  --ag-titanium: #F4F4F0;
+  --ag-platinum: #B8C0CC;
+  --ag-anodized: #5E6878;
+  --ag-amber: #8C5E00;
+  --ag-amber-soft: rgba(140, 94, 0, 0.14);
+  --ag-emerald: #087443;
+  --ag-emerald-soft: rgba(8, 116, 67, 0.14);
+  --ag-cyan: #026AA2;
+  --ag-cyan-soft: rgba(2, 106, 162, 0.14);
+  --ag-indigo: #5925DC;
+  --ag-indigo-soft: rgba(89, 37, 220, 0.14);
+  --ag-rose: #B42318;
+  --ag-rose-soft: rgba(180, 35, 24, 0.14);
+  --ag-node-hum: #8C5E00;
+  --ag-node-det: #087443;
+  --ag-node-agt: #026AA2;
+  --ag-horizon-h1: #E5A93C;
+  --ag-horizon-h2: #E06C88;
+  --ag-horizon-h3: #9B8AFB;
+  --ag-horizon-h4: #738AF8;
+  --ag-horizon-h5: #56C2F6;
+  --ag-horizon-h6: #38C6B4;
+  --ag-horizon-h7: #2AC38A;
+  --ag-text-primary: #111318;
+  --ag-text-secondary: #343A46;
+  --ag-text-muted: #5A6270;
+  --ag-border-subtle: #CFC9BE;
+  --ag-border-strong: #111318;
+  --ag-shadow-panel: none;
+  --ag-font-display: 'Chakra Petch', 'IBM Plex Sans', 'InterVariable', sans-serif;
+  --ag-font-sans: 'IBM Plex Sans', 'InterVariable', sans-serif;
+  --ag-font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --ag-space-1: 4px;
+  --ag-space-2: 8px;
+  --ag-space-3: 12px;
+  --ag-space-4: 16px;
+  --ag-space-6: 24px;
+  --ag-space-8: 32px;
+  --ag-space-11: 44px;
+  --ag-space-12: 48px;
+
+  /* Tailwind / Shadcn Semantic Bridge -> Swiss Vellum Light Mode */
+  --background: var(--ag-void);
+  --foreground: var(--ag-text-primary);
+  --card: var(--ag-obsidian);
+  --card-foreground: var(--ag-text-primary);
+  --popover: var(--ag-obsidian);
+  --popover-foreground: var(--ag-text-primary);
+  --primary: var(--ag-cyan);
+  --primary-foreground: #FDFCF9;
+  --secondary: var(--ag-slate);
+  --secondary-foreground: var(--ag-text-primary);
+  --muted: var(--ag-slate);
+  --muted-foreground: var(--ag-text-secondary);
+  --accent: var(--ag-raised);
+  --accent-foreground: var(--ag-text-primary);
+  --destructive: var(--ag-rose);
+  --warning: var(--ag-amber);
+  --border: var(--ag-border-subtle);
+  --input: var(--ag-border-subtle);
+  --ring: var(--ag-cyan);
+  --chart-1: var(--ag-amber);
+  --chart-2: var(--ag-emerald);
+  --chart-3: var(--ag-cyan);
+  --chart-4: var(--ag-indigo);
+  --chart-5: var(--ag-rose);
+  --radius: 0.5rem;
+  --sidebar: var(--ag-obsidian);
+  --sidebar-foreground: var(--ag-text-primary);
+  --sidebar-primary: var(--ag-cyan);
+  --sidebar-primary-foreground: #FDFCF9;
+  --sidebar-accent: var(--ag-slate);
+  --sidebar-accent-foreground: var(--ag-text-primary);
+  --sidebar-border: var(--ag-border-subtle);
+  --sidebar-ring: var(--ag-cyan);
+  --priority-low: #5A6270;
+  --priority-medium: #8C5E00;
+  --priority-high: #D97706;
+  --priority-urgent: #B42318;
+  --kanban-column: var(--ag-slate);
+  --kanban-column-raised: var(--ag-raised);
+  --kanban-column-wip-destructive: rgba(180, 35, 24, 0.12);
+  --kanban-column-wip-warning: rgba(140, 94, 0, 0.12);
+  --kanban-card: var(--ag-obsidian);
+  --kanban-card-hover: #FFFFFF;
+  --kanban-card-blocked: rgba(180, 35, 24, 0.08);
+  --kanban-card-blocked-hover: rgba(180, 35, 24, 0.14);
+  --row-blocked: rgba(180, 35, 24, 0.06);
+  --row-blocked-hover: rgba(180, 35, 24, 0.12);
+  --kanban-card-selected: rgba(2, 106, 162, 0.14);
   --overlay-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.18), 0 4px 10px -4px rgb(0 0 0 / 0.1);
   --pinned-column-shadow: 0 0 18px 2px rgb(0 0 0 / 0.16);
-  /* A panel on a side edge casts to the side, so the glow has no offset. */
   --side-panel-shadow: 0 0 28px 6px rgb(0 0 0 / 0.16);
   --modal-shadow: 0 32px 64px -16px rgb(0 0 0 / 0.28), 0 12px 24px -12px rgb(0 0 0 / 0.16);
-  /* The chat tab row casts down on the transcript under it; the composer is a
-     rounded surface the transcript scrolls up to, so it casts all round. */
   --chat-tabs-shadow: 0 10px 16px -6px rgb(0 0 0 / 0.28);
   --chat-composer-shadow: 0 -2px 20px 2px rgb(0 0 0 / 0.22);
 }
 
-.dark {
-  --background: oklch(0.185 0 0);
-  --foreground: oklch(0.965 0 0);
-  --card: oklch(0.225 0 0);
-  --card-foreground: oklch(0.965 0 0);
-  --popover: oklch(0.24 0 0);
-  --popover-foreground: oklch(0.965 0 0);
-  --primary: oklch(0.93 0 0);
-  --primary-foreground: oklch(0.18 0 0);
-  --secondary: oklch(0.29 0 0);
-  --secondary-foreground: oklch(0.965 0 0);
-  --muted: oklch(0.29 0 0);
-  --muted-foreground: oklch(0.85 0 0);
-  --accent: oklch(0.3 0 0);
-  --accent-foreground: oklch(0.965 0 0);
-  --destructive: oklch(0.77 0.18 22);
-  --warning: oklch(0.82 0.14 80);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.145 0 0);
-  --sidebar-foreground: oklch(0.965 0 0);
-  --sidebar-primary: oklch(0.93 0 0);
-  --sidebar-primary-foreground: oklch(0.18 0 0);
-  --sidebar-accent: oklch(0.24 0 0);
-  --sidebar-accent-foreground: oklch(0.965 0 0);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.62 0 0);
-  --priority-low: #9ca3af;
-  --priority-medium: #eab308;
-  --priority-high: #f97316;
-  --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.16 0 0);
-  --kanban-column-raised: oklch(0.19 0 0);
-  --kanban-column-wip-destructive: oklch(0.191 0.009 22);
-  --kanban-column-wip-warning: oklch(0.193 0.007 80);
-  --kanban-card: oklch(0.215 0 0);
-  --kanban-card-hover: oklch(0.25 0 0);
-  --kanban-card-blocked: oklch(0.222 0.012 25);
-  --kanban-card-blocked-hover: oklch(0.256 0.016 25);
-  --row-blocked: oklch(0.193 0.012 25);
-  --row-blocked-hover: oklch(0.23 0.016 25);
-  --kanban-card-selected: oklch(0.31 0.07 266);
+.dark, [data-theme="dark"] {
+  --ag-void: #07080A;
+  --ag-obsidian: #0C0E12;
+  --ag-slate: #12151C;
+  --ag-raised: #191D26;
+  --ag-bg-canvas: #07080A;
+  --ag-bg-surface-1: #0C0E12;
+  --ag-bg-surface-2: #12151C;
+  --ag-bg-surface-3: #191D26;
+  --ag-titanium: #F4F4F0;
+  --ag-platinum: #B8C0CC;
+  --ag-anodized: #5E6878;
+  --ag-amber: #E5A93C;
+  --ag-amber-soft: rgba(229, 169, 60, 0.14);
+  --ag-emerald: #2AC38A;
+  --ag-emerald-soft: rgba(42, 195, 138, 0.14);
+  --ag-cyan: #56C2F6;
+  --ag-cyan-soft: rgba(86, 194, 246, 0.14);
+  --ag-indigo: #9B8AFB;
+  --ag-indigo-soft: rgba(155, 138, 251, 0.14);
+  --ag-rose: #E55368;
+  --ag-rose-soft: rgba(229, 83, 104, 0.14);
+  --ag-node-hum: #E5A93C;
+  --ag-node-det: #2AC38A;
+  --ag-node-agt: #56C2F6;
+  --ag-horizon-h1: #E5A93C;
+  --ag-horizon-h2: #E06C88;
+  --ag-horizon-h3: #9B8AFB;
+  --ag-horizon-h4: #738AF8;
+  --ag-horizon-h5: #56C2F6;
+  --ag-horizon-h6: #38C6B4;
+  --ag-horizon-h7: #2AC38A;
+  --ag-text-primary: #F4F4F0;
+  --ag-text-secondary: #B8C0CC;
+  --ag-text-muted: #7D8796;
+  --ag-border-subtle: #222734;
+  --ag-border-strong: #F4F4F0;
+  --ag-shadow-panel: none;
+  --bg: var(--ag-void);
+  --surface: var(--ag-obsidian);
+  --surface-2: var(--ag-slate);
+  --surface-3: var(--ag-raised);
+  --surface-raised: var(--ag-slate);
+  --text: var(--ag-text-primary);
+  --text-muted: var(--ag-text-secondary);
+  --sky: var(--ag-cyan);
+  --emerald: var(--ag-emerald);
+  --amber: var(--ag-amber);
+  --indigo: var(--ag-indigo);
+  --rose: var(--ag-rose);
+
+  /* Tailwind / Shadcn Semantic Bridge -> Milled Carbon Dark Mode */
+  --background: var(--ag-void);
+  --foreground: var(--ag-text-primary);
+  --card: var(--ag-obsidian);
+  --card-foreground: var(--ag-text-primary);
+  --popover: var(--ag-slate);
+  --popover-foreground: var(--ag-text-primary);
+  --primary: var(--ag-cyan);
+  --primary-foreground: var(--ag-void);
+  --secondary: var(--ag-slate);
+  --secondary-foreground: var(--ag-text-primary);
+  --muted: var(--ag-slate);
+  --muted-foreground: var(--ag-text-secondary);
+  --accent: var(--ag-raised);
+  --accent-foreground: var(--ag-text-primary);
+  --destructive: var(--ag-rose);
+  --warning: var(--ag-amber);
+  --border: var(--ag-border-subtle);
+  --input: var(--ag-border-subtle);
+  --ring: var(--ag-cyan);
+  --chart-1: var(--ag-amber);
+  --chart-2: var(--ag-emerald);
+  --chart-3: var(--ag-cyan);
+  --chart-4: var(--ag-indigo);
+  --chart-5: var(--ag-rose);
+  --sidebar: var(--ag-obsidian);
+  --sidebar-foreground: var(--ag-text-primary);
+  --sidebar-primary: var(--ag-cyan);
+  --sidebar-primary-foreground: var(--ag-void);
+  --sidebar-accent: var(--ag-raised);
+  --sidebar-accent-foreground: var(--ag-text-primary);
+  --sidebar-border: var(--ag-border-subtle);
+  --sidebar-ring: var(--ag-cyan);
+  --priority-low: #7D8796;
+  --priority-medium: #E5A93C;
+  --priority-high: #F97316;
+  --priority-urgent: #E55368;
+  --kanban-column: var(--ag-obsidian);
+  --kanban-column-raised: var(--ag-slate);
+  --kanban-column-wip-destructive: rgba(229, 83, 104, 0.14);
+  --kanban-column-wip-warning: rgba(229, 169, 60, 0.14);
+  --kanban-card: var(--ag-slate);
+  --kanban-card-hover: var(--ag-raised);
+  --kanban-card-blocked: rgba(229, 83, 104, 0.14);
+  --kanban-card-blocked-hover: rgba(229, 83, 104, 0.22);
+  --row-blocked: rgba(229, 83, 104, 0.10);
+  --row-blocked-hover: rgba(229, 83, 104, 0.18);
+  --kanban-card-selected: rgba(86, 194, 246, 0.18);
   --overlay-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.7), 0 6px 16px -6px rgb(0 0 0 / 0.55);
   --pinned-column-shadow: 0 0 20px 4px rgb(0 0 0 / 0.6);
   --side-panel-shadow: 0 0 28px 8px rgb(0 0 0 / 0.65);
@@ -188,11 +285,9 @@
   --chat-composer-shadow: 0 -2px 22px 4px rgb(0 0 0 / 0.7);
 }
 
-/* Every floating surface lifts off the page with the same shadow, and a border
-   fainter than the page's so it does not read as a bright outline. It is set here
-   rather than per component: the shadcn components are kept as generated, and
-   `shadow-md` on a popover reads as nothing against a background of nearly the
-   same lightness. These rules sit outside @layer, so they win over the utility. */
+.ag-brand-lockup { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.ag-brand-mark { display: inline-block; flex-shrink: 0; }
+
 [data-slot='dropdown-menu-content'],
 [data-slot='dropdown-menu-sub-content'],
 [data-slot='context-menu-content'],

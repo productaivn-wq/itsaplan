@@ -7,8 +7,6 @@ import CycleBreadcrumb from '@/components/layout/CycleBreadcrumb';
 import InitiativeBreadcrumb from '@/components/layout/InitiativeBreadcrumb';
 import IssueBreadcrumb from '@/components/layout/IssueBreadcrumb';
 
-// The header title: a breadcrumb on an issue, initiative or cycle page, otherwise
-// the page's own label.
 export default function ShellHeaderTitle({
   route,
   projectName,
@@ -23,8 +21,6 @@ export default function ShellHeaderTitle({
   const t = useTranslations('nav');
   const sectionText = useSettingsSectionText();
 
-  // The label on the pages that are not an issue, initiative or cycle detail. An
-  // /agents/:section route names its section.
   function pageLabel(): string {
     const { sub, section, aiTeamSection } = route;
     const known = (slug: string) => SETTINGS_SECTIONS.some((s) => s.slug === slug);
@@ -33,6 +29,7 @@ export default function ShellHeaderTitle({
     if (sub === 'dashboards') return t('dashboards');
     if (sub === 'initiatives') return t('initiatives');
     if (sub === 'cycles') return t('cycles');
+    if (sub === 'docs' || sub === 'notes' || sub === 'vibe') return t('documents');
     if (aiTeamSection) return known(aiTeamSection) ? sectionText(aiTeamSection).label : t('aiTeam');
     if (sub === 'agents') return t('aiAgents');
     if (sub === 'api') return t('api');

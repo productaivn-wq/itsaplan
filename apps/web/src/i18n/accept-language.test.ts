@@ -30,4 +30,7 @@ describe('localeFromAcceptLanguage', () => {
   it('falls back to English when no requested language is supported', () => {
     assert.equal(localeFromAcceptLanguage('de-DE,ja;q=0.9'), 'en');
   });
+  it('resolves vi-VN to vi', () => {
+    expect(resolveAcceptLanguage('vi-VN,vi;q=0.9,en;q=0.8')).toBe('vi');
+  });
 });

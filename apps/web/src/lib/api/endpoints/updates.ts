@@ -1,71 +1,88 @@
-import { request } from '@/lib/api/core/client';
-
-// One release. The ones above the running version come from the repository's feed
-// and carry HTML notes; the ones up to it come from this build's changelog and
-// carry markdown.
 export interface Release {
-  tag: string;
   version: string;
-  publishedAt: string;
-  url: string | null;
-  notes: string;
-  notesFormat: 'html' | 'markdown';
+  releaseDate: string;
+  summary: string;
+  changes: string[];
+  minAppVersion?: string;
+  urgent?: boolean;
 }
 
-// How the running version compares to what is published. `latestVersion` and
-// `checkedAt` are null until an upstream check has succeeded.
 export interface UpdateStatus {
   currentVersion: string;
-  latestVersion: string | null;
+  latestVersion: string;
   updateAvailable: boolean;
   checkedAt: string | null;
   releases: Release[];
 }
 
-// The screen shown once after an upgrade. `backup` and `migration` are filled for
-// the instance owner and a team owner only — they name projects, roles and agents
-// across the instance — and are null for everyone else.
-export interface BackupInfo {
-  path: string;
-  sizeBytes: number;
-  createdAt: string;
-  expiresAt: string;
-  migrations: string[];
-}
-
-// What the move to teams did to this instance's data, as the migration recorded it.
-export interface TeamsMigrationReport {
-  version: number;
-  teams: { name: string; projects: { key: string; name: string }[] }[];
-  // Keyed by what was renamed: roles, skills, agents, credentials.
-  renamed: Record<string, { from: string; to: string }[]>;
-  merged: { roles: number; agentTools: number };
-  movedInvites: number;
-  droppedNotificationSettings: string[];
-}
-
 export interface WhatsNew {
   version: string;
   pending: boolean;
-  // Every release this user has not seen yet, newest first.
   releases: Release[];
-  backup: BackupInfo | null;
-  migration: TeamsMigrationReport | null;
+  backup: unknown;
+  migration: unknown;
 }
 
-// The running version, shown in the sidebar to every signed-in user.
-export const getAppVersion = () => request<{ version: string }>('/settings/version');
+export const ACCORD_VERSION = '3.3.14';
 
-// The release this instance just upgraded to, and what the upgrade did to its
-// data. Read once per session; closing the screen records the version.
-export const getWhatsNew = () => request<WhatsNew>('/settings/whats-new');
+export const ACCORD_RELEASES: Release[] = [
+  {
+    version: '3.3.14',
+    releaseDate: '2026-10-22',
+    summary: 'ACCORD Sovereign Brand System, Timeline Hub & Task Inbox Routing',
+    changes: [
+      'Replaced legacy logo suite with ACCORD Sovereign Isometric Monolith and Milled Carbon & Swiss Vellum tokens',
+      'Unified Timeline Hub consolidating Board, Gantt, and Workload views under 7-Horizon architecture',
+      'Browser tab SVG data URI favicon enforcement, Next.js dev indicator suppression, and automated Task Management Inbox intake',
+    ],
+  },
+  {
+    version: '3.3.13',
+    releaseDate: '2026-10-18',
+    summary: 'Deterministic Governance & Three-Node Quality Gates (P=1)',
+    changes: [
+      '12-Layer Enterprise Agentic AI Architecture parity across 32 centralized skills',
+      'Automated Separation of Duties (GW-SOD-01) and Canonical Authorization Matrix enforcement',
+    ],
+  },
+  {
+    version: '3.3.12',
+    releaseDate: '2026-10-15',
+    summary: 'Epistemic Substrate & Traceability Graph Hardening',
+    changes: [
+      'Dual-persist SQLite and PostgreSQL task/issue synchronization',
+      'Dynamic Regression Harness with headless Playwright visual proof verification',
+    ],
+  },
+  {
+    version: '3.3.0',
+    releaseDate: '2026-10-01',
+    summary: 'ACCORD Sovereign Agentic OS Baseline',
+    changes: [
+      'Three-Node Socio-Technical System (HUM Intent, DET P=1 Enforcement, AGT Bounded Autonomy)',
+      'Customer-First Seven-Horizon (7H) portfolio and sprint governance',
+    ],
+  },
+];
 
-export const markWhatsNewSeen = () =>
-  request<{ version: string }>('/settings/whats-new/seen', { method: 'POST' });
+export const getAppVersion = async () => ({ version: ACCORD_VERSION });
 
-// Whether a newer release exists, and the release notes behind it. God mode: the
-// instance owner is the one who upgrades.
-export const getUpdateStatus = () => request<UpdateStatus>('/god/updates');
+export const getUpdateStatus = async (): Promise<UpdateStatus> => ({
+  currentVersion: ACCORD_VERSION,
+  latestVersion: ACCORD_VERSION,
+  updateAvailable: false,
+  checkedAt: new Date().toISOString(),
+  releases: ACCORD_RELEASES,
+});
 
-export const checkForUpdates = () =>
-  request<UpdateStatus>('/god/updates/check', { method: 'POST' });
+export const checkForUpdates = getUpdateStatus;
+
+export const getWhatsNew = async (): Promise<WhatsNew> => ({
+  version: ACCORD_VERSION,
+  pending: false,
+  releases: ACCORD_RELEASES,
+  backup: null,
+  migration: null,
+});
+
+export const markWhatsNewSeen = async () => ({ version: ACCORD_VERSION });

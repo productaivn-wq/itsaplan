@@ -1,0 +1,95 @@
+{
+  "title": "Display",
+  "layouts": {
+    "kanban": "Kanban",
+    "table": "Bảng",
+    "timeline": "Dòng thời gian",
+    "calendar": "Lịch"
+  },
+  "sortFields": {
+    "manual": "Manual",
+    "title": "Tiêu đề",
+    "identifier": "Issue number",
+    "status": "State",
+    "priority": "Độ ưu tiên",
+    "assignee": "Người thực hiện",
+    "type": "Type",
+    "startDate": "Ngày bắt đầu",
+    "dueDate": "Ngày đến hạn",
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật"
+  },
+  "groupFields": {
+    "none": "No grouping",
+    "status": "State",
+    "assignee": "Người thực hiện",
+    "delegate": "Delegate",
+    "priority": "Độ ưu tiên",
+    "type": "Type",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ"
+  },
+  "properties": {
+    "id": "ID",
+    "status": "State",
+    "priority": "Độ ưu tiên",
+    "type": "Type",
+    "assignee": "Người thực hiện",
+    "delegate": "Delegate",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "estimatePoints": "Story points",
+    "estimateTime": "Time estimate",
+    "startDate": "Ngày bắt đầu",
+    "dueDate": "Ngày đến hạn",
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật",
+    "statusAge": "Time in trạng thái"
+  },
+  "stateTypes": {
+    "backlog": "Tồn đọng",
+    "unstarted": "Unstarted",
+    "started": "Started",
+    "completed": "Đã hoàn thành",
+    "canceled": "Đã hủy"
+  },
+  "timelineScales": {
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter"
+  },
+  "weekStart": {
+    "0": "Sunday",
+    "1": "Monday"
+  },
+  "dateFields": {
+    "dueDate": "Ngày đến hạn",
+    "startDate": "Ngày bắt đầu"
+  },
+  "rows": {
+    "columns": "Columns",
+    "grouping": "Grouping",
+    "swimlanes": "Swimlanes",
+    "subGrouping": "Sub-grouping",
+    "ordering": "Ordering",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "showEmptyColumns": "Show empty columns",
+    "showEmptyGroups": "Show empty groups",
+    "showLinks": "Show links",
+    "separateSubtaskCards": "Show subtasks as separate cards",
+    "separateSubtaskRows": "Show subtasks as separate rows",
+    "startSubtasksCollapsed": "Start with subtasks collapsed",
+    "showNestedSubtasks": "Show nested subtasks",
+    "nestedSubtasks": "Nested subtasks",
+    "displayProperties": "Display properties",
+    "placeBy": "Place by",
+    "startWeekOn": "Start week on",
+    "startCollapsed": "Start with groups collapsed",
+    "scale": "Scale",
+    "addCustomField": "Add custom field",
+    "viewIcon": "View icon"
+  },
+  "layoutCommand": "{layout} layout"
+}

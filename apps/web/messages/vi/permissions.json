@@ -1,0 +1,52 @@
+{
+  "none": "No quyền hạn granted",
+  "grantedCount": "{count, plural, one {# permission} other {# permissions}} granted",
+  "resources": {
+    "work_items": "Hạng mục công việc",
+    "initiatives": "Sáng kiến",
+    "cycles": "Chu kỳ",
+    "dashboards": "Bảng điều khiển",
+    "documents": "Docs",
+    "views": "Hạng mục công việc views",
+    "members_invite": "Invites",
+    "members_manage": "Thành viên",
+    "states": "States",
+    "issue_types": "Issue types",
+    "labels": "Nhãn",
+    "ai_agents": "AI agents",
+    "integrations": "Tích hợp",
+    "agent_skills": "Agent skills",
+    "agent_tools": "Agent tools",
+    "custom_fields": "Custom fields",
+    "issue_templates": "Issue templates",
+    "workflow_config": "Workflow configuration",
+    "actions": "Actions",
+    "webhooks": "Webhooks",
+    "repositories": "Repositories",
+    "note_boards": "Ghi chú boards",
+    "import_export": "Import/Export",
+    "danger_zone": "Danger zone"
+  },
+  "actions": {
+    "create": "Tạo",
+    "edit": "Chỉnh sửa",
+    "read": "Read",
+    "delete": "Xóa"
+  },
+  "groups": {
+    "workItems": "Hạng mục công việc",
+    "dashboards": "Bảng điều khiển",
+    "documents": "Docs",
+    "notes": "Ghi chú",
+    "ai": "AI",
+    "configuration": "Configuration",
+    "members": "Thành viên",
+    "project": "Dự án",
+    "other": "Other"
+  },
+  "resourceColumn": "Resource",
+  "allowed": "allowed",
+  "notAllowed": "not allowed",
+  "accessHeading": "Access to this dự án",
+  "joined": "joined {date}"
+}

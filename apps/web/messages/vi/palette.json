@@ -1,0 +1,14 @@
+{
+  "placeholder": "Type a command or tìm kiếm…",
+  "noResults": "Không tìm thấy kết quả.",
+  "issues": "Issues",
+  "searching": "Searching…",
+  "selectAllIssues": "Select all issues",
+  "newIssue": "New issue",
+  "newInitiative": "New sáng kiến",
+  "newProject": "New dự án",
+  "toggleChat": "Show or hide the AI chat",
+  "board": "Bảng Kanban",
+  "commands": "Commands",
+  "switchProject": "Switch dự án"
+}

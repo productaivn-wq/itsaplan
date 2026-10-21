@@ -1,67 +1,92 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useAccountPreferences } from '@/services/preferences.service';
-import { useHotkeySettingsQuery } from '@/services/hotkeys.service';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   applyOverrides,
   DEFAULT_COMBOS,
-  formatCombo,
-  matchesCombo,
-  type HotkeyCombos,
-  type HotkeyId,
+  HotkeyActionId,
+  HotkeyMap,
 } from '@/utils/hotkeys';
+import {
+  loadPersonalHotkeys,
+  PERSONAL_HOTKEYS_EVENT,
+  savePersonalHotkeys as writePersonalHotkeys,
+} from '@/utils/personal-hotkeys';
 
-// The combinations in effect for the signed-in user. Every listener and every
-// shortcut label reads them from here, so a rebound key applies everywhere at once.
-// Three layers, each overriding the one before: the built-in bindings, the
-// instance-wide ones set in god mode, then the user's own.
-const HotkeysCtx = createContext<HotkeyCombos>(DEFAULT_COMBOS);
+interface HotkeysContextValue {
+  combos: HotkeyMap;
+  personal: Partial<HotkeyMap>;
+  setPersonalOverride: (id: HotkeyActionId, combo: string | null) => void;
+  resetPersonalOverrides: () => void;
+}
+
+const HotkeysContext = createContext<HotkeysContextValue | null>(null);
 
 export function HotkeysProvider({ children }: { children: ReactNode }) {
-  const instance = useHotkeySettingsQuery().data;
-  const { hotkeys: personal } = useAccountPreferences();
+  const [personal, setPersonal] = useState<Partial<HotkeyMap>>({});
+
+  useEffect(() => {
+    setPersonal(loadPersonalHotkeys());
+    const onChange = () => setPersonal(loadPersonalHotkeys());
+    window.addEventListener(PERSONAL_HOTKEYS_EVENT, onChange);
+    window.addEventListener('storage', onChange);
+    return () => {
+      window.removeEventListener(PERSONAL_HOTKEYS_EVENT, onChange);
+      window.removeEventListener('storage', onChange);
+    };
+  }, []);
 
   const combos = useMemo(
-    () => applyOverrides(applyOverrides(DEFAULT_COMBOS, instance ?? {}), personal),
-    [instance, personal],
+    () => applyOverrides(DEFAULT_COMBOS, personal),
+    [personal],
   );
 
-  return <HotkeysCtx.Provider value={combos}>{children}</HotkeysCtx.Provider>;
-}
-
-export function useHotkeyCombos(): HotkeyCombos {
-  return useContext(HotkeysCtx);
-}
-
-// Whether a key press is the shortcut `id`, under the combinations in effect.
-export function useHotkeyMatch() {
-  const combos = useHotkeyCombos();
-  return useMemo(() => (e: KeyboardEvent, id: HotkeyId) => matchesCombo(e, combos[id]), [combos]);
-}
-
-// True on macOS, so a shortcut is shown as ⌘K rather than Ctrl+K. Resolved after
-// mount: the server has no platform to read, and a mismatch would hydrate wrong.
-export function useIsMac(): boolean {
-  const [isMac, setIsMac] = useState(true);
-  useEffect(() => {
-    setIsMac(/mac|iphone|ipad/i.test(navigator.userAgent));
+  const setPersonalOverride = useCallback((id: HotkeyActionId, combo: string | null) => {
+    setPersonal((prev) => {
+      const next: Partial<HotkeyMap> = { ...prev };
+      if (!combo) {
+        delete next[id];
+      } else {
+        next[id] = combo;
+      }
+      writePersonalHotkeys(next);
+      return next;
+    });
   }, []);
-  return isMac;
-}
 
-// Formats any shortcut for display, for a component that shows several of them.
-// Returns null when the id is not bound.
-export function useHotkeyFormatter(): (id: HotkeyId) => string | null {
-  const combos = useHotkeyCombos();
-  const isMac = useIsMac();
-  return useMemo(
-    () => (id: HotkeyId) => (combos[id] ? formatCombo(combos[id], isMac) : null),
-    [combos, isMac],
+  const resetPersonalOverrides = useCallback(() => {
+    setPersonal({});
+    writePersonalHotkeys({});
+  }, []);
+
+  const value = useMemo<HotkeysContextValue>(
+    () => ({ combos, personal, setPersonalOverride, resetPersonalOverrides }),
+    [combos, personal, setPersonalOverride, resetPersonalOverrides],
   );
+
+  return <HotkeysContext.Provider value={value}>{children}</HotkeysContext.Provider>;
 }
 
-// One shortcut formatted for display, or null when it is not bound.
-export function useHotkeyLabel(id: HotkeyId): string | null {
-  return useHotkeyFormatter()(id);
+export function useHotkeys(): HotkeysContextValue {
+  const ctx = useContext(HotkeysContext);
+  if (!ctx) return {
+    combos: DEFAULT_COMBOS,
+    personal: {},
+    setPersonalOverride: () => {},
+    resetPersonalOverrides: () => {},
+  };
+  return ctx;
+}
+
+export function useHotkeyCombo(id: HotkeyActionId): string {
+  const { combos } = useHotkeys();
+  return combos[id] ?? DEFAULT_COMBOS[id];
 }

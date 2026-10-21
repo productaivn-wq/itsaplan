@@ -1,0 +1,37 @@
+{
+  "label": "API keys",
+  "title": "API keys",
+  "description": "Personal API keys authenticate requests to the API as your account ({email}). A key's value is shown only once, when you tạo it.",
+  "sectionTitle": "Your API keys",
+  "create": "Tạo API key",
+  "empty": "No API keys yet. Tạo one to authenticate requests to the API.",
+  "fallbackName": "Khóa API",
+  "createdAt": "Đã tạo {date}",
+  "expiresAt": "Expires {date}",
+  "noExpiry": "Does not expire",
+  "deleteAction": "Xóa API key",
+  "createDialog": {
+    "title": "Tạo API key",
+    "nameLabel": "Tên",
+    "namePlaceholder": "e.g. CI pipeline",
+    "nameHint": "A label to recognize this key later.",
+    "expiryLabel": "Expires in",
+    "expiresInDays": "{days} days",
+    "expiryHint": "The key stops working on that day. Tạo a new one to keep going.",
+    "submit": "Tạo key",
+    "submitPending": "Creating…",
+    "error": "Could not tạo API key."
+  },
+  "createdDialog": {
+    "title": "API key created",
+    "description": "Copy your key now. For security, it is shown only once and cannot be retrieved later.",
+    "copy": "Copy key"
+  },
+  "deleteDialog": {
+    "title": "Xóa API key?",
+    "confirm": "Xóa key",
+    "description": "Any request using this key will stop working immediately. This cannot be undone.",
+    "error": "Could not xóa API key."
+  },
+  "loadFailed": "Could not load API keys."
+}

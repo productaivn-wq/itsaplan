@@ -30,6 +30,7 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   // standalone build for a lean docker image.
   output: 'standalone',
   poweredByHeader: false,

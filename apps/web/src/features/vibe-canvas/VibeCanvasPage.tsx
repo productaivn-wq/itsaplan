@@ -1,13 +1,17 @@
 'use client';
 
 import * as React from 'react';
+import { usePathname } from 'next/navigation';
 import {
+  BookOpen,
+  BookOpenText,
+  Bot,
   Compass,
   Folder,
   Globe2,
-  BookOpen,
-  Bot,
   RefreshCw,
+  Sparkles,
+  StickyNote,
   Wifi,
   WifiOff,
 } from 'lucide-react';
@@ -15,6 +19,8 @@ import { useShellRoute } from '@/hooks/useShellRoute';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import DocumentsPage from '@/features/documents/DocumentsPage';
+import NotesPage from '@/features/notes/NotesPage';
 
 import type {
   VibeZone,
@@ -22,25 +28,57 @@ import type {
   VibeDocContent,
   VibeAgent,
   VibeTask,
+  VibeConversation,
+  WeKnoraMemoryPayload,
 } from './types';
 import SpatialFinderView from './components/SpatialFinderView';
 import GalaxyCanvasView from './components/GalaxyCanvasView';
 import GroundedReaderView from './components/GroundedReaderView';
 import AgentSwarmView from './components/AgentSwarmView';
 import ArchiveManifestModal from './components/ArchiveManifestModal';
+import WeKnoraCopilotDock from './components/WeKnoraCopilotDock';
 
 const API_BASE_URL = '';
 
-export default function VibeCanvasPage() {
+export type ConsolidatedWorkspaceMode = 'docs' | 'notes' | 'finder' | 'reader' | 'galaxy' | 'swarm';
+
+export interface VibeCanvasPageProps {
+  initialMode?: ConsolidatedWorkspaceMode;
+}
+
+function resolveDefaultMode(
+  pathname: string,
+  initialMode?: ConsolidatedWorkspaceMode,
+): ConsolidatedWorkspaceMode {
+  if (initialMode) return initialMode;
+  if (pathname.includes('/notes')) return 'notes';
+  if (pathname.includes('/docs')) return 'docs';
+  return 'finder';
+}
+
+export default function VibeCanvasPage({ initialMode }: VibeCanvasPageProps = {}) {
   const { projectKey } = useShellRoute();
+  const pathname = usePathname();
 
-  // Navigation tab state
-  const [activeTab, setActiveTab] = React.useState<string>('finder');
+  const [activeTab, setActiveTab] = React.useState<string>(() =>
+    resolveDefaultMode(pathname, initialMode),
+  );
 
-  // Bridge connectivity status
+  // Persistent WeKnora Copilot Side Dock for Docs & Notes modes
+  const [showWeKnoraDock, setShowWeKnoraDock] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    if (pathname.includes('/notes')) {
+      setActiveTab('notes');
+    } else if (pathname.includes('/docs')) {
+      setActiveTab('docs');
+    } else if (initialMode) {
+      setActiveTab(initialMode);
+    }
+  }, [pathname, initialMode]);
+
   const [bridgeConnected, setBridgeConnected] = React.useState<boolean>(true);
 
-  // Workspace Data State
   const [zones, setZones] = React.useState<VibeZone[]>([
     { name: '00_INBOX', count: 0, icon: 'inbox', path: '00_INBOX' },
     { name: '10_ACTIVE_TIMEBOUND', count: 0, icon: 'clock', path: '10_ACTIVE_TIMEBOUND' },
@@ -54,16 +92,34 @@ export default function VibeCanvasPage() {
   const [docContent, setDocContent] = React.useState<VibeDocContent | null>(null);
   const [loadingContent, setLoadingContent] = React.useState<boolean>(false);
 
-  // Agent Swarm & Task State
+  // WeKnora Multi-Threaded Conversations, 5-Bucket Memory, Agents & Tasks
+  const [conversations, setConversations] = React.useState<VibeConversation[]>([
+    {
+      id: 'thread-default',
+      thread_id: 'thread-default',
+      title: 'Project Master Architecture',
+      created_at: '',
+      message_count: 2,
+    },
+    {
+      id: 'thread-weknora',
+      thread_id: 'thread-weknora',
+      title: 'Jevbox vs WeKnora Evaluation',
+      created_at: '',
+      message_count: 5,
+    },
+  ]);
+  const [activeThreadId, setActiveThreadId] = React.useState<string>('thread-default');
+  const [weknoraMemory, setWeknoraMemory] = React.useState<WeKnoraMemoryPayload | null>(null);
   const [agents, setAgents] = React.useState<VibeAgent[]>([]);
   const [tasks, setTasks] = React.useState<VibeTask[]>([]);
+  const [triageLoading, setTriageLoading] = React.useState<boolean>(false);
+  const [triageResults, setTriageResults] = React.useState<any | null>(null);
 
-  // Reader & Citation Highlight State
   const [highlightRange, setHighlightRange] = React.useState<{ start: number; end: number } | null>(
-    null
+    null,
   );
 
-  // Archive Inspection Modal State
   const [archiveModal, setArchiveModal] = React.useState<{
     isOpen: boolean;
     filePath: string;
@@ -74,7 +130,6 @@ export default function VibeCanvasPage() {
     content: '',
   });
 
-  // 1. Fetch Zones
   const fetchZones = React.useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/vibe/zones`);
@@ -89,12 +144,12 @@ export default function VibeCanvasPage() {
             icon: k.includes('INBOX')
               ? 'inbox'
               : k.includes('TIMEBOUND')
-              ? 'clock'
-              : k.includes('CONTINUOUS')
-              ? 'layers'
-              : k.includes('REF')
-              ? 'book'
-              : 'archive',
+                ? 'clock'
+                : k.includes('CONTINUOUS')
+                  ? 'layers'
+                  : k.includes('REF')
+                    ? 'book'
+                    : 'archive',
             path: k,
           }));
           setZones(mapped);
@@ -106,7 +161,6 @@ export default function VibeCanvasPage() {
     }
   }, []);
 
-  // 2. Fetch Files for Active Zone
   const fetchFiles = React.useCallback(async (zone: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/vibe/zone?zone=${encodeURIComponent(zone)}`);
@@ -118,6 +172,7 @@ export default function VibeCanvasPage() {
           size: f.size_bytes || 0,
           modified: f.modified_at || '',
           type: (f.icon === 'pdf' ? 'doc' : f.icon) || 'doc',
+          openjev_score: f.openjev_score,
         }));
         setFiles(mappedFiles);
         if (mappedFiles.length > 0) {
@@ -134,12 +189,11 @@ export default function VibeCanvasPage() {
     }
   }, []);
 
-  // 3. Fetch Document Content
   const fetchDocContent = React.useCallback(async (file: VibeFile) => {
     setLoadingContent(true);
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/vibe/document?path=${encodeURIComponent(file.relative_path)}&start_line=1&end_line=300`
+        `${API_BASE_URL}/api/vibe/document?path=${encodeURIComponent(file.relative_path)}&start_line=1&end_line=200`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -154,6 +208,7 @@ export default function VibeCanvasPage() {
           slice_content: data.content || (data.lines ? data.lines.join('\n') : ''),
           total_lines: data.total_lines,
           displayed_lines: data.end_line - data.start_line + 1,
+          profiler: data.profiler,
         });
       }
     } catch (err) {
@@ -163,13 +218,46 @@ export default function VibeCanvasPage() {
     }
   }, []);
 
-  // 4. Fetch Tasks
+  const fetchConversations = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vibe/conversations`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setConversations(
+            data.map((c: any) => ({
+              id: c.thread_id || c.id,
+              thread_id: c.thread_id || c.id,
+              title: c.title,
+              created_at: c.created_at || '',
+              message_count: c.message_count || 0,
+            })),
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch WeKnora conversations:', err);
+    }
+  }, []);
+
+  const fetchWeKnoraMemory = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vibe/memory`);
+      if (res.ok) {
+        const data = await res.json();
+        setWeknoraMemory(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch WeKnora 5-bucket memory:', err);
+    }
+  }, []);
+
   const fetchTasks = React.useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/vibe/tasks`);
       if (res.ok) {
         const data = await res.json();
-        const mapped = data.map((t: any) => ({
+        const mapped = (Array.isArray(data) ? data : []).map((t: any) => ({
           id: t.task_id,
           title: t.title,
           status: t.status,
@@ -184,7 +272,6 @@ export default function VibeCanvasPage() {
     }
   }, [projectKey]);
 
-  // 5. Fetch Agents
   const fetchAgents = React.useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/vibe/agents`);
@@ -205,26 +292,60 @@ export default function VibeCanvasPage() {
     }
   }, []);
 
-  // Initial Load
   React.useEffect(() => {
     fetchZones();
+    fetchConversations();
+    fetchWeKnoraMemory();
     fetchTasks();
     fetchAgents();
-  }, [fetchZones, fetchTasks, fetchAgents]);
+  }, [fetchZones, fetchConversations, fetchWeKnoraMemory, fetchTasks, fetchAgents]);
 
-  // Zone Change Effect
   React.useEffect(() => {
     fetchFiles(activeZone);
   }, [activeZone, fetchFiles]);
 
-  // Active File Effect
   React.useEffect(() => {
     if (activeFile) {
       fetchDocContent(activeFile);
     }
   }, [activeFile, fetchDocContent]);
 
-  // Handlers for cross-component interactions
+  const handleCreateThread = async (title?: string) => {
+    const threadTitle = title || `WeKnora Session ${conversations.length + 1}`;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vibe/conversations/new`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: threadTitle }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const tid = created.thread_id || created.id;
+        await fetchConversations();
+        if (tid) setActiveThreadId(tid);
+      }
+    } catch (err) {
+      console.error('Failed to create WeKnora thread:', err);
+    }
+  };
+
+  const handleRunInboxTriage = async () => {
+    setTriageLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/vibe/custodian/triage`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTriageResults(data);
+      }
+    } catch (err) {
+      console.error('Custodian inbox triage failed:', err);
+    } finally {
+      setTriageLoading(false);
+    }
+  };
+
   const handleSelectZone = (zone: string) => {
     setActiveZone(zone);
     setActiveFile(null);
@@ -249,7 +370,7 @@ export default function VibeCanvasPage() {
   const handleInspectArchive = async (filePath: string) => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/api/vibe/document?path=${encodeURIComponent(filePath)}&start_line=1&end_line=500`
+        `${API_BASE_URL}/api/vibe/document?path=${encodeURIComponent(filePath)}&start_line=1&end_line=200`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -265,12 +386,10 @@ export default function VibeCanvasPage() {
   };
 
   const handleSelectFileByPath = (path: string) => {
-    // If file is already in current list, select it
     const found = files.find((f) => f.relative_path === path);
     if (found) {
       setActiveFile(found);
     } else {
-      // Create minimal VibeFile and fetch its content
       const fileName = path.split('/').pop() || path;
       const syntheticFile: VibeFile = {
         name: fileName,
@@ -283,57 +402,100 @@ export default function VibeCanvasPage() {
     }
   };
 
+  const handleJumpToCitationFromDock = (cit: {
+    file_path: string;
+    start_line: number;
+    end_line: number;
+  }) => {
+    setHighlightRange({ start: cit.start_line, end: cit.end_line });
+    handleSelectFileByPath(cit.file_path);
+    setActiveTab('reader');
+  };
+
+  const handleOpenWikiGraphFromDock = (path: string) => {
+    setHighlightRange(null);
+    handleSelectFileByPath(path);
+    setActiveTab('reader');
+  };
+
+  const isDocsOrNotesMode = activeTab === 'docs' || activeTab === 'notes';
+
   return (
     <div
-      className="flex w-full flex-col overflow-hidden bg-background text-foreground"
+      id="consolidated-knowledge-workspace"
+      className="flex w-full flex-1 flex-col overflow-hidden bg-background text-foreground"
       style={{ height: 'calc(100vh - 3.5rem)', minHeight: '600px' }}
     >
-      {/* NATIVE HEADER TOOLBAR: Tabs & Bridge Status */}
-      <div className="flex h-13 shrink-0 items-center justify-between border-b border-border px-4 bg-card/60 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 font-semibold text-sm">
-            <Compass className="size-4.5 text-primary" />
-            <span className="tracking-tight">Vibe Working Canvas</span>
+      {/* CONSOLIDATED HEADER TOOLBAR: Docs + Notes + Full WeKnora Vibe Canvas */}
+      <div
+        id="consolidated-knowledge-toolbar"
+        className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card/60 px-4 backdrop-blur-md"
+      >
+        <div className="flex items-center gap-3 overflow-x-auto">
+          <div className="flex shrink-0 items-center gap-2 text-sm font-semibold">
+            <Compass className="size-4 text-primary" />
+            <span id="consolidated-workspace-title" className="tracking-tight">
+              Docs, Notes &amp; WeKnora Vibe Canvas
+            </span>
           </div>
 
-          {/* Radix Tabs Selector */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-8">
-            <TabsList className="h-8 p-0.5 bg-muted/60">
-              <TabsTrigger value="finder" className="h-7 px-2.5 text-xs gap-1.5">
+            <TabsList className="h-8 bg-muted/60 p-0.5">
+              <TabsTrigger value="docs" className="h-7 gap-1.5 px-2.5 text-xs">
+                <BookOpenText className="size-3.5" />
+                <span>Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="h-7 gap-1.5 px-2.5 text-xs">
+                <StickyNote className="size-3.5" />
+                <span>Notes</span>
+              </TabsTrigger>
+              <TabsTrigger value="finder" className="h-7 gap-1.5 px-2.5 text-xs">
                 <Folder className="size-3.5" />
                 <span>Spatial Finder</span>
               </TabsTrigger>
-              <TabsTrigger value="galaxy" className="h-7 px-2.5 text-xs gap-1.5">
-                <Globe2 className="size-3.5" />
-                <span>3D Galaxy</span>
-              </TabsTrigger>
-              <TabsTrigger value="reader" className="h-7 px-2.5 text-xs gap-1.5">
+              <TabsTrigger value="reader" className="h-7 gap-1.5 px-2.5 text-xs">
                 <BookOpen className="size-3.5" />
                 <span>Evidence Reader</span>
               </TabsTrigger>
-              <TabsTrigger value="swarm" className="h-7 px-2.5 text-xs gap-1.5">
+              <TabsTrigger value="galaxy" className="h-7 gap-1.5 px-2.5 text-xs">
+                <Globe2 className="size-3.5" />
+                <span>3D Galaxy</span>
+              </TabsTrigger>
+              <TabsTrigger value="swarm" className="h-7 gap-1.5 px-2.5 text-xs">
                 <Bot className="size-3.5" />
-                <span>Agent Swarm & Board</span>
+                <span>Agent Swarm &amp; Board</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        {/* Status Indicators & Utilities */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-2">
+          {isDocsOrNotesMode && (
+            <Button
+              type="button"
+              variant={showWeKnoraDock ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowWeKnoraDock((v) => !v)}
+              className="h-7 gap-1.5 text-xs"
+            >
+              <Sparkles className="size-3.5" />
+              <span>WeKnora Copilot</span>
+            </Button>
+          )}
+
           <Badge
             variant="outline"
-            className={`gap-1.5 text-[11px] font-mono ${
+            className={`gap-1.5 font-mono text-[11px] ${
               bridgeConnected
-                ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10'
-                : 'border-destructive/30 text-destructive bg-destructive/10'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                : 'border-destructive/30 bg-destructive/10 text-destructive'
             }`}
           >
             {bridgeConnected ? (
               <>
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
                 <Wifi className="size-3" />
-                Bridge: 8765
+                WeKnora Bridge: 8765
               </>
             ) : (
               <>
@@ -349,19 +511,67 @@ export default function VibeCanvasPage() {
             onClick={() => {
               fetchZones();
               fetchFiles(activeZone);
+              fetchConversations();
+              fetchWeKnoraMemory();
               fetchTasks();
               fetchAgents();
             }}
             className="size-8"
-            title="Refresh All Data"
+            title="Refresh WeKnora & Workspace Data"
           >
             <RefreshCw className="size-3.5 text-muted-foreground" />
           </Button>
         </div>
       </div>
 
-      {/* VIEWPORT BODY */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* CONSOLIDATED VIEWPORT BODY */}
+      <div className="relative flex flex-1 overflow-hidden">
+        {activeTab === 'docs' && (
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
+              <DocumentsPage />
+            </div>
+            {showWeKnoraDock && (
+              <WeKnoraCopilotDock
+                apiBaseUrl={API_BASE_URL}
+                conversations={conversations}
+                activeThreadId={activeThreadId}
+                onSelectThread={setActiveThreadId}
+                onCreateThread={handleCreateThread}
+                memory={weknoraMemory}
+                onJumpToCitation={handleJumpToCitationFromDock}
+                onOpenWikiGraphDoc={handleOpenWikiGraphFromDock}
+                onRunInboxTriage={handleRunInboxTriage}
+                triageLoading={triageLoading}
+                triageResults={triageResults}
+              />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'notes' && (
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
+              <NotesPage />
+            </div>
+            {showWeKnoraDock && (
+              <WeKnoraCopilotDock
+                apiBaseUrl={API_BASE_URL}
+                conversations={conversations}
+                activeThreadId={activeThreadId}
+                onSelectThread={setActiveThreadId}
+                onCreateThread={handleCreateThread}
+                memory={weknoraMemory}
+                onJumpToCitation={handleJumpToCitationFromDock}
+                onOpenWikiGraphDoc={handleOpenWikiGraphFromDock}
+                onRunInboxTriage={handleRunInboxTriage}
+                triageLoading={triageLoading}
+                triageResults={triageResults}
+              />
+            )}
+          </div>
+        )}
+
         {activeTab === 'finder' && (
           <SpatialFinderView
             zones={zones}
@@ -375,6 +585,8 @@ export default function VibeCanvasPage() {
             onOpenReader={handleOpenReader}
             onInspectArchive={handleInspectArchive}
             onAskWeKnora={handleAskWeKnora}
+            onSelectFileByPath={handleOpenWikiGraphFromDock}
+            onRunInboxTriage={handleRunInboxTriage}
           />
         )}
 
@@ -399,6 +611,14 @@ export default function VibeCanvasPage() {
             onInspectArchive={handleInspectArchive}
             onSelectFileByPath={handleSelectFileByPath}
             apiBaseUrl={API_BASE_URL}
+            conversations={conversations}
+            activeThreadId={activeThreadId}
+            onSelectThread={setActiveThreadId}
+            onCreateThread={handleCreateThread}
+            memory={weknoraMemory}
+            onRunInboxTriage={handleRunInboxTriage}
+            triageLoading={triageLoading}
+            triageResults={triageResults}
           />
         )}
 
@@ -413,7 +633,6 @@ export default function VibeCanvasPage() {
         )}
       </div>
 
-      {/* ZERO-MOJIBAKE ARCHIVE MANIFEST MODAL */}
       <ArchiveManifestModal
         isOpen={archiveModal.isOpen}
         onClose={() => setArchiveModal((prev) => ({ ...prev, isOpen: false }))}

@@ -79,7 +79,7 @@ function selectCycles(where: SQL | undefined) {
       canceled: sql<number>`count(*) filter (where ${projectColumn.stateType} = 'canceled')`,
     })
     .from(cycle)
-    .leftJoin(issue, eq(issue.cycleId, cycle.id))
+    .leftJoin(issue, and(eq(issue.cycleId, cycle.id), isNull(issue.archivedAt)))
     .leftJoin(projectColumn, eq(projectColumn.id, issue.columnId))
     .where(where)
     .groupBy(cycle.id);
@@ -256,8 +256,10 @@ function assertDatesMovable(status: CycleStatus, movesStart: boolean, movesEnd: 
 export async function updateCycle(id: number, patch: CyclePatch): Promise<CycleRow | null> {
   const [before] = await db.select().from(cycle).where(eq(cycle.id, id));
   if (!before) return null;
-  const beforeStartIso = before.startDate instanceof Date ? before.startDate.toISOString() : String(before.startDate);
-  const beforeEndIso = before.endDate instanceof Date ? before.endDate.toISOString() : String(before.endDate);
+  const beforeStartIso =
+    before.startDate instanceof Date ? before.startDate.toISOString() : String(before.startDate);
+  const beforeEndIso =
+    before.endDate instanceof Date ? before.endDate.toISOString() : String(before.endDate);
   const movesStart = patch.startDate !== undefined && patch.startDate !== beforeStartIso;
   const movesEnd = patch.endDate !== undefined && patch.endDate !== beforeEndIso;
   assertDatesMovable(

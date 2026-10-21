@@ -1,0 +1,53 @@
+{
+  "add": "Add lọc",
+  "remove": "Gỡ bỏ lọc",
+  "valuePlaceholder": "value",
+  "noOptions": "No options",
+  "selected": "{count} selected",
+  "operators": {
+    "is": "is",
+    "is_not": "is not",
+    "before": "before",
+    "after": "after",
+    "is_set": "is set",
+    "is_not_set": "is not set",
+    "contains": "contains",
+    "not_contains": "does not contain"
+  },
+  "boolean": {
+    "true": "True",
+    "false": "False"
+  },
+  "cycleStatus": {
+    "active": "Active chu kỳ",
+    "upcoming": "Upcoming chu kỳ"
+  },
+  "initiativeStatus": {
+    "active": "Active sáng kiến",
+    "planned": "Planned sáng kiến",
+    "proposed": "Proposed sáng kiến"
+  },
+  "fields": {
+    "status": "State",
+    "statusType": "State type",
+    "assignee": "Người thực hiện",
+    "delegate": "Delegate",
+    "priority": "Độ ưu tiên",
+    "type": "Type",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "dueDate": "Ngày đến hạn",
+    "startDate": "Ngày bắt đầu",
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật"
+  },
+  "unset": {
+    "assignee": "No người thực hiện",
+    "delegate": "No delegate",
+    "type": "No type",
+    "initiative": "No sáng kiến",
+    "cycle": "No chu kỳ",
+    "member": "No value"
+  }
+}
