@@ -11,6 +11,7 @@ import {
   ptBR,
   id,
   es,
+  vi,
   type Locale as DateFnsLocale,
 } from 'date-fns/locale';
 

@@ -1,120 +1,137 @@
-import common from '../../messages/en/common.json';
-import auth from '../../messages/en/auth.json';
-import sidebar from '../../messages/en/sidebar.json';
-import header from '../../messages/en/header.json';
-import board from '../../messages/en/board.json';
-import issues from '../../messages/en/issues.json';
-import filters from '../../messages/en/filters.json';
-import views from '../../messages/en/views.json';
-import cycles from '../../messages/en/cycles.json';
-import initiatives from '../../messages/en/initiatives.json';
-import dashboards from '../../messages/en/dashboards.json';
-import notes from '../../messages/en/notes.json';
-import documents from '../../messages/en/documents.json';
-import settings from '../../messages/en/settings.json';
-import teams from '../../messages/en/teams.json';
-import projects from '../../messages/en/projects.json';
-import members from '../../messages/en/members.json';
-import invitations from '../../messages/en/invitations.json';
 import account from '../../messages/en/account.json';
-import onboarding from '../../messages/en/onboarding.json';
-import ai from '../../messages/en/ai.json';
-import commands from '../../messages/en/commands.json';
-import hotkeys from '../../messages/en/hotkeys.json';
-import activity from '../../messages/en/activity.json';
-import setup from '../../messages/en/setup.json';
-import sections from '../../messages/en/sections.json';
-import errors from '../../messages/en/errors.json';
-import validation from '../../messages/en/validation.json';
-import meta from '../../messages/en/meta.json';
-import whatsNew from '../../messages/en/whatsNew.json';
+import aiChat from '../../messages/en/aiChat.json';
+import apiKeys from '../../messages/en/apiKeys.json';
+import auth from '../../messages/en/auth.json';
+import common from '../../messages/en/common.json';
+import cycles from '../../messages/en/cycles.json';
+import dashboards from '../../messages/en/dashboards.json';
+import display from '../../messages/en/display.json';
+import documents from '../../messages/en/documents.json';
+import filters from '../../messages/en/filters.json';
 import type godType from '../../messages/en/god.json';
+import inbox from '../../messages/en/inbox.json';
+import initiatives from '../../messages/en/initiatives.json';
+import invite from '../../messages/en/invite.json';
+import issue from '../../messages/en/issue.json';
+import issueLinks from '../../messages/en/issueLinks.json';
+import mcp from '../../messages/en/mcp.json';
+import members from '../../messages/en/members.json';
+import meta from '../../messages/en/meta.json';
+import nav from '../../messages/en/nav.json';
+import newProject from '../../messages/en/newProject.json';
+import notes from '../../messages/en/notes.json';
+import palette from '../../messages/en/palette.json';
+import permissions from '../../messages/en/permissions.json';
+import projects from '../../messages/en/projects.json';
+import sections from '../../messages/en/sections.json';
+import settings from '../../messages/en/settings.json';
+import shell from '../../messages/en/shell.json';
+import teams from '../../messages/en/teams.json';
+import updates from '../../messages/en/updates.json';
+import views from '../../messages/en/views.json';
+import whatsNew from '../../messages/en/whatsNew.json';
+import workItems from '../../messages/en/workItems.json';
+import { DEFAULT_LOCALE, type Locale } from './locales';
 
-// God Mode i18n bundle (13.4 KB) excluded from runtime SSR payload per SPEC-ITSAPLAN-CUT-GOD-MODE-283
+// SPEC-ITSAPLAN-CUT-GOD-MODE-283: Exclude 13.4 KB god.json from runtime SSR payload.
 const god = {} as typeof godType;
 
-export const defaultMessages = {
-  common,
-  auth,
-  sidebar,
-  header,
-  board,
-  issues,
-  filters,
-  views,
-  cycles,
-  initiatives,
-  dashboards,
-  notes,
-  documents,
-  settings,
-  teams,
-  projects,
-  members,
-  invitations,
-  account,
-  onboarding,
-  ai,
-  commands,
-  hotkeys,
-  activity,
-  setup,
-  sections,
-  errors,
-  validation,
+const defaultMessages = {
   meta,
-  whatsNew,
+  auth,
+  common,
+  nav,
+  palette,
+  views,
+  shell,
+  sections,
+  issueLinks,
+  issue,
+  display,
+  documents,
+  filters,
+  workItems,
+  apiKeys,
+  invite,
+  mcp,
+  projects,
+  aiChat,
+  inbox,
+  permissions,
+  members,
+  cycles,
+  dashboards,
+  initiatives,
+  notes,
+  account,
+  settings,
   god,
-} as const;
+  newProject,
+  teams,
+  updates,
+  whatsNew,
+};
 
 export type Messages = typeof defaultMessages;
 
-export const NAMESPACES = [
-  'common',
-  'auth',
-  'sidebar',
-  'header',
-  'board',
-  'issues',
-  'filters',
-  'views',
-  'cycles',
-  'initiatives',
-  'dashboards',
-  'notes',
-  'documents',
-  'settings',
-  'teams',
-  'projects',
-  'members',
-  'invitations',
-  'account',
-  'onboarding',
-  'ai',
-  'commands',
-  'hotkeys',
-  'activity',
-  'setup',
-  'sections',
-  'errors',
-  'validation',
+const NAMESPACES: (keyof Messages)[] = [
   'meta',
+  'auth',
+  'common',
+  'nav',
+  'palette',
+  'views',
+  'shell',
+  'sections',
+  'issueLinks',
+  'issue',
+  'display',
+  'documents',
+  'filters',
+  'workItems',
+  'apiKeys',
+  'invite',
+  'mcp',
+  'projects',
+  'aiChat',
+  'inbox',
+  'permissions',
+  'members',
+  'cycles',
+  'dashboards',
+  'initiatives',
+  'notes',
+  'account',
+  'settings',
+  'newProject',
+  'teams',
+  'updates',
   'whatsNew',
-] as const;
+];
 
-export type Namespace = (typeof NAMESPACES)[number];
+export async function loadMessages(locale: Locale): Promise<Messages> {
+  if (locale === DEFAULT_LOCALE) return defaultMessages;
 
-export async function loadMessages(locale: string): Promise<Messages> {
-  if (locale === 'en') return defaultMessages;
-  try {
-    const entries = await Promise.all(
-      NAMESPACES.map(async (ns) => {
-        const mod = await import(`../../messages/${locale}/${ns}.json`);
-        return [ns, mod.default] as const;
-      }),
-    );
-    return { ...Object.fromEntries(entries), god } as unknown as Messages;
-  } catch {
-    return defaultMessages;
+  const translated = await Promise.all(
+    NAMESPACES.map(async (ns) => [
+      ns,
+      (await import(`../../messages/${locale}/${ns}.json`)).default,
+    ]),
+  );
+
+  return mergeMessages(defaultMessages, Object.fromEntries(translated)) as Messages;
+}
+
+type MessageTree = { [key: string]: string | MessageTree };
+
+function mergeMessages(base: MessageTree, override: MessageTree): MessageTree {
+  const result: MessageTree = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    const current = result[key];
+    result[key] =
+      typeof value === 'object' && typeof current === 'object'
+        ? mergeMessages(current, value)
+        : value;
   }
+  return result;
 }

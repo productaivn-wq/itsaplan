@@ -1,54 +1,71 @@
 'use client';
 
-import { KeyRound } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
-import SidebarBrandFooter from '@/components/brand/SidebarBrandFooter';
+import { KeyRound } from 'lucide-react';
+import type { Project } from '@/lib/api/endpoints/projects';
+import { vaultPath } from '@/utils/paths';
+import { useSidebarSide } from '@/hooks/useSidebarSide';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarRail,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { secretsVaultPath } from '@/utils/routes';
-import ProjectSwitcher from './ProjectSwitcher';
-import SidebarMainNav from './SidebarMainNav';
-import SidebarNavItem from './SidebarNavItem';
-import SidebarSettingsNav from './SidebarSettingsNav';
+import ProjectSwitcher from '@/components/layout/ProjectSwitcher';
+import SidebarNavItem from '@/components/layout/SidebarNavItem';
+import SidebarMainNav from '@/components/layout/SidebarMainNav';
+import SidebarBrandFooter from '@/components/brand/SidebarBrandFooter';
 
-interface AppSidebarProps {
-  variant?: 'main' | 'settings';
-}
-
-export default function AppSidebar({ variant = 'main' }: AppSidebarProps) {
-  const t = useTranslations('sidebar');
+// SPEC-ITSAPLAN-CUT-GOD-MODE-283 & SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284:
+// Both God Mode and Project Settings sidebar mode are cut to keep the sidebar fast.
+export default function AppSidebar({
+  projects,
+  currentProjectKey,
+  onSelectProject,
+}: {
+  projects: Project[];
+  currentProjectKey: string | null;
+  onSelectProject: (key: string) => void;
+}) {
   const pathname = usePathname();
-  const isSettings = variant === 'settings';
+  const disabled = !currentProjectKey;
+  const projectId = projects.find((p) => p.ref === currentProjectKey)?.id ?? null;
+  const onVault = pathname.endsWith('/vault');
+  const side = useSidebarSide();
 
   return (
-    <Sidebar collapsible="icon">
-      {!isSettings && (
-        <SidebarHeader>
-          <ProjectSwitcher />
-        </SidebarHeader>
-      )}
-      <SidebarContent>{isSettings ? <SidebarSettingsNav /> : <SidebarMainNav />}</SidebarContent>
+    <Sidebar collapsible="icon" side={side}>
+      <SidebarHeader>
+        <ProjectSwitcher
+          projects={projects}
+          currentProjectKey={currentProjectKey}
+          onSelectProject={onSelectProject}
+        />
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarMainNav projectKey={currentProjectKey} projectId={projectId} />
+      </SidebarContent>
+
       <SidebarFooter>
-        <SidebarGroup className="p-0">
-          <SidebarMenu>
-            <SidebarNavItem
-              href={secretsVaultPath()}
-              icon={KeyRound}
-              label="Secret Vault"
-              isActive={pathname.startsWith('/secrets')}
-            />
-          </SidebarMenu>
-        </SidebarGroup>
+        <SidebarMenu>
+          <SidebarNavItem
+            href={currentProjectKey ? vaultPath(currentProjectKey) : '#'}
+            icon={KeyRound}
+            label="Secret Vault"
+            active={onVault}
+            disabled={disabled}
+          />
+        </SidebarMenu>
+
+        <SidebarSeparator />
+
         <SidebarBrandFooter />
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   );
