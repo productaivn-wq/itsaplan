@@ -1,46 +1,46 @@
 {
-  "name": "itsaplan",
-  "version": "3.3.17",
-  "license": "AGPL-3.0-only",
-  "devDependencies": {
-    "@clack/prompts": "^1.7.0",
-    "@repo/eslint-config": "workspace:*",
-    "@types/bun": "^1.4.1",
-    "eslint": "^9.39.0",
-    "lefthook": "^2.1.10",
-    "prettier": "3.9.6",
-    "prettier-plugin-tailwindcss": "0.8.1",
-    "turbo": "^2.10.9",
-    "typescript": "^6.0.3"
-  },
-  "packageManager": "bun@1.4.0",
-  "private": true,
-  "scripts": {
-    "setup": "bun scripts/setup.ts",
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "start": "turbo run start",
-    "lint": "turbo run lint",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "typecheck": "turbo run typecheck && tsc --noEmit",
-    "test": "bun test scripts/ && turbo run test --concurrency=1",
-    "test:coverage": "cd apps/api && bun run test:coverage",
-    "db:generate": "bun --filter='@repo/db' run db:generate",
-    "db:migrate": "bun --filter='@repo/db' run db:migrate",
-    "db:migrate:test": "SKIP_PRE_MIGRATION_BACKUP=1 bun --env-file=.env.test packages/db/src/migrate.ts",
-    "db:studio": "bun --filter='@repo/db' run db:studio",
-    "auth:generate": "bun --filter='@repo/auth' run auth:generate",
-    "prepare": "lefthook install || true"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "overrides": {
-    "@scalar/types": "0.16.2",
-    "@scalar/themes": "0.16.2",
-    "@tiptap/extension-bubble-menu": "3.30.5",
-    "@tiptap/extension-floating-menu": "3.30.5"
-  }
+    "name":  "itsaplan",
+    "version":  "3.3.18",
+    "license":  "AGPL-3.0-only",
+    "devDependencies":  {
+                            "@clack/prompts":  "^1.7.0",
+                            "@repo/eslint-config":  "workspace:*",
+                            "@types/bun":  "^1.4.1",
+                            "eslint":  "^9.39.0",
+                            "lefthook":  "^2.1.10",
+                            "prettier":  "3.9.6",
+                            "prettier-plugin-tailwindcss":  "0.8.1",
+                            "turbo":  "^2.10.9",
+                            "typescript":  "^6.0.3"
+                        },
+    "packageManager":  "bun@1.4.0",
+    "private":  true,
+    "scripts":  {
+                    "setup":  "bun scripts/setup.ts",
+                    "dev":  "turbo run dev",
+                    "build":  "turbo run build",
+                    "start":  "turbo run start",
+                    "lint":  "turbo run lint",
+                    "format":  "prettier . --write",
+                    "format:check":  "prettier . --check",
+                    "typecheck":  "turbo run typecheck \u0026\u0026 tsc --noEmit",
+                    "test":  "bun test scripts/ \u0026\u0026 turbo run test --concurrency=1",
+                    "test:coverage":  "cd apps/api \u0026\u0026 bun run test:coverage",
+                    "db:generate":  "bun --filter=\u0027@repo/db\u0027 run db:generate",
+                    "db:migrate":  "bun --filter=\u0027@repo/db\u0027 run db:migrate",
+                    "db:migrate:test":  "SKIP_PRE_MIGRATION_BACKUP=1 bun --env-file=.env.test packages/db/src/migrate.ts",
+                    "db:studio":  "bun --filter=\u0027@repo/db\u0027 run db:studio",
+                    "auth:generate":  "bun --filter=\u0027@repo/auth\u0027 run auth:generate",
+                    "prepare":  "lefthook install || true"
+                },
+    "workspaces":  [
+                       "apps/*",
+                       "packages/*"
+                   ],
+    "overrides":  {
+                      "@scalar/types":  "0.16.2",
+                      "@scalar/themes":  "0.16.2",
+                      "@tiptap/extension-bubble-menu":  "3.30.5",
+                      "@tiptap/extension-floating-menu":  "3.30.5"
+                  }
 }

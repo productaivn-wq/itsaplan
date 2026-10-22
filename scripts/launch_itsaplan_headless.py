@@ -1,6 +1,24 @@
+﻿_prewarmed = False
+
+def _prewarm_itsaplan_routes():
+    global _prewarmed
+    if _prewarmed:
+        return
+    _prewarmed = True
+    def _warm():
+        try:
+            for path in ("/login", "/thanb/PM"):
+                req = urllib.request.Request(f"http://127.0.0.1:3001{path}", headers={"User-Agent": "ItsAPlanPrewarmer/1.0"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    pass
+            log("Background pre-warming complete (/login, /thanb/PM warmed).")
+        except Exception as e:
+            log(f"Background pre-warming note: {e}")
+    import threading
+    threading.Thread(target=_warm, daemon=True).start()
 #!/usr/bin/env python3
 """
-launch_itsaplan_headless.py — Autonomous Headless Watchdog Supervisor for ItsAPlan & Bridge Stack.
+launch_itsaplan_headless.py â€” Autonomous Headless Watchdog Supervisor for ItsAPlan & Bridge Stack.
 
 Responsibilities:
 1. Verifies PostgreSQL (port 5432) connectivity with retry loop.
@@ -154,7 +172,7 @@ def ensure_postgres_running(host="127.0.0.1", port=5432, timeout_s=30) -> bool:
                 log(f"PostgreSQL is online and responsive on {host}:{port} (attempt {attempt}).")
                 return True
         except (socket.timeout, ConnectionRefusedError, OSError):
-            time.sleep(2)
+            time.sleep(0.5)
             attempt += 1
 
     log(f"WARNING: PostgreSQL port {port} unresponsive after {timeout_s}s. Proceeding with caution.")
@@ -329,3 +347,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
