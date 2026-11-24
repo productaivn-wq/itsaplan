@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { DropLine } from '../shared/DropLine';
 import { draggedIds } from '../../utils/kanban';
 
@@ -22,12 +22,13 @@ export function CardDropSlot({
   disabled?: boolean;
   children: ReactNode;
 }) {
-  const { setNodeRef, isOver, active } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `card:${issueId}`,
     disabled,
     data: { onDrop: (ids: number[]) => !ids.includes(issueId) && onDrop(ids) },
   });
   // Dropping cards on one of themselves is a no-op, so it gets no marker.
+  const { active } = useDndContext();
   const showDropLine = isOver && !draggedIds(active).includes(issueId);
 
   return (

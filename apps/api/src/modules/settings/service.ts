@@ -5,10 +5,107 @@ import {
   getStorageSettings,
   type StorageSettings,
 } from '@repo/db';
-import { HttpError, intEnv } from '#shared/lib';
+import { HttpError } from '#shared/lib';
+import { listTeams } from '#modules/teams/service';
 
-// The instance settings kept in app_setting: the upload limits, the keyboard
-// shortcuts and the sites that may frame the public pages.
+export const COMPANY_SETTING_KEY = 'company';
+
+export type AutonomyTier = 'TIER_0' | 'TIER_1' | 'TIER_2';
+
+export interface CompanySettings {
+  companyName: string;
+  legalName: string;
+  slug: string;
+  domain: string;
+  industry: string;
+  timezone: string;
+  defaultLocale: string;
+  defaultAutonomyTier: AutonomyTier;
+  requireSodApproval: boolean;
+  allowAgentTeamBootstrap: boolean;
+  onboardingCompleted: boolean;
+  updatedByUserId: string | null;
+  updatedAt: string | null;
+}
+
+export function defaultCompanySettings(): CompanySettings {
+  return {
+    companyName: 'Agentic Workspace',
+    legalName: '',
+    slug: 'workspace',
+    domain: '',
+    industry: '',
+    timezone: 'Asia/Ho_Chi_Minh',
+    defaultLocale: 'en',
+    defaultAutonomyTier: 'TIER_1',
+    requireSodApproval: true,
+    allowAgentTeamBootstrap: true,
+    onboardingCompleted: false,
+    updatedByUserId: null,
+    updatedAt: null,
+  };
+}
+
+export async function getCompanySettings(): Promise<CompanySettings> {
+  const stored = await getSetting<Partial<CompanySettings>>(COMPANY_SETTING_KEY);
+  return { ...defaultCompanySettings(), ...(stored ?? {}) };
+}
+
+export async function canManageCompany(user: { id: string; role?: string | null }): Promise<boolean> {
+  if (user.role === 'god') return true;
+  const teams = await listTeams(user.id);
+  return teams.some((t) => t.role === 'owner');
+}
+
+export async function setCompanySettings(
+  patch: Partial<CompanySettings>,
+  userId: string,
+): Promise<CompanySettings> {
+  if (patch.companyName !== undefined) {
+    if (!patch.companyName.trim()) {
+      throw new HttpError(400, 'Company name is required');
+    }
+  }
+  if (patch.slug !== undefined) {
+    if (!/^[a-z][a-z0-9-]{1,39}$/.test(patch.slug)) {
+      throw new HttpError(400, 'Invalid company slug');
+    }
+  }
+  if (patch.domain !== undefined && patch.domain.trim() !== '') {
+    if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(patch.domain.trim())) {
+      throw new HttpError(400, 'Invalid company domain');
+    }
+  }
+  if (patch.defaultAutonomyTier !== undefined) {
+    if (!['TIER_0', 'TIER_1', 'TIER_2'].includes(patch.defaultAutonomyTier)) {
+      throw new HttpError(400, 'Invalid autonomy tier');
+    }
+  }
+
+  const current = await getCompanySettings();
+  const next: CompanySettings = {
+    ...current,
+    ...patch,
+    companyName: patch.companyName !== undefined ? patch.companyName.trim() : current.companyName,
+    slug: patch.slug !== undefined ? patch.slug.trim() : current.slug,
+    domain: patch.domain !== undefined ? patch.domain.trim() : current.domain,
+    legalName: patch.legalName !== undefined ? patch.legalName.trim() : current.legalName,
+    industry: patch.industry !== undefined ? patch.industry.trim() : current.industry,
+    timezone: patch.timezone !== undefined ? patch.timezone.trim() : current.timezone,
+    defaultLocale: patch.defaultLocale !== undefined ? patch.defaultLocale.trim() : current.defaultLocale,
+    updatedByUserId: userId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  next.onboardingCompleted =
+    patch.onboardingCompleted ?? Boolean(next.companyName.trim() && next.slug.trim());
+
+  await setSetting(COMPANY_SETTING_KEY, next);
+  return next;
+}
+
+// The instance settings kept in app_setting: the upload limits and the keyboard
+// shortcuts.
 
 // Instance-wide upload limits (app_setting key 'storage'). getStorageSettings/
 // mimeAllowed/MB/StorageSettings live in @repo/db (packages/db/src/domains/storage.ts) —
@@ -36,15 +133,15 @@ export async function setStorageSettings(
 const PROJECT_DEFAULTS_SETTING_KEY = 'projects';
 
 export interface ProjectDefaults {
-  // Whether a new project starts reachable over MCP. On: an instance driven
-  // through MCP does not have to remember the per-project toggle. This is a
+  // Whether a new project starts reachable over MCP. Off by default (fail-closed):
+  // teams explicitly opt in projects that external MCP clients should reach. This is a
   // visibility default, not an access grant — a project still only appears to a
   // member holding a key, exactly as it does today.
   mcpEnabled: boolean;
 }
 
 function defaultProjectDefaults(): ProjectDefaults {
-  return { mcpEnabled: true };
+  return { mcpEnabled: false };
 }
 
 export async function getProjectDefaults(): Promise<ProjectDefaults> {
@@ -59,66 +156,6 @@ export async function setProjectDefaults(
   const next = { ...(await getProjectDefaults()), ...patch };
   await setSetting(PROJECT_DEFAULTS_SETTING_KEY, next);
   return next;
-}
-
-// The instance agent settings (app_setting key 'agents'): what applies to every team's
-// agents.
-
-const AGENT_SETTINGS_KEY = 'agents';
-
-export interface AgentSettings {
-  // Days the traces of an agent run are kept for; the background sweep deletes older
-  // ones (agents/core/runtime/trace-retention.ts). 0 keeps them.
-  traceRetentionDays: number;
-  // The longest one run may take. AGENT_RUN_TIMEOUT_MS sets the value used until one is saved.
-  maxRunSeconds: number;
-  // Runs of internal agents in flight at once across the instance; the rest wait in the
-  // queue. 0 sets no limit.
-  maxConcurrentRuns: number;
-}
-
-export const MIN_RUN_SECONDS = 10;
-export const MAX_RUN_SECONDS = 3600;
-export const MAX_CONCURRENT_RUNS = 1000;
-
-function defaultAgentSettings(): AgentSettings {
-  return {
-    traceRetentionDays: 30,
-    maxRunSeconds: Math.min(
-      Math.max(Math.round(intEnv('AGENT_RUN_TIMEOUT_MS', 240_000) / 1000), MIN_RUN_SECONDS),
-      MAX_RUN_SECONDS,
-    ),
-    maxConcurrentRuns: 5,
-  };
-}
-
-export async function getAgentSettings(): Promise<AgentSettings> {
-  const stored = await getSetting<Partial<AgentSettings>>(AGENT_SETTINGS_KEY);
-  return { ...defaultAgentSettings(), ...(stored ?? {}) };
-}
-
-export async function setAgentSettings(patch: Partial<AgentSettings>): Promise<AgentSettings> {
-  const next = { ...(await getAgentSettings()), ...patch };
-  await setSetting(AGENT_SETTINGS_KEY, next);
-  return next;
-}
-
-// Whether public links work on this instance (app_setting key 'sharing'). Off closes every
-// link and takes the choice away from the workspaces; on leaves it to each of them.
-
-const SHARING_SETTINGS_KEY = 'sharing';
-
-export interface SharingSettings {
-  enabled: boolean;
-}
-
-export async function getSharingSettings(): Promise<SharingSettings> {
-  return (await getSetting<SharingSettings>(SHARING_SETTINGS_KEY)) ?? { enabled: true };
-}
-
-export async function setSharingSettings(settings: SharingSettings): Promise<SharingSettings> {
-  await setSetting(SHARING_SETTINGS_KEY, settings);
-  return settings;
 }
 
 // The instance keyboard shortcuts (app_setting key 'hotkeys'): the combination
@@ -139,39 +176,4 @@ export async function getHotkeySettings(): Promise<HotkeyCombos> {
 export async function setHotkeySettings(combos: HotkeyCombos): Promise<HotkeyCombos> {
   await setSetting(HOTKEYS_SETTING_KEY, combos);
   return combos;
-}
-
-// The sites that may show the public pages in a frame (app_setting key 'embedSites'): the
-// shared work items and views, and what a build serves under /p. Kept as origins, the way the
-// web app writes them into frame-ancestors. Empty, no site may.
-const EMBED_SITES_KEY = 'embedSites';
-
-export async function getEmbedSites(): Promise<{ origins: string[] }> {
-  return { origins: (await getSetting<string[]>(EMBED_SITES_KEY)) ?? [] };
-}
-
-export async function setEmbedSites(origins: string[]): Promise<{ origins: string[] }> {
-  const sites = [...new Set(origins.map(siteOrigin))];
-  await setSetting(EMBED_SITES_KEY, sites);
-  return { origins: sites };
-}
-
-// The origins a site may be: a scheme, a host of letters, digits, dots and hyphens (an
-// international name is in its ASCII form by then), and a port. Nothing else reaches the
-// header, where a `;` or a space would start another directive.
-const SITE_ORIGIN = /^https?:\/\/[a-z0-9.-]+(:\d+)?$/;
-
-// A site as the browser names it in a frame check, from what the owner typed.
-function siteOrigin(text: string): string {
-  const invalid = () =>
-    new HttpError(400, `${text} is not a site address, such as https://example.com`);
-  let url: URL;
-  try {
-    url = new URL(text.trim());
-  } catch {
-    throw invalid();
-  }
-  const bare = url.pathname === '/' && !url.search && !url.hash && !url.username && !url.password;
-  if (!bare || !SITE_ORIGIN.test(url.origin)) throw invalid();
-  return url.origin;
 }

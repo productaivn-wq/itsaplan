@@ -7,20 +7,40 @@ import { aiAgentsPath } from '@/utils/paths';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/page/EmptyState';
 
-// What the panel shows for a project with no agent: there is nobody to chat with, so
-// there is no composer either.
-export function ChatPanelEmpty({ projectKey }: { projectKey: string }) {
+// Fallback shown only when auto-provisioning the project's default Workspace Assistant
+// fails. Offers an immediate Retry action plus a secondary link to agent settings.
+export function ChatPanelEmpty({
+  projectKey,
+  errorMessage,
+  onRetry,
+}: {
+  projectKey: string;
+  errorMessage?: string | null;
+  onRetry?: () => void;
+}) {
   const t = useTranslations('aiChat');
   const { can } = usePermissions();
 
   return (
     <div className="flex h-full flex-col">
-      <EmptyState title={t('emptyTitle')} description={t('emptyDescription')}>
-        {can('ai_agents', 'edit') && (
-          <Button asChild size="sm">
-            <Link href={aiAgentsPath(projectKey)}>{t('createAgent')}</Link>
-          </Button>
-        )}
+      <EmptyState
+        title={errorMessage ? t('provisionFailedTitle') : t('emptyTitle')}
+        description={errorMessage || t('emptyDescription')}
+      >
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {onRetry && (
+            <Button type="button" size="sm" onClick={onRetry}>
+              {t('retry')}
+            </Button>
+          )}
+          {can('ai_agents', 'edit') && (
+            <Button asChild size="sm" variant={onRetry ? 'outline' : 'default'}>
+              <Link href={aiAgentsPath(projectKey)}>
+                {onRetry ? t('manageAgents') : t('createAgent')}
+              </Link>
+            </Button>
+          )}
+        </div>
       </EmptyState>
     </div>
   );

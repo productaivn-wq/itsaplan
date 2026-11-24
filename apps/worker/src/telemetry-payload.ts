@@ -50,8 +50,6 @@ export interface PulseInput {
   day: string;
   installedDay: string | null;
   version: string;
-  // 'community', or the name of the extending build the worker image comes from.
-  build: string;
   bunVersion: string;
   docker: boolean;
   // '<platform>/<arch>', e.g. 'linux/arm64'.
@@ -109,7 +107,6 @@ export function buildPulse(input: PulseInput) {
     day: input.day,
     installedDay: input.installedDay,
     version: input.version,
-    build: input.build,
     runtime: {
       bun: input.bunVersion,
       docker: input.docker,

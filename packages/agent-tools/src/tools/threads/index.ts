@@ -1,4 +1,5 @@
 import type { Integration } from '../../types';
+import { OAUTH2_PROVIDER_SPECS } from '../../oauth-catalog';
 import { threadsPublish } from './publish';
 import { threadsReply } from './reply';
 import { threadsDelete } from './delete';
@@ -22,6 +23,8 @@ import { threadsKeywordSearch, threadsLocationSearch } from './search';
 export const threads: Integration = {
   key: 'threads',
   label: 'Threads',
+  authModes: ['oauth2', 'api_key'],
+  oauth2: OAUTH2_PROVIDER_SPECS.threads,
   credentialSchema: [
     {
       key: 'accessToken',

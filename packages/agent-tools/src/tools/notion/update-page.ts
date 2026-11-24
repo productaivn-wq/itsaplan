@@ -25,7 +25,6 @@ function command(mode: string, markdown: string, find: string): Record<string, u
 
 export const notionUpdatePage: CustomToolEntry = {
   key: 'notion_update_page',
-  group: 'Pages',
   label: 'Notion Update Page',
   scopes: ['Update content', 'Insert content'],
   description:

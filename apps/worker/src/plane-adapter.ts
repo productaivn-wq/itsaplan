@@ -1,18 +1,10 @@
 import { pinnedFetch } from '@repo/net';
-import {
-  SourceRateLimitedError,
-  type AttachmentDownload,
-  type Page,
-  type SourceProject,
-  type SourceReader,
-} from './reader';
+import type { Page, SourceReader } from './reader';
 import type {
   CanonicalState,
   CanonicalStateCategory,
   CanonicalLabel,
   CanonicalCycle,
-  CanonicalCustomField,
-  CanonicalChecklist,
   CanonicalIssue,
   CanonicalRelation,
   CanonicalComment,
@@ -31,6 +23,15 @@ export interface PlaneCredential {
 }
 
 const PER_PAGE = 100;
+
+// Thrown when Plane's rate limit is hit (or about to be): x-ratelimit-remaining
+// reaches 0, or a 429 arrives. The worker catches this and reschedules the job
+// instead of treating it as a failed attempt.
+export class PlaneRateLimitedError extends Error {
+  constructor(public readonly retryAfterMs: number) {
+    super('Plane rate limit reached');
+  }
+}
 
 // A 404 confirmed live to mean "this Plane version doesn't have this
 // endpoint" (custom properties, work item types, ...) rather than a broken
@@ -216,21 +217,7 @@ export class PlaneReader implements SourceReader {
   constructor(
     private readonly credential: PlaneCredential,
     private readonly projectId: string,
-    private readonly fetch: typeof pinnedFetch = pinnedFetch,
   ) {}
-
-  async describeSource(): Promise<SourceProject> {
-    const project = await this.getJson<{ name: string }>('/');
-    // Plane Cloud serves its API and its app on two hosts; a self-hosted instance on one.
-    const app = new URL(this.credential.baseUrl);
-    if (app.host === 'api.plane.so') app.host = 'app.plane.so';
-    const base = app.href.replace(/\/$/, '');
-    const slug = encodeURIComponent(this.credential.workspaceSlug);
-    return {
-      name: project.name,
-      url: `${base}/${slug}/projects/${encodeURIComponent(this.projectId)}/issues/`,
-    };
-  }
 
   async listStates(): Promise<CanonicalState[]> {
     const rows = await this.getResults<{ id: string; name: string; group: string }>('/states/');
@@ -324,14 +311,6 @@ export class PlaneReader implements SourceReader {
     });
   }
 
-  async listCustomFields(): Promise<CanonicalCustomField[]> {
-    return [];
-  }
-
-  async listIssueChecklists(): Promise<CanonicalChecklist[]> {
-    return [];
-  }
-
   async listIssueAttachments(issueSourceId: string): Promise<CanonicalAttachment[]> {
     const rows = await this.getJson<
       { id: string; attributes: { name: string; type: string; size: number } }[]
@@ -347,10 +326,10 @@ export class PlaneReader implements SourceReader {
   // Two-hop resolve, confirmed live (see "Attachments" in the notes file): this
   // call itself 302s to an S3 URL valid for exactly an hour, needing no Plane
   // auth — never resolved ahead of the moment it's actually downloaded.
-  async resolveAttachmentDownload(
+  async resolveAttachmentDownloadUrl(
     issueSourceId: string,
     attachmentSourceId: string,
-  ): Promise<AttachmentDownload> {
+  ): Promise<string> {
     const path = `/work-items/${issueSourceId}/attachments/${attachmentSourceId}/`;
     const res = await this.requestRaw(path);
     const location = res.headers.get('location');
@@ -359,7 +338,7 @@ export class PlaneReader implements SourceReader {
         `Plane attachment resolve did not redirect: GET ${path} -> HTTP ${res.status}`,
       );
     }
-    return { url: location };
+    return location;
   }
 
   // members/ is flat, unpaginated, and carries email directly — exactly what
@@ -393,11 +372,11 @@ export class PlaneReader implements SourceReader {
   }
 
   // The rate-limit and 404 checks every Plane call needs, without requiring a
-  // 2xx status — resolveAttachmentDownload's whole point is a 3xx response.
+  // 2xx status — resolveAttachmentDownloadUrl's whole point is a 3xx response.
   private async requestRaw(path: string): Promise<Response> {
     const base = this.credential.baseUrl.replace(/\/$/, '');
     const url = `${base}/api/v1/workspaces/${this.credential.workspaceSlug}/projects/${this.projectId}${path}`;
-    const res = await this.fetch(url, {
+    const res = await pinnedFetch(url, {
       headers: { 'X-Api-Key': this.credential.apiKey },
       timeoutMs: 15_000,
     });
@@ -407,8 +386,7 @@ export class PlaneReader implements SourceReader {
       resetEpochSec: res.headers.get('x-ratelimit-reset'),
       retryAfterSec: res.headers.get('retry-after'),
     });
-    // x-ratelimit-remaining reaching 0 counts too, not only a 429.
-    if (backoff !== null) throw new SourceRateLimitedError(backoff, 'Plane rate limit reached');
+    if (backoff !== null) throw new PlaneRateLimitedError(backoff);
     if (res.status === 404) throw new PlaneNotFoundError(path);
     return res;
   }
@@ -456,7 +434,6 @@ function mapWorkItem(raw: PlaneWorkItem): CanonicalIssue {
     descriptionMarkdown: htmlToMarkdown(raw.description_html),
     stateSourceId: typeof raw.state === 'string' ? raw.state : (raw.state?.id ?? ''),
     assigneeEmail: firstAssigneeEmail(raw.assignees),
-    watcherEmails: [],
     labelSourceIds: (raw.labels ?? []).map((l) => (typeof l === 'string' ? l : l.id)),
     cycleSourceId: raw.cycle_id ?? raw.cycle ?? null,
     parentSourceId: raw.parent_id ?? raw.parent ?? null,
@@ -469,7 +446,6 @@ function mapWorkItem(raw: PlaneWorkItem): CanonicalIssue {
     customFields: [],
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
-    archivedAt: null,
   };
 }
 

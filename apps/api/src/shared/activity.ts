@@ -4,7 +4,7 @@ import { t } from 'elysia';
 // return a change-log entry: the issue feed, the initiative feed and the
 // project-wide activity feed.
 const ActivitySide = t.Object({
-  value: t.Nullable(t.String()),
+  value: t.Optional(t.Nullable(t.String())),
   // The row behind the text, when the side names one. A user id is a string.
   id: t.Optional(t.Nullable(t.Union([t.Number(), t.String()]))),
   // 'status' carries the state type the column had at the moment of the move.

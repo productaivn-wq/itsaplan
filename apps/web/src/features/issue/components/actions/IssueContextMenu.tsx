@@ -1,9 +1,9 @@
 import { useContext, useState, type ReactNode } from 'react';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { Issue } from '@/lib/api/endpoints/issues';
-import { IssueOpenerCtx } from '@/context/shellContext';
+import { ShellCtx } from '@/context/shellContext';
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu';
-import IssueMenu from './IssueMenu';
+import IssueContextMenuContent from './IssueContextMenuContent';
 
 export default function IssueContextMenu({
   project,
@@ -16,32 +16,30 @@ export default function IssueContextMenu({
   onDeleted?: () => void;
   children: ReactNode;
 }) {
-  // Null outside the Shell: on the public read-only board there is no Shell, and the
-  // card is shown without a menu.
-  const openIssue = useContext(IssueOpenerCtx);
+  // Read the Shell directly (not useShell) so this can render outside it: on the
+  // public read-only board there is no Shell, and the card is shown without a menu.
+  const shell = useContext(ShellCtx);
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  // Every card on a board mounts a menu, and a scrolled board mounts cards all the
-  // time. The menu's queries, mutations and session are set up the first time it
-  // opens, and stay mounted so its dialogs outlive the menu.
-  const [everOpened, setEverOpened] = useState(false);
 
-  if (!openIssue) return <>{children}</>;
+  // No Shell (public share): render the card as-is, without the right-click menu.
+  if (!shell) return <>{children}</>;
 
   return (
     <ContextMenu
       onOpenChange={(next) => {
+        if (next) setMounted(true);
         setOpen(next);
-        if (next) setEverOpened(true);
       }}
     >
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      {everOpened && (
-        <IssueMenu
+      {mounted && (
+        <IssueContextMenuContent
           project={project}
           issue={issue}
+          shell={shell}
           open={open}
           onDeleted={onDeleted}
-          onOpenIssue={openIssue}
         />
       )}
     </ContextMenu>

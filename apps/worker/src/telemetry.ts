@@ -260,12 +260,6 @@ function identifiers(value: unknown): string[] {
     .slice(0, MAX_IDENTIFIERS);
 }
 
-// The worker image sets it and an operator can override it, so it is checked as the lists are.
-function buildName(): string {
-  const name = process.env.BUILD_NAME;
-  return name !== undefined && IDENTIFIER.test(name) ? name : 'community';
-}
-
 interface Lists {
   integrationKeys: string[];
   gitProviders: string[];
@@ -358,7 +352,6 @@ export async function processTelemetry(): Promise<void> {
     day,
     installedDay: await installedDay(),
     version: pkg.version,
-    build: buildName(),
     bunVersion: Bun.version,
     docker: existsSync('/.dockerenv'),
     platform: `${process.platform}/${process.arch}`,

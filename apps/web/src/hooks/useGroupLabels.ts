@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { GroupLabels } from '@/utils/project';
 import { usePriorityLabel } from '@/hooks/usePriorityLabel';
@@ -10,17 +9,14 @@ import { usePriorityLabel } from '@/hooks/usePriorityLabel';
 export function useGroupLabels(): GroupLabels {
   const t = useTranslations('workItems.groups');
   const priority = usePriorityLabel();
-  return useMemo(
-    () => ({
-      noAssignee: t('noAssignee'),
-      noDelegate: t('noDelegate'),
-      noPriority: t('noPriority'),
-      noType: t('noType'),
-      noInitiative: t('noInitiative'),
-      noCycle: t('noCycle'),
-      noMember: t('noMember'),
-      priority,
-    }),
-    [t, priority],
-  );
+  return {
+    noAssignee: t('noAssignee'),
+    noDelegate: t('noDelegate'),
+    noPriority: t('noPriority'),
+    noType: t('noType'),
+    noInitiative: t('noInitiative'),
+    noCycle: t('noCycle'),
+    noMember: t('noMember'),
+    priority,
+  };
 }

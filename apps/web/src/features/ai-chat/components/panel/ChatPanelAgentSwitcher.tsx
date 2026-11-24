@@ -15,12 +15,16 @@ export function ChatPanelAgentSwitcher({
   providerLabel,
   disabled,
   onSelect,
+  projectKey,
+  canManageAgents = false,
 }: {
   agents: AiAgent[];
   selected: AiAgent;
   providerLabel: (key: string) => string;
   disabled: boolean;
   onSelect: (agentId: number) => void;
+  projectKey?: string;
+  canManageAgents?: boolean;
 }) {
   const t = useTranslations('aiChat');
 
@@ -44,6 +48,8 @@ export function ChatPanelAgentSwitcher({
         selectedId={selected.id}
         providerLabel={providerLabel}
         onSelect={onSelect}
+        projectKey={projectKey}
+        canManageAgents={canManageAgents}
       />
     </DropdownMenu>
   );

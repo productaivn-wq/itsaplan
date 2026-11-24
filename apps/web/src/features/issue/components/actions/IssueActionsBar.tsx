@@ -1,12 +1,11 @@
 import { useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Archive,
   ArchiveRestore,
   Check,
   ClipboardCopy,
-  FolderInput,
   GitBranch,
   Globe,
   Share2,
@@ -15,12 +14,7 @@ import {
 import type { ActionDef } from '@/lib/api/endpoints/actions';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { IssueDetail as IssueDetailRow } from '@/lib/api/endpoints/issues';
-import {
-  enableIssueShare,
-  disableIssueShare,
-  listIssueDocumentShares,
-  type ShareOptions,
-} from '@/lib/api/endpoints/share';
+import { enableIssueShare, disableIssueShare } from '@/lib/api/endpoints/share';
 import { actionIcon } from '@/utils/actionIcons';
 import { useActionsQuery } from '@/services/actions.service';
 import { useRestoreIssue } from '@/services/issues.service';
@@ -29,14 +23,11 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useArchiveAction } from '../../hooks/useArchiveAction';
 import { ApplyActionDialog, DeleteIssueDialog, matchedActions } from './IssueActions';
 import { buildIssueBranchName, buildIssuePrompt } from '../../utils/issuePrompt';
-import { writeClipboardText } from '../../utils/clipboard';
 import { useSession } from '@/lib/auth-client';
 import { shareIssuePath } from '@/utils/paths';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import ShareDialog from '@/components/common/share/ShareDialog';
-import MoveIssueDialog from './MoveIssueDialog';
-import IssueDocumentSharesNotice from './IssueDocumentSharesNotice';
 import { useTranslations } from 'next-intl';
 
 // The issue detail Actions: the manual actions whose condition matches this
@@ -62,31 +53,22 @@ export default function IssueActionsBar({
   const qc = useQueryClient();
   const canEdit = can('work_items', 'edit');
   const canDelete = can('work_items', 'delete');
-  const canShare = canEdit && project.sharingEnabled;
   const actionsQuery = useActionsQuery(project.project.ref);
   const { archive, dialog: archiveDialog } = useArchiveAction(project);
   const restoreIssue = useRestoreIssue(project.project.ref);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [moving, setMoving] = useState(false);
   const [confirmingAction, setConfirmingAction] = useState<ActionDef | null>(null);
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const documentShares =
-    useQuery({
-      queryKey: [...qk.issue(issue.id), 'document-shares'],
-      queryFn: () => listIssueDocumentShares(issue.id),
-      enabled: canShare,
-    }).data ?? [];
-  const shared = !!issue.shareToken || documentShares.length > 0;
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Enabling/revoking the public link refetches the issue so its shareToken,
-  // shareExtended and shareExpiresAt (which the dialog reads) stay in sync. The same
-  // call creates the link and changes how much a live one exposes or when it expires.
-  async function share(options: ShareOptions) {
-    const state = await enableIssueShare(issue.id, options);
+  // Enabling/revoking the public link refetches the issue so its shareToken and
+  // shareExtended (which the dialog reads) stay in sync. The same call creates the
+  // link and flips how much a live one exposes.
+  async function share(extended: boolean) {
+    const { token } = await enableIssueShare(issue.id, extended);
     await qc.invalidateQueries({ queryKey: qk.issue(issue.id) });
-    return state;
+    return token;
   }
   async function disableShare() {
     await disableIssueShare(issue.id);
@@ -99,7 +81,7 @@ export default function IssueActionsBar({
   const issueActions = canEdit ? matchedActions(actionsQuery.data ?? [], project, issue) : [];
 
   async function copyPrompt() {
-    await writeClipboardText(buildIssuePrompt(issue, project, session?.user));
+    await navigator.clipboard.writeText(buildIssuePrompt(issue, project, session?.user));
     setCopied(true);
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
     copiedTimer.current = setTimeout(() => setCopied(false), 1500);
@@ -112,7 +94,7 @@ export default function IssueActionsBar({
   }
 
   async function copyBranch() {
-    await writeClipboardText(buildIssueBranchName(issue, session?.user));
+    await navigator.clipboard.writeText(buildIssueBranchName(issue, session?.user));
     toast.success(t('branchCopied'));
   }
 
@@ -165,16 +147,14 @@ export default function IssueActionsBar({
         </TooltipTrigger>
         <TooltipContent>{copied ? t('copied') : t('copyPrompt')}</TooltipContent>
       </Tooltip>
-      {canShare && (
+      {canEdit && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size={btnSize}
               className={
-                shared
-                  ? 'bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300'
-                  : 'text-muted-foreground hover:text-foreground'
+                issue.shareToken ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               }
               onClick={() => setSharing(true)}
             >
@@ -182,11 +162,7 @@ export default function IssueActionsBar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {issue.shareToken
-              ? t('sharedPublicly')
-              : documentShares.length > 0
-                ? t('sharedThroughDocument')
-                : t('sharePublicly')}
+            {issue.shareToken ? t('sharedPublicly') : t('sharePublicly')}
           </TooltipContent>
         </Tooltip>
       )}
@@ -233,21 +209,6 @@ export default function IssueActionsBar({
             <Button
               variant="ghost"
               size={btnSize}
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setMoving(true)}
-            >
-              <FolderInput className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t('move')}</TooltipContent>
-        </Tooltip>
-      )}
-      {canDelete && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size={btnSize}
               className="text-muted-foreground hover:text-destructive"
               onClick={() => setConfirmingDelete(true)}
             >
@@ -273,10 +234,6 @@ export default function IssueActionsBar({
         />
       )}
 
-      {moving && (
-        <MoveIssueDialog project={project} issue={issue} onClose={() => setMoving(false)} />
-      )}
-
       {archiveDialog}
 
       {confirmingAction && (
@@ -293,14 +250,10 @@ export default function IssueActionsBar({
         onOpenChange={setSharing}
         title={t('shareIssue')}
         token={issue.shareToken}
-        options={[{ name: 'extended', checked: issue.shareExtended }]}
-        expiresAt={issue.shareExpiresAt}
+        extended={issue.shareExtended}
         enable={share}
         disable={disableShare}
         pathForToken={shareIssuePath}
-        notice={
-          <IssueDocumentSharesNotice projectRef={project.project.ref} shares={documentShares} />
-        }
       />
     </>
   );

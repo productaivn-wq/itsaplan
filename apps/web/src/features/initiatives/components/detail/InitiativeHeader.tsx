@@ -1,7 +1,10 @@
 'use client';
 
-import { Info } from 'lucide-react';
+import { Building2, GanttChart, Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { openOfficePath, projectPath } from '@/utils/paths';
+import { Button } from '@/components/ui/button';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { Initiative, InitiativePatch } from '@/lib/api/endpoints/initiatives';
 import { useUpdateInitiative } from '@/services/initiatives.service';
@@ -112,7 +115,31 @@ export default function InitiativeHeader({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2.5">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() =>
+            navigateFeatureInstant(
+              `${openOfficePath(project.project.ref)}?initiative_id=${initiative.id}`,
+            )
+          }
+        >
+          <Building2 className="size-3.5" />
+          <span>Office</span>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => navigateFeatureInstant(`${projectPath(project.project.ref)}/timeline`)}
+        >
+          <GanttChart className="size-3.5" />
+          <span>Timeline</span>
+        </Button>
         <div className="flex items-center gap-1">
           <HealthInfoPopover />
           <HealthBadge health={initiative.health} />

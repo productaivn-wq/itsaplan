@@ -7,7 +7,7 @@ import { accessErrors, commonErrors } from '#shared/responses';
 import { mcpTool } from '#mcp/generate';
 import { paginate } from '#shared/pagination';
 import { teamParams } from '#modules/teams/model';
-import { integrationCatalog, integrationKind } from './catalog';
+import { INTEGRATION_CATALOG, integrationKind } from './catalog';
 import { listModelsForProvider } from './provider-models';
 import {
   CredentialPageResponse,
@@ -18,8 +18,15 @@ import {
   ProviderModelListResponse,
   createCredentialBody,
   credentialParams,
+  EphemeralTokenResponse,
   integrationOptionsQuery,
+  leaseEphemeralTokenBody,
+  OAuthProviderConfigResponse,
+  oauthProviderParams,
   providerParams,
+  saveOAuthProviderConfigBody,
+  startOAuthBody,
+  StartOAuthResponse,
   updateCredentialBody,
 } from './model';
 import {
@@ -29,6 +36,12 @@ import {
   updateCredential,
   deleteCredential,
 } from './service';
+import {
+  getOAuthProviderConfigDto,
+  leaseEphemeralToken,
+  saveOAuthProviderConfig,
+  startOAuthFlow,
+} from './oauth-service';
 
 // The credential store belongs to the team and serves every project it owns, so every
 // route sits under :teamId, gated by the integrations resource on the team: its owner
@@ -46,8 +59,8 @@ export const integrationRoutes = new Elysia({
   .use(guards)
 
   // The frontend builds the credential form from credentialSchema. Open to any team
-  // member: the catalog holds no team data.
-  .get('/teams/:teamId/integrations/catalog', () => integrationCatalog(), {
+  // member: the catalog is a constant in this codebase, not team data.
+  .get('/teams/:teamId/integrations/catalog', () => INTEGRATION_CATALOG, {
     params: teamParams,
     teamMember: true,
     response: { 200: IntegrationCatalogResponse, ...accessErrors },
@@ -180,6 +193,75 @@ export const integrationRoutes = new Elysia({
       detail: {
         summary: 'Delete a credential',
         description: 'Delete an integration credential.',
+      },
+    },
+  )
+
+  .get(
+    '/teams/:teamId/integrations/oauth/:integrationKey/config',
+    ({ params }) => getOAuthProviderConfigDto(params.integrationKey),
+    {
+      params: oauthProviderParams,
+      teamPermission: ['integrations', 'read'],
+      response: { 200: OAuthProviderConfigResponse, ...commonErrors },
+      detail: {
+        summary: 'Get OAuth2 provider config',
+        description: 'Redacted Direct BYO-App / Relay configuration for an OAuth2 integration.',
+      },
+    },
+  )
+
+  .put(
+    '/teams/:teamId/integrations/oauth/:integrationKey/config',
+    ({ params, body }) => saveOAuthProviderConfig(params.integrationKey, body),
+    {
+      params: oauthProviderParams,
+      body: saveOAuthProviderConfigBody,
+      teamPermission: ['integrations', 'edit'],
+      response: { 200: OAuthProviderConfigResponse, ...commonErrors },
+      detail: {
+        summary: 'Save OAuth2 provider config',
+        description: 'Save Direct BYO-App credentials or Relay URL for an OAuth2 integration.',
+      },
+    },
+  )
+
+  .post(
+    '/teams/:teamId/integrations/oauth/:integrationKey/start',
+    ({ params, membership, user, body }) =>
+      startOAuthFlow({
+        teamId: membership.teamId,
+        userId: user?.id ?? 'system',
+        integrationKey: params.integrationKey,
+        label: body.label,
+        credentialId: body.credentialId,
+        returnTo: body.returnTo,
+      }),
+    {
+      params: oauthProviderParams,
+      body: startOAuthBody,
+      teamPermission: ['integrations', 'create'],
+      response: { 200: StartOAuthResponse, ...commonErrors },
+      detail: {
+        summary: 'Start OAuth2 flow',
+        description: 'Generate an authorize URL for connecting or reconnecting an integration.',
+      },
+    },
+  )
+
+  .post(
+    '/teams/:teamId/integrations/:credentialId/ephemeral-token',
+    ({ params, membership, body }) =>
+      leaseEphemeralToken(params.credentialId, membership.teamId, body.requestedDomain),
+    {
+      params: credentialParams,
+      body: leaseEphemeralTokenBody,
+      teamPermission: ['integrations', 'read'],
+      response: { 200: EphemeralTokenResponse, ...commonErrors },
+      detail: {
+        summary: 'Lease ephemeral OAuth access token',
+        description:
+          'Returns a fresh, domain-scoped OAuth2 access token for local CLI harnesses without storing static tokens.',
       },
     },
   );

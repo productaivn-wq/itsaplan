@@ -4,10 +4,11 @@
 // live in the shared layer because api.ts types Dashboard.layout with them and
 // the dashboards feature consumes them.
 
-import { EMPTY_FILTER_SET, type FilterSet } from '@/utils/filters';
+import { EMPTY_FILTER_SET, isEffectiveCondition, type FilterSet } from '@/utils/filters';
 import { uuid } from '@/utils/uuid';
 
 export type WidgetType =
+  | 'watched_metrics'
   | 'stat'
   | 'recent_issues'
   | 'activity_feed'
@@ -31,6 +32,21 @@ export const COL_GAP = 24; // px between columns
 export const ROW_GAP = 16; // px between rows
 export const MIN_W = 2;
 export const MIN_H = 2;
+
+// Converts a measured widget pixel height into the minimum grid row span `h`
+// whose rendered height (`h * ROW_UNIT + (h - 1) * ROW_GAP`) fits it without
+// an internal scrollbar.
+export function rowsForContentHeight(contentHeightPx: number, minH = MIN_H): number {
+  if (!Number.isFinite(contentHeightPx) || contentHeightPx <= 0) return minH;
+  const rows = Math.ceil((contentHeightPx + ROW_GAP) / (ROW_UNIT + ROW_GAP));
+  return Math.max(minH, rows);
+}
+
+// Widgets that size their own internals to fill the grid cell (via CSS container
+// height) rather than reporting an intrinsic content height.
+export function isFillHeightWidget(type: WidgetType): boolean {
+  return type === 'burnup';
+}
 
 // Below this container width a half-width widget is too narrow to read anything
 // in, so the grid drops to STACK_COLS columns (see stackLayout).
@@ -68,6 +84,10 @@ export interface WidgetConfig {
   forecastWeeks?: number;
   // burnup — a single projection line, or a range of about ±40% around it
   forecast?: 'line' | 'range';
+  // watched_metrics — filter & display cap on the Overview widget
+  pinnedOnly?: boolean;
+  metricCategory?: string | null;
+  maxItems?: number;
 }
 
 export interface WidgetInstance {
@@ -91,21 +111,22 @@ export const WIDGET_DEFAULTS: Record<
   WidgetType,
   { w: number; h: number; minH: number; config: WidgetConfig }
 > = {
+  watched_metrics: { w: 12, h: 5, minH: 4, config: { pinnedOnly: true, maxItems: 8 } },
   stat: { w: 3, h: 3, minH: 2, config: {} },
   recent_issues: { w: 6, h: 7, minH: 3, config: { sort: 'created', limit: 10 } },
   activity_feed: { w: 6, h: 7, minH: 3, config: { limit: 20 } },
-  pulse: { w: 12, h: 5, minH: 5, config: { granularity: 'day' } },
+  pulse: { w: 12, h: 6, minH: 6, config: { granularity: 'day' } },
   throughput: { w: 6, h: 6, minH: 5, config: { weeks: 12 } },
   burnup: {
     w: 6,
     h: 6,
-    minH: 5,
+    minH: 6,
     config: { days: 90, initiativeId: null, forecastWeeks: 4, forecast: 'range' },
   },
   breakdown: { w: 6, h: 6, minH: 5, config: { by: 'status' } },
   agent_runs: { w: 6, h: 7, minH: 3, config: { limit: 20 } },
-  agent_health: { w: 3, h: 3, minH: 3, config: { days: 30 } },
-  webhook_health: { w: 3, h: 3, minH: 3, config: { days: 30 } },
+  agent_health: { w: 3, h: 4, minH: 4, config: { days: 30 } },
+  webhook_health: { w: 3, h: 4, minH: 4, config: { days: 30 } },
   agent_workload: { w: 6, h: 6, minH: 3, config: {} },
 };
 
@@ -208,7 +229,7 @@ export function stackLayout(layout: DashboardLayout): DashboardLayout {
 // pin a single state or the unassigned bucket.
 const OPEN_FILTER: FilterSet = {
   conditions: [
-    { id: 'c1', field: 'statusType', op: 'is_not', values: ['completed', 'canceled', 'closed'] },
+    { id: 'c1', field: 'statusType', op: 'is_not', values: ['completed', 'canceled'] },
   ],
 };
 const IN_PROGRESS_FILTER: FilterSet = {
@@ -218,7 +239,10 @@ const BACKLOG_FILTER: FilterSet = {
   conditions: [{ id: 'c1', field: 'statusType', op: 'is', values: ['backlog'] }],
 };
 const UNASSIGNED_FILTER: FilterSet = {
-  conditions: [{ id: 'c1', field: 'assignee', op: 'is', values: [null] }],
+  conditions: [
+    { id: 'c1', field: 'assignee', op: 'is', values: [null] },
+    { id: 'c2', field: 'statusType', op: 'is_not', values: ['completed', 'canceled'] },
+  ],
 };
 
 // The built-in layout shown when a project has no saved dashboards. Saving it
@@ -228,15 +252,74 @@ const UNASSIGNED_FILTER: FilterSet = {
 // the two lists.
 export type DefaultStatKey = 'open' | 'inProgress' | 'backlog' | 'unassigned';
 
+function isTerminalExclusion(values: unknown[]): boolean {
+  const strs = values.filter((v): v is string => typeof v === 'string');
+  if (strs.length !== values.length) return false;
+  const set = new Set(strs);
+  if (set.size === 2 && set.has('completed') && set.has('canceled')) return true;
+  return set.size === 3 && set.has('completed') && set.has('canceled') && set.has('closed');
+}
+
+export function matchDefaultStatKey(filters: FilterSet | null | undefined): DefaultStatKey | null {
+  const active = (filters?.conditions ?? []).filter(isEffectiveCondition);
+  if (active.length === 1) {
+    const [c] = active;
+    if (!c) return null;
+    if (c.field === 'statusType' && c.op === 'is_not' && isTerminalExclusion(c.values)) {
+      return 'open';
+    }
+    if (
+      c.field === 'statusType' &&
+      c.op === 'is' &&
+      c.values.length === 1 &&
+      c.values[0] === 'started'
+    ) {
+      return 'inProgress';
+    }
+    if (
+      c.field === 'statusType' &&
+      c.op === 'is' &&
+      c.values.length === 1 &&
+      c.values[0] === 'backlog'
+    ) {
+      return 'backlog';
+    }
+    return null;
+  }
+  if (active.length === 2) {
+    const hasUnassigned = active.some(
+      (c) =>
+        c.field === 'assignee' &&
+        c.op === 'is' &&
+        c.values.length === 1 &&
+        c.values[0] === null,
+    );
+    const hasOpenOnly = active.some(
+      (c) => c.field === 'statusType' && c.op === 'is_not' && isTerminalExclusion(c.values),
+    );
+    if (hasUnassigned && hasOpenOnly) return 'unassigned';
+  }
+  return null;
+}
+
 export function defaultDashboardLayout(
   statTitle: (key: DefaultStatKey) => string,
 ): DashboardLayout {
   return [
     {
+      id: 'default-watched-metrics',
+      type: 'watched_metrics',
+      x: 0,
+      y: 0,
+      w: 12,
+      h: 5,
+      config: { pinnedOnly: true, maxItems: 8 },
+    },
+    {
       id: 'default-open',
       type: 'stat',
       x: 0,
-      y: 0,
+      y: 5,
       w: 3,
       h: 3,
       title: statTitle('open'),
@@ -246,7 +329,7 @@ export function defaultDashboardLayout(
       id: 'default-progress',
       type: 'stat',
       x: 3,
-      y: 0,
+      y: 5,
       w: 3,
       h: 3,
       title: statTitle('inProgress'),
@@ -256,7 +339,7 @@ export function defaultDashboardLayout(
       id: 'default-backlog',
       type: 'stat',
       x: 6,
-      y: 0,
+      y: 5,
       w: 3,
       h: 3,
       title: statTitle('backlog'),
@@ -266,32 +349,32 @@ export function defaultDashboardLayout(
       id: 'default-unassigned',
       type: 'stat',
       x: 9,
-      y: 0,
+      y: 5,
       w: 3,
       h: 3,
       title: statTitle('unassigned'),
       config: { filters: UNASSIGNED_FILTER },
     },
-    { id: 'default-throughput', type: 'throughput', x: 0, y: 3, w: 6, h: 6, config: { weeks: 12 } },
+    { id: 'default-throughput', type: 'throughput', x: 0, y: 8, w: 6, h: 6, config: { weeks: 12 } },
     {
       id: 'default-breakdown',
       type: 'breakdown',
       x: 6,
-      y: 3,
+      y: 8,
       w: 6,
       h: 6,
       config: { by: 'status' },
     },
-    { id: 'default-pulse', type: 'pulse', x: 0, y: 9, w: 12, h: 5, config: { granularity: 'day' } },
+    { id: 'default-pulse', type: 'pulse', x: 0, y: 14, w: 12, h: 6, config: { granularity: 'day' } },
     {
       id: 'default-recent',
       type: 'recent_issues',
       x: 0,
-      y: 14,
+      y: 20,
       w: 6,
       h: 7,
       config: { sort: 'created', limit: 10 },
     },
-    { id: 'default-activity', type: 'activity_feed', x: 6, y: 14, w: 6, h: 7, config: {} },
+    { id: 'default-activity', type: 'activity_feed', x: 6, y: 20, w: 6, h: 7, config: {} },
   ];
 }

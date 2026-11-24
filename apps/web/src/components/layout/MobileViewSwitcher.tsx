@@ -13,12 +13,11 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import MobileHiddenViews from '@/components/layout/MobileHiddenViews';
-import MobileViewItem from '@/components/layout/MobileViewItem';
 
 // Mobile view picker: the tab strip collapses into a dropdown showing the active
-// view, listing All + saved views (searchable) and a New view action. It is given the
-// hidden views too, so it names one opened by its link.
+// view, listing All + saved views (searchable) and a New view action. Item values
+// are ids, not names — two views may share a name — and the name is passed as a
+// search keyword.
 export default function MobileViewSwitcher({
   views,
   activeViewId,
@@ -35,13 +34,6 @@ export default function MobileViewSwitcher({
   const t = useTranslations('views');
   const [open, setOpen] = useState(false);
   const active = activeViewId != null ? (views.find((v) => v.id === activeViewId) ?? null) : null;
-  const hidden = views.filter((v) => v.hidden);
-
-  function selectView(id: number) {
-    onSelect(id);
-    setOpen(false);
-  }
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -78,24 +70,23 @@ export default function MobileViewSwitcher({
                 <span className="min-w-0 flex-1 truncate">{t('all')}</span>
                 {activeViewId === null && <Check className="size-4 shrink-0" />}
               </CommandItem>
-              {views
-                .filter((v) => !v.hidden)
-                .map((v) => (
-                  <MobileViewItem
-                    key={v.id}
-                    view={v}
-                    active={v.id === activeViewId}
-                    onSelect={selectView}
-                  />
-                ))}
+              {views.map((v) => (
+                <CommandItem
+                  key={v.id}
+                  value={String(v.id)}
+                  keywords={[v.name]}
+                  onSelect={() => {
+                    onSelect(v.id);
+                    setOpen(false);
+                  }}
+                  className={cn(activeViewId === v.id && 'bg-accent/50')}
+                >
+                  <ViewIcon name={v.icon} className="size-4" />
+                  <span className="min-w-0 flex-1 truncate">{v.name}</span>
+                  {activeViewId === v.id && <Check className="size-4 shrink-0" />}
+                </CommandItem>
+              ))}
             </CommandGroup>
-            {hidden.length > 0 && (
-              <MobileHiddenViews
-                hidden={hidden}
-                activeViewId={activeViewId}
-                onSelect={selectView}
-              />
-            )}
             {canCreate && (
               <CommandGroup>
                 <CommandItem

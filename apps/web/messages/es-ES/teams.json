@@ -1,5 +1,4 @@
 {
-  "archived": "Archivado",
   "create": {
     "title": "Nuevo equipo",
     "namePlaceholder": "Nombre del equipo",
@@ -10,19 +9,17 @@
     "submit": "Crear equipo"
   },
   "sections": {
-    "collapse": "Contraer secciones",
-    "expand": "Expandir secciones",
     "info": {
       "title": "Información",
       "description": "El equipo y tu lugar en él."
     },
+    "orgChart": {
+      "title": "Org chart",
+      "description": "Leadership hierarchy, 8 functional departments, seats, and assigned human & AI members."
+    },
     "projects": {
       "title": "Proyectos",
       "description": "Los proyectos que este equipo posee."
-    },
-    "templates": {
-      "title": "Plantillas de proyecto",
-      "description": "Ajustes guardados con los que empiezan los proyectos nuevos."
     },
     "members": {
       "title": "Miembros del equipo",
@@ -56,12 +53,17 @@
       "title": "Agentes de IA",
       "description": "Los agentes de IA que este equipo posee, y los proyectos en los que trabaja cada uno de ellos."
     },
-    "analytics": {
-      "title": "Consumo",
-      "description": "Lo que han gastado en modelos los agentes del equipo, por agente, proyecto y día."
+    "capabilities": {
+      "title": "Capacidades",
+      "description": "Plano de control unificado para políticas de empresa, proyectos, agentes de IA, habilidades, herramientas y MCP."
     },
-    "queue": {
-      "title": "Ejecuciones de agentes"
+    "git": {
+      "title": "Git",
+      "description": "Repositorios de GitHub y GitLab conectados para el equipo."
+    },
+    "llmRouter": {
+      "title": "LLM Router",
+      "description": "Manage sovereign LLM provider priority, model catalog defaults, WAL telemetry, cooldowns, and live routing diagnostics."
     }
   },
   "info": {
@@ -75,19 +77,10 @@
     "leads": "Propietarios y administradores",
     "leadsHint": "Personas que pueden gestionar este equipo y sus proyectos.",
     "saved": "Equipo guardado",
-    "leaveHint": "Conservas los proyectos de los que eres miembro. Para volver a unirte, un propietario tiene que añadirte de vuelta.",
-    "delete": {
-      "action": "Eliminar equipo",
-      "hint": "Se eliminan con él sus miembros, roles, plantillas de proyecto, invitaciones, habilidades, herramientas e integraciones. Las personas conservan sus cuentas y sus otros equipos.",
-      "blocked": "Elimina primero los proyectos y los agentes de IA del equipo.",
-      "title": "¿Eliminar {name}?",
-      "description": "<strong>{name}</strong> se elimina junto con sus miembros, roles, plantillas de proyecto, invitaciones, habilidades, herramientas e integraciones. Las personas conservan sus cuentas y sus otros equipos. No se puede deshacer.",
-      "deleted": "Equipo eliminado"
-    }
+    "leaveHint": "Conservas los proyectos de los que eres miembro. Para volver a unirte, un propietario tiene que añadirte de vuelta."
   },
   "columns": {
     "project": "Proyecto",
-    "template": "Plantilla",
     "owners": "Propietarios",
     "members": "Miembros",
     "created": "Creada",
@@ -103,34 +96,28 @@
     "emailPlaceholder": "nombre@ejemplo.com",
     "alreadyMember": "{email} ya está en este equipo",
     "alreadyPending": "{email} ya tiene una invitación pendiente",
-    "domainNotAllowed": "El dominio de {email} no está permitido en esta instancia",
     "refused": "No se ha podido invitar a {email}",
     "roleLabel": "Rol del equipo",
     "roleHint": {
       "member": "Trabaja en los proyectos a los que le añadas.",
       "manager": "Gestiona proyectos e invita personas al equipo.",
-      "owner": "Dirige el equipo: su nombre, sus roles y quién pertenece a él."
+      "owner": "Dirige el equipo: su nombre, sus roles y quién pertene a él."
     },
     "submit": "Enviar invitación",
     "joinsTeam": "Se une al equipo",
     "joinsProject": "Se une al equipo y a {project}",
     "copyLink": "Copiar el enlace",
     "copied": "Copiado",
-    "resendEmail": "Enviar correo",
-    "resendingEmail": "Enviando…",
     "revokeAction": "Revocar invitación",
     "revokeTitle": "¿Revocar la invitación de {email}?",
     "revokeConfirm": "Revocar invitación",
     "revokeDescription": "El enlace deja de funcionar. Puedes volver a invitarlo más tarde.",
-    "pending": "Invitado",
-    "expiredAt": "caducó el {date}",
-    "renew": "Renovar",
-    "renewing": "Renovando…"
+    "pending": "Invitado"
   },
   "manage": {
     "label": "Gestionar equipos",
     "teams": "Equipos",
-    "empty": "Todavía no pertenece a ningún equipo.",
+    "empty": "Todavía no pertene a ningún equipo.",
     "newTeam": "Nuevo equipo",
     "leaveAction": "Abandonar el equipo",
     "roles": {
@@ -138,7 +125,8 @@
       "manager": "Administrador",
       "member": "Miembro",
       "agent": "Agente de IA"
-    }
+    },
+    "controlPlane": "Plano de control"
   },
   "roles": {
     "ownerOnly": "Solo un propietario o administrador del equipo puede gestionar los roles.",
@@ -146,9 +134,9 @@
     "search": "Buscar roles",
     "noMatches": "Ningún rol coincide con «{query}».",
     "default": "Por defecto",
-    "system": "Del sistema",
     "editAction": "Editar el rol",
     "deleteAction": "Eliminar el rol",
+    "defaultUndeletable": "El rol por defecto no se puede eliminar",
     "deleteTitle": "Eliminar el rol «{name}»",
     "deleteDescription": "Nada está en este rol. No se puede deshacer.",
     "deleteInUse": "Este rol todavía está en uso. Elige el rol al que se mueve todo lo que está en él.",
@@ -162,6 +150,16 @@
     "moveAndDelete": "Mover y eliminar",
     "noTargetRole": "No hay otro rol al que moverlos. Crea uno primero.",
     "newRole": "Nuevo rol",
+    "editorTitleEdit": "Editar el rol",
+    "editorTitleNew": "Nuevo rol",
+    "namePlaceholder": "p. ej. Colaborador",
+    "resourceColumn": "Recurso",
+    "toggleActionAll": "Alternar {action} para todos los recursos",
+    "toggleGroupAll": "Alternar todos los permisos de {group}",
+    "toggleActionGroup": "Alternar {action} para {group}",
+    "cellAria": "{resource}: {action}",
+    "saveRole": "Guardar el rol",
+    "createRole": "Crear el rol",
     "copyRoles": "Copiar los roles",
     "pasteRoles": "Pegar los roles",
     "nothingToCopy": "No hay roles personalizados que copiar.",
@@ -171,94 +169,20 @@
     "parseFailed": "No se han podido leer los roles del portapapeles.",
     "import": {
       "title": "Aplicar roles del portapapeles",
-      "summary": "Se aplicarán {count, plural, one {# rol} other {# roles}}. Sobrescribir un rol sustituye su matriz de permisos; los miembros conservan el rol.",
+      "summary": "Se aplicarán {count, plural, one {# rol} other {# roles}}. Sobrescribír un rol sustituye su matriz de permisos; los miembros conservan el rol.",
       "preview": "Previsualizar los permisos",
       "apply": "Aplicar {count, plural, =0 {los roles} one {# rol} other {# roles}}",
       "applied": "Roles aplicados: {created} creados, {updated} actualizados{skipped, plural, =0 {} other {, # saltados}}.",
       "actions": {
         "create": "Nuevo",
         "update": "Sobrescribir",
-        "skip": "Saltar (rol del sistema)"
+        "skip": "Saltar (por defecto)"
       }
     },
     "transferErrors": {
       "invalidJson": "El portapapeles no contiene un JSON válido.",
       "notAnExport": "El portapapeles no contiene una exportación de roles.",
       "empty": "La exportación de roles está vacía."
-    }
-  },
-  "templates": {
-    "empty": "Todavía no hay plantillas de proyecto",
-    "emptyHint": "Guarda un proyecto como plantilla para crear proyectos nuevos a partir de ella.",
-    "newAction": "Nueva plantilla",
-    "teams": "Equipos",
-    "allTeams": "Todos los equipos",
-    "noTeams": "Ningún equipo",
-    "editAction": "Editar plantilla",
-    "editHint": "Lo que contiene la plantilla se queda tal como se guardó.",
-    "copyAction": "Copiar plantilla",
-    "copied": "Plantilla \"{name}\" copiada. Pégala en otro espacio de trabajo para importarla.",
-    "downloadAction": "Descargar",
-    "downloadFailed": "No se pudo descargar la plantilla.",
-    "importAction": "Importar plantilla",
-    "deleteAction": "Eliminar plantilla",
-    "deleteDialog": {
-      "title": "¿Eliminar la plantilla «{name}»?",
-      "description": "Los proyectos creados con ella no cambian.",
-      "confirm": "Eliminar plantilla",
-      "galleryNote": "Su página en la galería también se retira."
-    },
-    "panel": {
-      "saved": "Guardada el {date}",
-      "none": "Ninguno",
-      "teams": "Equipos: {teams}"
-    },
-    "publish": {
-      "action": "Publicar",
-      "published": "Publicada",
-      "account": "Cuenta de la galería",
-      "publishingAs": "Publicas como",
-      "authorProfile": "Perfil del autor",
-      "changeEmail": "Cambiar correo",
-      "rules": "Normas de la galería",
-      "unlink": "Desvincular espacio de trabajo",
-      "downloadable": "Cualquiera puede descargarla",
-      "private": "Sin tickets ni personas",
-      "counts": "{states, plural, one {# estado} other {# estados}} · {types, plural, one {# tipo} other {# tipos}} · {fields, plural, one {# campo} other {# campos}}",
-      "by": "de <b>{name}</b>",
-      "authorHint": "Se muestra en todas las plantillas publicadas desde {email}.",
-      "authorName": "Autor",
-      "authorUrl": "Enlace al perfil",
-      "optional": "Opcional",
-      "authorUrlInvalid": "Debe empezar por https://",
-      "submit": "Publicar",
-      "update": "Actualizar página",
-      "live": "En línea",
-      "since": "desde el {date}",
-      "openPage": "Abrir página",
-      "copyLink": "Copiar enlace",
-      "linkCopied": "Enlace copiado",
-      "copyFailed": "No se pudo copiar el enlace",
-      "unpublish": "Retirar",
-      "unpublishConfirm": "¿Retirar la página?",
-      "unpublishHint": "Su enlace dejará de funcionar.",
-      "keep": "Mantener",
-      "publishedToast": "Publicada",
-      "updatedToast": "Página actualizada",
-      "badge": "Pública",
-      "badgeHint": "En la galería desde el {date}",
-      "link": {
-        "intro": "Confirma un correo una sola vez para este espacio de trabajo.",
-        "email": "Correo electrónico",
-        "emailHint": "No se muestra públicamente",
-        "agree": "Al enviar el código aceptas las <rules>normas de la galería</rules>.",
-        "sendCode": "Enviar código",
-        "codeSent": "Introduce el código enviado a {email}",
-        "code": "Código",
-        "confirm": "Confirmar",
-        "resend": "Enviar de nuevo",
-        "resent": "Código nuevo enviado"
-      }
     }
   },
   "panel": {
@@ -283,7 +207,10 @@
       "overdue": "Con retraso",
       "unassigned": "Sin asignar",
       "closedLast7d": "Cerradas en 7 días"
-    }
+    },
+    "assignedAiAgents": "Agentes de IA asignados",
+    "manageInControlPlane": "Gestionar en el Plano de control",
+    "noAssignedAiAgents": "Aún no hay agentes de IA vinculados a este proyecto."
   },
   "leaveDialog": {
     "title": "¿Abandonar {name}?",
@@ -309,11 +236,9 @@
     "username": "Nombre de usuario",
     "password": "Contraseña",
     "passwordPlaceholder": "Contraseña de SMTP",
-    "timeout": "Tiempo de espera (s)",
+    "timeout": "Expiry (s)",
     "optional": "Opcional",
     "apiKey": "Clave de API",
-    "from": "Dirección de remitente",
-    "fromHint": "Obligatoria para Resend. Con SMTP toma por defecto el nombre de usuario.",
     "telegramBot": "Bot de Telegram",
     "telegramBotHint": "El bot que entrega las notificaciones para cada proyecto del equipo. Los miembros eligen su propio chat en sus preferencias. El token se guarda cifrado.",
     "botToken": "Token de la API del bot (opcional)",
@@ -333,7 +258,7 @@
     "search": "Buscar integraciones",
     "noMatches": "Ninguna integración coincide con «{query}».",
     "empty": "Todavía no hay credenciales",
-    "emptyHint": "Los agentes no pueden usar un proveedor de IA ni una herramienta sin una.",
+    "emptyHint": "Los agentes no pueden usar un proveedor de IA ni una herramientra sin una.",
     "deleteMessage": "¿Eliminar la credencial de {integration}? Los agentes y las herramientas que la usan dejarán de funcionar hasta que añadas una nueva.",
     "groups": {
       "llm": {
@@ -348,6 +273,23 @@
     "columns": {
       "integration": "Integración",
       "credentials": "Credenciales"
+    },
+    "oauth": {
+      "modeDirect": "Direct BYO-App",
+      "modeRelay": "OAuth Relay",
+      "notConfigured": "OAuth not configured yet",
+      "configureApp": "Configure OAuth App (BYO-App / Relay)",
+      "connect": "Connect {integration} (1-Click OAuth)",
+      "reconnect": "Reconnect {integration}",
+      "configSaved": "OAuth config saved",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "relayUrl": "Relay URL",
+      "relaySecret": "Relay Shared Secret",
+      "callbackUrl": "Callback URL",
+      "keepExisting": "Leave blank to keep existing",
+      "saveConfig": "Save OAuth Config",
+      "orManual": "Or enter token manually"
     }
   },
   "skills": {
@@ -363,7 +305,7 @@
     "descriptionPlaceholder": "Se muestra al agente para decidir cuándo cargar esta habilidad",
     "noDescription": "Sin descripción",
     "unsaved": "Cambios no guardados",
-    "addReference": "Añadir referencia",
+    "addReference": "Añadir referncia",
     "source": {
       "inline": "En línea",
       "upload": "Subida",
@@ -375,8 +317,8 @@
     "skillFile": "Fichero SKILL.md",
     "loaded": "{file} cargada",
     "trustWarning": "Importa solo habilidades en las que confíes",
-    "trustWarning1": "Una habilidad se convierte en instrucciones que tus agentes siguen. Revisa el origen primero.",
-    "trustWarning2": "Solo SKILL.md y sus referencias de markdown se importan. Los scripts se saltan.",
+    "trustWarning1": "Una habilidad se convierte en instrucciones que tus agentes siguen. Revisa el orijen primero.",
+    "trustWarning2": "Solo SKILL.md y sus referncias de markdown se importan. Los scripts se saltan.",
     "githubUrl": "URL de GitHub",
     "githubUrlPlaceholder": "https://github.com/propietario/repositorio o una carpeta de habilidad",
     "githubUrlHint": "Un repositorio, una carpeta o un SKILL.md.",
@@ -391,36 +333,32 @@
     "files": "Ficheros",
     "skill": "Habilidad",
     "description": "Descripción",
-    "referenceCount": "{count, plural, one {# referencia} other {# referencias}}",
+    "referenceCount": "{count, plural, one {# referncia} other {# referncias}}",
     "noAccess": "No tienes acceso a las habilidades de este equipo."
   },
   "tools": {
-    "add": "Añadir herramienta",
-    "delete": "Eliminar herramienta",
+    "add": "Añadir herramientra",
+    "delete": "Eliminar herramientra",
+    "back": "Volver a las herramientas",
     "tool": "Herramienta",
     "scopes": "Ámbitos",
     "noScopes": "Sin ámbitos",
     "empty": "Todavía no hay herramientas",
-    "emptyHint": "Configura una herramienta una sola vez, después actívala en cualquier agente.",
+    "emptyHint": "Configura una herramientra una sola vez, después actívala en cualquier agente.",
     "search": "Buscar herramientas",
-    "noMatches": "Ninguna herramienta coincide con «{query}».",
+    "noMatches": "Ninguna herramientra coincide con «{query}».",
     "scopesLabel": "Permisos obligatorios del token",
     "credential": "Credencial",
     "chooseCredential": "Elegir una credencial",
-    "credentialFallback": "Credencial n.º {id}",
-    "noCredential": "Todavía no hay una credencial de {integration}",
-    "noCredentialHint": "Añade una en las integraciones del equipo para seleccionar estas herramientas.",
-    "deleteMessage": "¿Quitar {tool}? Los agentes que la usan perderán el acceso a esta herramienta.",
+    "noCredential": "Todavía no hay una credencial de {integration}. Añade una en las integraciones del equipo primero.",
+    "deleteMessage": "¿Quitar {tool}? Los agentes que la usan perderán el acceso a esta herramientra.",
+    "scopesUpper": "Ámbitos",
     "selectGroup": "Seleccionar todo",
     "clearGroup": "Limpiar",
-    "selectedCount": "{count, plural, one {# herramienta seleccionada} other {# herramientas seleccionadas}}",
-    "readyToUse": "Listas para usar",
-    "needsCredential": "Necesitan una credencial",
-    "toolCount": "{count, plural, one {# herramienta} other {# herramientas}}",
-    "matchCount": "{shown} de {total, plural, one {# herramienta} other {# herramientas}} coinciden",
-    "added": "Ya añadida",
-    "noCredentialNeeded": "Las herramientas de {integration} no necesitan credencial.",
-    "addCount": "{count, plural, =0 {Añadir herramientas} one {Añadir # herramienta} other {Añadir # herramientas}}",
+    "selectedCount": "{count, plural, one {# herramientra seleccionada} other {# herramientas seleccionadas}}",
+    "oneIntegration": "Elige herramientas de una sola integración — funcionan sobre una sola credencial.",
+    "continue": "Continuar",
+    "alreadyAdded": "{count, plural, one {# herramientra ya está en esta credencial y se salta.} other {# herramientas ya están en esta credencial y se saltan.}}",
     "noAccess": "No tienes acceso a las herramientas de este equipo."
   },
   "agents": {
@@ -457,8 +395,6 @@
     "username": "Nombre de usuario",
     "usernamePlaceholder": "p. ej. bot-triaje",
     "usernameHint": "Letras, dígitos, puntos, guiones y barras bajas. Hasta 64 caracteres.",
-    "chat": "Chat",
-    "chatHint": "Deja que el equipo abra o siga un chat con este agente. Si se apaga, desaparece del selector del chat; las menciones, delegaciones y tareas programadas lo siguen ejecutando.",
     "access": "Disponibilidad",
     "accessHint": "Quién le puede dar tareas a este agente",
     "model": "Modelo",
@@ -490,55 +426,16 @@
     "runDelay": "Esperar antes de empezar",
     "runDelayHint": "Tiempo para seguir editando el ticket antes de que el agente empiece. 0 empieza de inmediato.",
     "minutes": "min",
-    "connection": "Conexión",
-    "connectionHint": "Cómo recibe el agente sus tareas",
-    "deliveryRunner": "Ejecutor",
-    "deliveryRunnerHint": "Tu máquina pide las tareas",
-    "deliveryUrl": "Endpoint",
-    "deliveryUrlHint": "Tu URL recibe las tareas",
-    "invocationUrl": "URL del endpoint",
-    "invocationUrlPlaceholder": "https://example.com/agent",
-    "invocationUrlHint": "Recibe cada tarea y mensaje de chat como un POST firmado.",
-    "invocationUnsaved": "Guarda para enviar las tareas a esta URL.",
-    "invocationSecretOnSave": "Guarda la URL para obtener el secreto de firma.",
-    "invocationSecret": "Secreto de firma",
-    "invocationSecretHint": "Úsalo para comprobar la cabecera X-Itsaplan-Signature.",
-    "invocationSecretRotated": "Secreto de firma regenerado",
-    "invocationRotate": "Regenerar el secreto",
-    "invocationRotateTitle": "¿Regenerar el secreto de firma?",
-    "invocationRotateMessage": "Las solicitudes para <v>{name}</v> pasan al secreto nuevo de inmediato. Actualiza tu endpoint o rechazará las próximas tareas.",
-    "invocationTest": "Solicitud de prueba",
-    "invocationTestHint": "Envía un ping firmado a la URL guardada.",
-    "invocationTestSend": "Enviar prueba",
-    "invocationTestSending": "Enviando…",
-    "invocationTestOk": "Respondió {status} en {ms} ms",
-    "invocationTestRefused": "Respondió {status}. Se esperaba 2xx.",
-    "invocationTestTimeout": "Sin respuesta a tiempo. Responde primero y luego haz el trabajo.",
-    "invocationTestUnreachable": "No se pudo contactar con el endpoint",
-    "invocationHelpOpen": "Cómo crear el endpoint",
-    "invocationHelpTitle": "Cómo recibir tareas en una URL",
-    "invocationHelpVerify": "Comprueba la firma",
-    "invocationHelpVerifyHint": "HMAC-SHA256 de la marca de tiempo, un punto y el cuerpo sin procesar, con el secreto de firma como clave. Rechaza las solicitudes de hace más de cinco minutos.",
-    "invocationHelpAccept": "Responde 2xx enseguida",
-    "invocationHelpAcceptHint": "Trabaja después de responder. Con cualquier otro estado, la tarea vuelve más tarde y un mensaje de chat falla al instante.",
-    "invocationHelpPayload": "Lee la tarea",
-    "invocationHelpPayloadHint": "El campo event indica qué llegó: una tarea, un mensaje de chat o un ping de prueba.",
-    "invocationHelpTabRun": "Tarea",
-    "invocationHelpTabChat": "Mensaje de chat",
-    "invocationHelpTabPing": "Ping de prueba",
-    "invocationHelpReport": "Envía el resultado con la clave del agente",
-    "invocationHelpReportHint": "Mientras trabajas, envía un heartbeat al menos cada 5 minutos. Luego envía el resultado. Puedes enviar una respuesta de chat por partes.",
-    "invocationHelpTest": "Envía una solicitud de prueba",
-    "invocationHelpTestHint": "La sección Conexión muestra cómo respondió tu endpoint.",
+    "runner": "Ejecutor",
+    "runnerHint": "El proceso en tu máquina que ejecuta las tareas de este agente",
     "runnerWayCli": "CLI del ejecutor",
     "runnerWayCliHint": "Nuestro paquete de npm. Apúntalo a un agente de codificación, sondea tareas y informa de vuelta. Necesita un fichero de configuración con la clave del agente.",
     "runnerWayApi": "Tu propio código",
     "runnerWayApiHint": "Reclama tareas y publica resultados por la API con la clave del agente, desde cualquier script.",
     "runnerScope": "Disponible para",
-    "runnerScopeOwner": "Solo el propietario",
+    "runnerScopeOwner": "Solo yo",
     "runnerScopeTeam": "Todo el mundo",
     "runnerScopeOwnerHint": "Solo tú le puedes dar tareas.",
-    "runnerScopeOwnerNamedHint": "Solo {name}, su propietario, le puede dar tareas.",
     "runnerScopeTeamHint": "Cualquier miembro del equipo le puede dar tareas.",
     "runnerCopyCommand": "Copiar el comando",
     "runnerHelpOpen": "Cómo configurar el ejecutor",
@@ -553,7 +450,7 @@
     "runnerHelpTabCustom": "El tuyo propio",
     "runnerHelpPiAdapter": "Pi lee .mcp.json mediante una extensión. Instálala una vez: pi install npm:pi-mcp-adapter",
     "runnerHelpCheck": "Comprobar que está conectado",
-    "runnerHelpCheckHint": "La sección Conexión muestra En línea.",
+    "runnerHelpCheckHint": "La sección Ejecutor muestra En línea.",
     "runnerOnline": "Ejecutor en línea",
     "runnerOffline": "Ejecutor fuera de línea",
     "runnerNever": "Todavía no hay ejecutor",
@@ -561,8 +458,6 @@
     "runnerStateOffline": "Fuera de línea",
     "runnerStateNone": "No conectado",
     "runnerSeen": "Última ves visto hace {time}",
-    "runnerStateUrl": "Endpoint",
-    "runnerUrl": "Recibe tareas en su URL",
     "actions": "Acciones",
     "actionsHint": "Lo que el agente puede hacer en el proyecto",
     "searchActions": "Buscar acciones",
@@ -588,29 +483,20 @@
     "tools": "Herramientas",
     "toolsHint": "Integraciones externas que el agente puede llamar",
     "noTools": "Sin herramientas configuradas",
-    "noToolsHint": "Configura una herramienta, después actívala aquí.",
+    "noToolsHint": "Configura una herramientra, después actívala aquí.",
     "goToTools": "Ir a Herramientas",
     "searchTools": "Buscar herramientas",
-    "enabled": "Activadas",
-    "available": "Disponibles",
     "advanced": "Avanzado",
-    "advancedHint": "Muestreo, razonamiento, límites de pasos y de tiempo, y memoria",
+    "advancedHint": "Muestreo, límite de pasos y memoria",
     "temperature": "Temperature",
-    "reasoningEffort": "Esfuerzo de razonamiento",
-    "reasoningEffortDefault": "Predeterminado del proveedor",
-    "reasoningEffortLow": "Bajo",
-    "reasoningEffortMedium": "Medio",
-    "reasoningEffortHigh": "Alto",
     "optional": "Opcional",
     "maxSteps": "Máximo de pasos",
-    "runTimeout": "Límite de tiempo (s)",
-    "runTimeoutDefault": "Máximo de la instancia",
     "memory": "Memoria de la conversación",
     "memoryHint": "Recuerda los mensajes recientes dentro de un hilo de conversación.",
     "memoryCount": "Recordar los últimos N mensajes",
     "memoryCountPlaceholder": "p. ej. 20",
     "keyWarning": "Cópiala ahora. La clave se muestra una sola vez.",
-    "apiKeyHint": "La clave con la que el agente se autentica",
+    "apiKeyHint": "La clave con la que el agente se autentic",
     "keyOnCreate": "Se emite cuando creas el agente, se muestra una vez.",
     "currentKey": "Clave actual",
     "currentKeyHint": "Solo se guardan sus primeros caracteres.",
@@ -628,7 +514,6 @@
     "endOfHistory": "Fin del historial",
     "manualTask": "Tarea manual",
     "scheduledTask": "Tarea programada",
-    "documentTask": "Comentario en un documento",
     "failed": "Fallida",
     "task": "Tarea",
     "error": "Error",
@@ -640,7 +525,7 @@
     "regenerateMessage": "La clave actual de <v>{name}</v> deja de funcionar de inmediato. Actualiza todo lo que la usa con la clave nueva.",
     "deleteMessage": "<v>{name}</v> y su clave de API se quitarán, y se limpiará de los tickets a los que estaba asignado o delegado. No se puede deshacer.",
     "actionCount": "{count, plural, one {# acción} other {# acciones}}",
-    "toolCount": "{count, plural, one {# herramienta} other {# herramientas}}",
+    "toolCount": "{count, plural, one {# herramientra} other {# herramientas}}",
     "skillCount": "{count, plural, one {# habilidad} other {# habilidades}}",
     "triggerMention": "Mención",
     "triggerDelegation": "Delegación",
@@ -691,179 +576,144 @@
     "noProjects": "Este equipo todavía no tiene proyectos.",
     "projectToggleAria": "Alternar el acceso de MCP para {project}"
   },
-  "workspace": {
-    "rail": "Espacios de trabajo",
-    "create": "Nuevo espacio de trabajo",
-    "createUnavailableTitle": "Más espacios de trabajo",
-    "createUnavailableHint": "Más espacios de trabajo por persona están disponibles en Cloud y en Pro autoalojado.",
-    "general": "General",
-    "roles": {
-      "owner": "Propietario",
-      "admin": "Administrador"
+  "company": {
+    "title": "Configuración de empresa",
+    "description": "Identidad corporativa, barreras de autonomía de agentes y políticas de cumplimiento.",
+    "configuredBadge": "Configurado",
+    "defaultBadge": "Configuración predeterminada",
+    "agenticSyncHint": "Gestionado mediante Agentic CLI y MCP. Anulación manual activada.",
+    "identityTitle": "Identidad de la empresa",
+    "identityHint": "Detalles de la entidad legal y perfil organizacional.",
+    "legalName": "Razón social",
+    "slug": "Clave URL (Slug)",
+    "slugHint": "Letras minúsculas, números y guiones (2–40 caracteres).",
+    "slugInvalid": "Use de 2 a 40 letras minúsculas, números o guiones, comenzando con una letra.",
+    "domain": "Dominio principal",
+    "industry": "Sector / Industria",
+    "timezone": "Zona horaria",
+    "governanceTitle": "Gobernanza de agentes y autorización",
+    "governanceHint": "Umbrales de autonomía, separación de funciones y controles de agentes.",
+    "defaultLocale": "Idioma predeterminado de la organización",
+    "autonomyTier": "Nivel de autonomía predeterminado",
+    "tier0": "Nivel 0 - Asesor (Todas las acciones requieren aprobación)",
+    "tier1": "Nivel 1 - Supervisado (Autónomo en bajo riesgo, aprobación en cambios clave)",
+    "tier2": "Nivel 2 - Autónomo soberano (Totalmente autónomo dentro del presupuesto)",
+    "requireSod": "Exigir separación de funciones",
+    "requireSodHint": "El autor y el revisor/aprobador deben ser identidades distintas.",
+    "allowBootstrap": "Permitir arranque de equipo por agentes",
+    "allowBootstrapHint": "Permitir que los agentes aprovisionen subespacios de proyectos y roles.",
+    "ownerOnly": "Solo los propietarios de la organización pueden modificar estos ajustes.",
+    "saved": "Configuración de empresa guardada con éxito"
+  },
+  "authorization": {
+    "overviewTitle": "Gobernanza de agentes y jerarquía",
+    "overviewHint": "Reglas de autorización entre proyectos, línea base de autonomía y matriz de rangos del equipo.",
+    "autonomyLabel": "Autonomía",
+    "sodOn": "Obligatorio",
+    "sodOff": "Opcional",
+    "editCompanyPolicy": "Editar política de empresa",
+    "fullScope": "Acceso total y matriz de roles",
+    "roleScoped": "Limitado por roles de proyecto"
+  },
+  "orgChart": {
+    "treeView": "Tree view",
+    "tableView": "Directory table",
+    "searchPlaceholder": "Filter departments, seats, or assignees...",
+    "leadershipTitle": "Executive Leadership",
+    "departmentsCount": "Departments",
+    "seatsFilled": "Seats filled",
+    "workforceCount": "Workforce",
+    "openSeat": "Open seat",
+    "editDepartment": "Inspect & edit",
+    "openLiveFloor": "Open live floor",
+    "missionLabel": "Mission",
+    "deliverableLabel": "Standard deliverable",
+    "positionsLabel": "Positions & seat assignments",
+    "addPosition": "Add seat",
+    "seatNamePlaceholder": "Seat / position title",
+    "assignMember": "Assigned person or AI",
+    "unassign": "Unassigned (Open seat)",
+    "saveChanges": "Save changes",
+    "savedToast": "Department & seats updated",
+    "colDepartment": "Department",
+    "colSeat": "Position / Seat",
+    "colAssignee": "Assigned To",
+    "colKind": "Type",
+    "colDeliverable": "Deliverable",
+    "kindHuman": "Human",
+    "kindAi": "AI Agent",
+    "kindOpen": "Open",
+    "drawerSubtitle": "Edit department mission, deliverables, and seat assignments.",
+    "quickLinks": "Related governance",
+    "linkMembers": "Team members",
+    "linkRoles": "Project roles & RBAC",
+    "noMatches": "No departments or seats match \"{query}\".",
+    "tier3Title": "Tier 3 · Org Chart & 8 Departments",
+    "tier3Desc": "Explore leadership hierarchy, 8 functional departments, positions, and assigned human & AI members.",
+    "tier3Cta": "Open Org Chart"
+  },
+  "navGroups": {
+    "workspace": "Espacio y Gobernanza",
+    "ai": "IA y Capacidades",
+    "platform": "Plataforma y Entrega"
+  },
+  "capabilities": {
+    "cards": {
+      "company": "Empresa y Política",
+      "projects": "Proyectos",
+      "agents": "Agentes de IA",
+      "agentsHint": "Plantilla de agentes",
+      "skills": "Habilidades",
+      "skillsHint": "Módulos SKILL.md",
+      "tools": "Herramientas e Integraciones"
     },
-    "titles": {
-      "owner": "Propietario del espacio",
-      "admin": "Administrador del espacio"
+    "tabs": {
+      "byProject": "Por proyecto",
+      "byAgent": "Por agente",
+      "library": "Habilidades y Herramientas"
     },
-    "info": {
-      "title": "Espacio de trabajo",
-      "description": "El espacio de trabajo al que pertenecen tus equipos.",
-      "workspace": "Espacio de trabajo",
-      "workspaceHint": "El nombre que ve todo el mundo.",
-      "role": "Tu rol",
-      "saved": "Espacio de trabajo guardado",
-      "color": "Color",
-      "colorReset": "Usar el predeterminado"
+    "columns": {
+      "assignedAgents": "Agentes asignados",
+      "coverage": "Cobertura",
+      "mcpReach": "Alcance MCP",
+      "capabilities": "Capacidades"
     },
-    "teamCreation": {
-      "title": "Quién crea equipos",
-      "description": "Quien crea un equipo es su propietario.",
-      "ownerOnly": "Solo el propietario decide quién crea equipos.",
-      "owner": "Solo el propietario",
-      "managers": "El propietario y los administradores",
-      "members": "Todos los de sus equipos"
+    "sodEnforced": "SoD obligatorio",
+    "sodOptional": "SoD opcional",
+    "mcpEnabledCount": "{count} con MCP",
+    "agentsSplit": "{internal} internos · {external} externos",
+    "integrationsCount": "{count} integraciones",
+    "searchPlaceholder": "Filtrar proyectos, agentes, habilidades o herramientas…",
+    "noProjects": "Sin proyectos aún",
+    "noProjectsHint": "Crea un proyecto para empezar a vincular agentes de IA y capacidades.",
+    "noMatchesTitle": "Sin coincidencias",
+    "noMatches": "Ningún elemento coincide con “{query}”.",
+    "restricted": "Restringido",
+    "noAgentsAttached": "Sin agentes asignados",
+    "coverageSummary": "{skills} habilidades · {tools} herramientas",
+    "configure": "Configurar",
+    "manageAll": "Gestionar todo"
+  },
+  "llmRouter": {
+    "offlineTitle": "Sovereign LLM Router Gateway is offline",
+    "offlineHint": "Ensure llm_router_openai_gateway.py is running on 127.0.0.1:18766 and ITSAPLAN_LLM_GATEWAY_TOKEN is configured.",
+    "actions": {
+      "probe": "Probe",
+      "syncModels": "Sync Models",
+      "refresh": "Refresh",
+      "retry": "Retry"
     },
-    "runLimit": {
-      "title": "Ejecuciones de agentes a la vez",
-      "description": "Cuántas ejecuciones de sus agentes van a la vez. El resto espera en cola. 0 es sin límite propio.",
-      "descriptionCapped": "Cuántas ejecuciones de sus agentes van a la vez, hasta {max}. El resto espera en cola. Con 0, el límite es {max}.",
-      "ownerOnly": "Solo el propietario cambia cuántas ejecuciones de agentes van a la vez.",
-      "none": "Sin límite"
+    "kpi": {
+      "gateway": "Gateway",
+      "success24h": "24h Success Rate",
+      "latencyTokens": "Avg Latency & 24h Tokens",
+      "cooldowns": "Active Cooldowns"
     },
-    "sharing": {
-      "title": "Enlaces públicos",
-      "description": "Si los documentos, las incidencias y las vistas de este espacio de trabajo se pueden compartir por enlace.",
-      "enabled": "Permitir enlaces públicos",
-      "enabledHint": "Desactivado, nadie puede compartir aquí y los enlaces existentes dejan de abrirse hasta que se active de nuevo.",
-      "instanceOff": "Los enlaces públicos están desactivados en esta instancia.",
-      "teamsOnly": "Solo los equipos seleccionados",
-      "teamsOnlyHint": "Solo pueden compartir los equipos de abajo. Los enlaces de los demás equipos dejan de abrirse.",
-      "statusOn": "Activado",
-      "statusOff": "Apagado",
-      "ownerOnly": "Solo el propietario elige qué equipos pueden compartir.",
-      "saved": "Ajustes de enlaces públicos guardados"
-    },
-    "managers": {
-      "title": "Responsables",
-      "description": "El propietario y los administradores gestionan el espacio de trabajo.",
-      "ownerOnly": "El propietario y los administradores gestionan el espacio de trabajo. Solo el propietario añade o quita administradores.",
-      "person": "Persona",
-      "role": "Rol",
-      "addAction": "Añadir administrador",
-      "addTitle": "Añadir administrador",
-      "addDescription": "Elige a alguien de los equipos del espacio de trabajo.",
-      "search": "Buscar por nombre o correo",
-      "noCandidates": "No hay nadie que añadir",
-      "added": "{name} ahora es administrador",
-      "removeAction": "Quitar administrador",
-      "removeTitle": "¿Quitar a {name} como administrador?",
-      "removeDescription": "Seguirá en sus equipos, pero no podrá gestionar el espacio de trabajo.",
-      "removed": "{name} ya no es administrador"
-    },
-    "scim": {
-      "title": "SCIM",
-      "description": "Permite que un proveedor de identidades añada personas a este espacio de trabajo, las quite y conceda acceso a proyectos a través de sus grupos.",
-      "saved": "Los ajustes de SCIM se han guardado",
-      "provisioning": "Preparación",
-      "provisioningConfigured": "Tu proveedor de identidades añade personas a este espacio de trabajo y las quita.",
-      "provisioningInstance": "Tu proveedor de identidades crea, actualiza y desactive cuentas en esta instancia.",
-      "provisioningMissing": "Genera primero un token.",
-      "token": "Token",
-      "noToken": "Todavía no se ha generado un token",
-      "tokenHint": "El token de portador que envía tu proveedor de identidades. Se muestra una sola vez; generar uno nuevo deja de hacer funcionar al viejo.",
-      "generateToken": "Generar token",
-      "replaceToken": "Sustituir token",
-      "baseUrl": "Endpoint de SCIM",
-      "baseUrlHint": "Apunta a tu proveedor de identidades a esta dirección.",
-      "copyBaseUrl": "Copiar el endpoint de SCIM",
-      "groups": "Grupos",
-      "groupsHint": "Los grupos que tu proveedor de identidades ha empujado. La lista es suya; lo que cada grupo concede se define aquí.",
-      "groupsEmpty": "Todavía no se ha empujado ningún grupo.",
-      "memberCount": "{count, plural, =0 {Sin miembros} one {# miembro} other {# miembros}}",
-      "grantsNothing": "todavía no concede nada",
-      "editMappings": "Editar el acceso",
-      "roleOwner": "Propietario",
-      "roleMember": "Miembro",
-      "tokenDialog": {
-        "title": "Generar un token de SCIM",
-        "description": "El token se muestra una sola vez y no se puede volver a leer. Cualquier token ya en uso deja de funcionar.",
-        "submit": "Generar",
-        "submitPending": "Generando…",
-        "createdTitle": "Tu token de SCIM",
-        "createdDescription": "Cópialo a tu proveedor de identidades ahora. No se puede volver a mostrar.",
-        "copy": "Copiar el token"
-      },
-      "mappings": {
-        "title": "Lo que concede {group}",
-        "description": "Los miembros de este grupo se unen a los proyectos listados aquí. Quitar un proyecto leva los miembros que este grupo le había dado.",
-        "empty": "Este grupo todavía no concede nada.",
-        "addProject": "Añadir un proyecto…",
-        "role": "Rol",
-        "roleOwner": "Propietario",
-        "roleMember": "Miembro",
-        "projectRole": "Rol del proyecto",
-        "defaultRole": "Rol por defecto",
-        "remove": "Quitar el proyecto",
-        "saved": "El acceso del grupo se ha guardado"
-      }
-    },
-    "delete": {
-      "action": "Eliminar espacio de trabajo",
-      "hint": "Sus equipos se eliminan con él. Las personas conservan sus cuentas y sus otros equipos.",
-      "blocked": "Elimina primero los proyectos y los agentes de IA de sus equipos.",
-      "title": "¿Eliminar {name}?",
-      "description": "<strong>{name}</strong> y sus equipos se eliminan. Las personas conservan sus cuentas y sus otros equipos. No se puede deshacer.",
-      "deleted": "Espacio de trabajo eliminado"
-    },
-    "agentUsage": {
-      "title": "Consumo de IA",
-      "description": "Lo que han gastado en modelos los agentes de todos los equipos."
-    },
-    "settingsGroup": "Ajustes",
-    "modelPrices": {
-      "title": "Precios de modelos",
-      "description": "Consumo de IA calcula el coste de cada llamada a un modelo con estos precios, por 1M de tokens. Un cambio también recalcula las llamadas pasadas.",
-      "used": {
-        "title": "En uso en este espacio de trabajo",
-        "description": "Modelos que tus agentes llamaron en los últimos 90 días y los que tienen tu precio.",
-        "unpriced": "{count, plural, one {# modelo no tiene precio, así que sus llamadas no cuentan en el coste.} other {# modelos no tienen precio, así que sus llamadas no cuentan en el coste.}}",
-        "empty": "Ninguna llamada a modelos en los últimos 90 días. Un modelo aparece aquí cuando tus agentes lo llaman."
-      },
-      "all": {
-        "title": "Todos los modelos",
-        "description": "Precios incluidos. Pon tu propio precio a cualquier modelo.",
-        "search": "Buscar modelos",
-        "noMatch": "Ningún modelo coincide con «{query}»."
-      },
-      "columns": {
-        "model": "Modelo",
-        "calls": "Llamadas",
-        "input": "Entrada",
-        "output": "Salida",
-        "cacheRead": "Lectura de caché",
-        "cacheWrite": "Escritura en caché",
-        "price": "Precio"
-      },
-      "source": {
-        "own": "Tuyo",
-        "builtIn": "Incluido",
-        "none": "Sin precio"
-      },
-      "setPrice": "Poner precio",
-      "edit": "Editar",
-      "setTitle": "Poner precio",
-      "editTitle": "Editar precio",
-      "perMillion": "USD por 1M de tokens.",
-      "builtInPrice": "Incluido: {input} de entrada, {output} de salida.",
-      "noBuiltInPrice": "Este modelo no tiene precio incluido.",
-      "sameAsInput": "Igual que la entrada",
-      "appliesToPast": "Se aplica a todas las llamadas de este modelo en este espacio de trabajo, también a las pasadas.",
-      "useBuiltIn": "Usar el precio incluido",
-      "removePrice": "Quitar precio",
-      "save": "Guardar precio"
-    },
-    "queue": {
-      "title": "Ejecuciones de agentes"
+    "tabs": {
+      "providers": "Providers & Priority",
+      "models": "Models & Catalog",
+      "telemetry": "Telemetry & Cooldowns",
+      "playground": "Test Playground"
     }
   }
 }

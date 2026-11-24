@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { AgentSchedule, AgentScheduleInput } from '@/lib/api/endpoints/agentSchedules';
-import { ScheduleDialog } from '@/cloud';
 import { aiAgentsPath } from '@/utils/paths';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/page/EmptyState';
@@ -17,9 +16,10 @@ import {
   useRunAgentSchedule,
   useUpdateAgentSchedule,
 } from '@/services/agentSchedules.service';
-import { useAgentDirectory } from '@/hooks/useProjectAgents';
+import { useProjectAgents } from '@/hooks/useProjectAgents';
 import { useSettingsCan } from '../../context/settingsPermission';
 import SettingsConfirmDeleteDialog from '../crud/SettingsConfirmDeleteDialog';
+import { SettingsScheduleDialog } from './SettingsScheduleDialog';
 import { SettingsScheduleRunsSheet } from './SettingsScheduleRunsSheet';
 import { SettingsSchedulesTable } from './SettingsSchedulesTable';
 import { useTranslations } from 'next-intl';
@@ -38,7 +38,7 @@ export default function SettingsSchedules({
   const can = useSettingsCan();
   const paging = usePaging();
   const schedulesQuery = useAgentSchedules(projectKey, paging.params);
-  const agentsQuery = useAgentDirectory();
+  const agentsQuery = useProjectAgents();
   const schedules = schedulesQuery.data?.items ?? [];
   const total = schedulesQuery.data?.total ?? 0;
   const agents = agentsQuery.data ?? [];
@@ -110,7 +110,6 @@ export default function SettingsSchedules({
         <div className="space-y-4">
           <SettingsSchedulesTable
             schedules={schedules}
-            columns={project.columns}
             runningId={runSchedule.isPending ? (runSchedule.variables ?? null) : null}
             onToggle={(schedule) =>
               updateSchedule.mutate({
@@ -129,11 +128,10 @@ export default function SettingsSchedules({
       )}
 
       {showEditor && (
-        <ScheduleDialog
+        <SettingsScheduleDialog
           key={editingSchedule?.id ?? 'new'}
           projectKey={projectKey}
           agents={agents}
-          columns={project.columns}
           initial={editingSchedule}
           saving={saving}
           onSave={saveSchedule}
@@ -159,7 +157,6 @@ export default function SettingsSchedules({
       <SettingsScheduleRunsSheet
         projectKey={projectKey}
         schedule={history}
-        columnName={project.columns.find((column) => column.id === history?.columnId)?.name ?? null}
         onClose={() => setHistory(null)}
       />
     </>

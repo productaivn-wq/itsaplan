@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Download, Plus } from 'lucide-react';
 import type { Attachment } from '@/lib/api/endpoints/attachments';
 import { useFileDragZone } from '@/hooks/useFileDragZone';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import {
   useAttachmentsQuery,
   useDeleteAttachment,
@@ -50,7 +50,7 @@ export default function IssueAttachmentsPanel({
   // A replaced attachment keeps its URL, which the image optimizer caches its
   // thumbnail under. Stamping the ones replaced here tells the two versions apart.
   const [replacedAt, setReplacedAt] = useState<Record<string, number>>({});
-  const { open, toggle } = usePersistedOpen('issue-attachments-open');
+  const { open, setOpen, toggle } = useSmartSectionOpen('issue-attachments-open-v2', items.length > 0);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const uploading = uploadAttachment.isPending;
@@ -93,15 +93,23 @@ export default function IssueAttachmentsPanel({
       {/* Fixed height: the Add button only renders while the section is open, and
           without it the row would shrink to the height of the heading text. */}
       <div className={`flex h-7 items-center justify-between gap-3 ${open ? 'mb-3' : ''}`}>
-        <IssueSectionHeading label={t('title')} open={open} onToggle={toggle} />
-        {open && !readOnly && (
+        <IssueSectionHeading
+          label={t('title')}
+          tally={items.length > 0 ? String(items.length) : undefined}
+          open={open}
+          onToggle={toggle}
+        />
+        {!readOnly && (
           <Button
             variant="ghost"
             size="sm"
             className="h-7 gap-1.5"
             disabled={uploading}
             title={attachmentLimitHint(limits)}
-            onClick={() => fileInput.current?.click()}
+            onClick={() => {
+              setOpen(true);
+              fileInput.current?.click();
+            }}
           >
             <Plus className="size-4" />
             {uploading ? t('uploading') : t('add')}

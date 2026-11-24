@@ -4,7 +4,6 @@ import { requireUser } from '#shared/access';
 import { guards } from '#shared/guards';
 import { mcpTool } from '#mcp/generate';
 import { accessErrors, commonErrors } from '#shared/responses';
-import { instantParam } from '#shared/lib';
 import {
   ActivityPage,
   AgentRunFeedListResponse,
@@ -16,6 +15,8 @@ import {
   StatsDto,
   ThroughputListResponse,
   WebhookStatsDto,
+  StatFilterSetBody,
+  StatCountResponse,
   activityQuery,
   agentRunFeedQuery,
   breakdownQuery,
@@ -26,6 +27,7 @@ import {
 } from './model';
 import {
   getStats,
+  countIssuesByFilterSet,
   getBreakdown,
   getPulse,
   getThroughput,
@@ -70,6 +72,22 @@ export const analyticsRoutes = new Elysia({
         summary: 'Get project stats',
         description: 'Issue counts by state (open, in progress, overdue, and more).',
         ...mcpTool('get_project_stats'),
+      },
+    },
+  )
+
+  .post(
+    '/projects/:projectKey/analytics/stat-count',
+    async ({ project, body }) => {
+      return { count: await countIssuesByFilterSet(project.id, body.filters) };
+    },
+    {
+      body: StatFilterSetBody,
+      permission: ['dashboards', 'read'],
+      response: { 200: StatCountResponse, ...commonErrors },
+      detail: {
+        summary: 'Count project issues matching a dashboard filter set',
+        description: 'Counts non-archived project issues satisfying arbitrary FilterSet conditions.',
       },
     },
   )
@@ -185,8 +203,6 @@ export const analyticsRoutes = new Elysia({
         actorUserId: query.actorUserId ?? null,
         action: query.action ?? null,
         issueIds,
-        from: instantParam('from', query.from),
-        to: instantParam('to', query.to),
       });
     },
     {
@@ -195,8 +211,7 @@ export const analyticsRoutes = new Elysia({
       response: { 200: ActivityPage, ...commonErrors },
       detail: {
         summary: 'Get project activity',
-        description:
-          'Project-wide feed of issue activity, newest first: comments and changes such as creation and state moves. `from` and `to` limit it to one period.',
+        description: 'Project-wide feed of issue activity.',
         ...mcpTool('get_project_activity'),
       },
     },

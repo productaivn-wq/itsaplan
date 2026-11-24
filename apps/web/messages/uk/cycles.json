@@ -72,5 +72,8 @@
   "dragFailed": "Не вдалося перемістити цикл",
   "notFound": "Цикл не знайдено.",
   "defaultName": "Спринт {n}",
-  "issuesDone": "Задач виконано"
+  "issuesDone": "Задач виконано",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left"
 }

@@ -70,7 +70,7 @@ export default function BurnupChart({
   // direction, so a mirrored chart would put its axes and series out of step with
   // each other. The labels and the tooltip are still translated.
   return (
-    <ChartContainer dir="ltr" config={config} className="h-full min-h-[180px] w-full">
+    <ChartContainer dir="ltr" config={config} className="h-full min-h-[150px] w-full">
       <ComposedChart data={points}>
         <CartesianGrid vertical={false} />
         <XAxis
@@ -188,7 +188,7 @@ export default function BurnupChart({
             label={{
               value: t('today'),
               position: 'insideTopRight',
-              fontSize: 10,
+              fontSize: 12,
               fill: TODAY_COLOR,
             }}
           />
@@ -201,7 +201,7 @@ export default function BurnupChart({
             label={{
               value: t('targetLabel'),
               position: 'insideTopLeft',
-              fontSize: 10,
+              fontSize: 12,
               fill: TARGET_COLOR,
             }}
           />

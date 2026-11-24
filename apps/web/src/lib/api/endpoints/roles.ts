@@ -18,11 +18,9 @@ export type PermissionResource =
   | 'issue_types'
   | 'labels'
   | 'ai_agents'
-  | 'agent_schedules'
   | 'integrations'
   | 'agent_skills'
   | 'agent_tools'
-  | 'agent_usage'
   | 'custom_fields'
   | 'issue_templates'
   | 'workflow_config'
@@ -37,14 +35,12 @@ export type ResourcePermissions = Record<PermissionAction, boolean>;
 
 export type Permissions = Record<PermissionResource, ResourcePermissions>;
 
-// A named permission matrix a project member is put on: a custom role of the team, or
-// a system role (`system`), which every team assigns and only god mode edits.
-// `isDefault` marks the system role new members get when none is chosen.
+// A project's custom role: a named permission matrix that can be assigned to a
+// member. `isDefault` marks the fallback role new members get; it cannot be deleted.
 export interface Role {
   id: number;
   name: string;
   isDefault: boolean;
-  system: boolean;
   permissions: Permissions;
   createdAt: string;
 }
@@ -71,7 +67,6 @@ export interface RoleUsage {
 export interface PermissionCatalogResource {
   key: PermissionResource;
   actions: PermissionAction[];
-  from?: PermissionResource;
 }
 
 export interface PermissionCatalog {
@@ -113,3 +108,25 @@ export const deleteRole = (teamId: number, roleId: number, targetRoleId?: number
   const qs = targetRoleId === undefined ? '' : `?targetRoleId=${targetRoleId}`;
   return request<void>(`/teams/${teamId}/roles/${roleId}${qs}`, { method: 'DELETE' });
 };
+
+export interface TeamRankSummary {
+  rank: 'owner' | 'manager' | 'member' | 'agent';
+  count: number;
+  fullAccess: boolean;
+  canManageRoles: boolean;
+  canDeleteRoles: boolean;
+}
+
+export interface TeamAuthorizationSnapshot {
+  teamId: number;
+  governance: {
+    defaultAutonomyTier: 'TIER_0' | 'TIER_1' | 'TIER_2';
+    requireSodApproval: boolean;
+    allowAgentTeamBootstrap: boolean;
+  };
+  teamRanks: TeamRankSummary[];
+  roles: Role[];
+}
+
+export const getTeamAuthorization = (teamId: number) =>
+  request<TeamAuthorizationSnapshot>(`/teams/${teamId}/authorization`);

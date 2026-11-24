@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import type { NewIssueDefaults } from '@/utils/project';
 
 // The project-level overlays, grouped here so the Shell tracks one object instead of
@@ -16,7 +16,7 @@ export function useOverlays() {
 
   // The panel is not addressed by the URL, so a link inside it navigates the page
   // behind it and leaves the panel standing over the new page.
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   useEffect(() => {
     setOpenIssueId(null);
   }, [pathname]);
@@ -28,17 +28,20 @@ export function useOverlays() {
     newIssueDefaults != null ||
     openIssueId != null;
 
-  return {
-    showNewProject,
-    setShowNewProject,
-    showNewInitiative,
-    setShowNewInitiative,
-    showCommand,
-    setShowCommand,
-    newIssueDefaults,
-    setNewIssueDefaults,
-    openIssueId,
-    setOpenIssueId,
-    anyOpen,
-  };
+  return useMemo(
+    () => ({
+      showNewProject,
+      setShowNewProject,
+      showNewInitiative,
+      setShowNewInitiative,
+      showCommand,
+      setShowCommand,
+      newIssueDefaults,
+      setNewIssueDefaults,
+      openIssueId,
+      setOpenIssueId,
+      anyOpen,
+    }),
+    [showNewProject, showNewInitiative, showCommand, newIssueDefaults, openIssueId, anyOpen],
+  );
 }

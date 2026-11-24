@@ -1,0 +1,359 @@
+{
+  "noAccess": "Bạn không có quyền truy cập vào bảng điều khiển.",
+  "defaultName": "Tổng quan",
+  "newDashboard": "Bảng điều khiển mới",
+  "renameDashboard": "Đổi tên bảng điều khiển",
+  "namePlaceholder": "Tên bảng điều khiển",
+  "options": "Tùy chọn bảng điều khiển",
+  "rename": "Đổi tên",
+  "editLayout": "Chỉnh sửa bố cục",
+  "discard": "Hủy thay đổi",
+  "saveDashboard": "Lưu bảng điều khiển",
+  "saveChanges": "Lưu thay đổi",
+  "noWidgets": "Chưa có tiện ích nào. Hãy thêm một tiện ích để xây dựng bảng điều khiển này.",
+  "addWidget": "Thêm tiện ích",
+  "addWidgetTitle": "Thêm tiện ích",
+  "addWidgetDescription": "Chọn một tiện ích để thêm vào bảng điều khiển này.",
+  "searchWidgets": "Tìm kiếm tiện ích",
+  "clearSearch": "Xóa tìm kiếm",
+  "noWidgetMatches": "Không có tiện ích nào khớp với “{query}”.",
+  "dragToMove": "Kéo để di chuyển",
+  "widgetName": "Tên tiện ích",
+  "widgetSettings": "Cài đặt tiện ích",
+  "widgetOptions": "Tùy chọn tiện ích",
+  "removeWidget": "Gỡ bỏ tiện ích",
+  "lastDays": "{days} ngày qua",
+  "showRows": "Hiển thị {count}",
+  "widgetGroups": {
+    "metrics": "Chỉ số theo dõi",
+    "issues": "Công việc",
+    "agents": "Tác nhân AI & Webhook"
+  },
+  "widgets": {
+    "stat": {
+      "label": "Số liệu",
+      "description": "Số lượng công việc khớp với bộ lọc"
+    },
+    "recent_issues": {
+      "label": "Công việc gần đây",
+      "description": "Các công việc mới nhất theo thời gian tạo hoặc cập nhật"
+    },
+    "activity_feed": {
+      "label": "Nhật ký hoạt động",
+      "description": "Nhật ký thay đổi trên toàn dự án, có thể lọc theo người thực hiện và hành động"
+    },
+    "pulse": {
+      "label": "Nhịp độ",
+      "description": "Biểu đồ nhiệt dạng GitHub về hoạt động hàng ngày"
+    },
+    "throughput": {
+      "label": "Năng suất",
+      "description": "Số công việc được tạo so với số công việc đã đóng mỗi tuần"
+    },
+    "burnup": {
+      "label": "Tiến độ Burnup",
+      "description": "Phạm vi, công việc đã bắt đầu và đã hoàn thành mỗi ngày cùng ngày hoàn thành dự kiến"
+    },
+    "breakdown": {
+      "label": "Phân tích chi tiết",
+      "description": "Số lượng công việc theo trạng thái, độ ưu tiên, loại hoặc người phụ trách"
+    },
+    "agent_runs": {
+      "label": "Lượt chạy tác nhân",
+      "description": "Các lượt chạy gần đây của tác nhân AI cùng kết quả"
+    },
+    "agent_health": {
+      "label": "Tình trạng tác nhân",
+      "description": "Tỷ lệ chạy thành công và các lỗi của tác nhân trong một khoảng thời gian"
+    },
+    "webhook_health": {
+      "label": "Tình trạng Webhook",
+      "description": "Kết quả phân phối Webhook và các điểm cuối đã bị tắt"
+    },
+    "agent_workload": {
+      "label": "Khối lượng công việc tác nhân",
+      "description": "Công việc được ủy quyền và kết quả chạy của từng tác nhân"
+    },
+    "watched_metrics": {
+      "label": "Chỉ số theo dõi",
+      "description": "KPI trọng tâm, ngưỡng cảnh báo và sức khỏe trực tiếp của dự án"
+    }
+  },
+  "breakdown": {
+    "empty": "Chưa có công việc nào.",
+    "by": {
+      "status": "Trạng thái",
+      "priority": "Độ ưu tiên",
+      "type": "Loại",
+      "assignee": "Người phụ trách",
+      "delegate": "Ủy quyền"
+    },
+    "caption": {
+      "status": "Theo trạng thái",
+      "priority": "Theo độ ưu tiên",
+      "type": "Theo loại",
+      "assignee": "Theo người phụ trách",
+      "delegate": "Theo ủy quyền"
+    }
+  },
+  "recentIssues": {
+    "empty": "Không có công việc nào khớp với bộ lọc này.",
+    "captionCreated": "Mới nhất trước",
+    "captionUpdated": "Cập nhật gần đây",
+    "filterCount": "{count, plural, one {# bộ lọc} other {# bộ lọc}}",
+    "sort": {
+      "created": "Mới nhất",
+      "updated": "Đã cập nhật"
+    }
+  },
+  "activityFeed": {
+    "empty": "Không có hoạt động nào khớp với bộ lọc này.",
+    "someone": "Ai đó",
+    "filterCount": "{count, plural, one {# bộ lọc} other {# bộ lọc}}",
+    "actions": {
+      "all": "Tất cả hoạt động",
+      "status": "Thay đổi trạng thái",
+      "assignee": "Phân công",
+      "priority": "Độ ưu tiên",
+      "created": "Đã tạo"
+    },
+    "verbs": {
+      "comment": "đã bình luận về",
+      "created": "đã tạo",
+      "title": "đã đổi tên",
+      "description": "đã cập nhật mô tả của",
+      "status": "đã thay đổi trạng thái của",
+      "assignee": "đã thay đổi người phụ trách của",
+      "priority": "đã thay đổi độ ưu tiên của",
+      "type": "đã thay đổi loại của",
+      "start_date": "đã thay đổi ngày bắt đầu của",
+      "due_date": "đã thay đổi ngày đến hạn của",
+      "label_add": "đã thêm nhãn vào",
+      "label_remove": "đã gỡ bỏ nhãn khỏi",
+      "field": "đã cập nhật trường trên",
+      "other": "đã cập nhật"
+    }
+  },
+  "pulse": {
+    "caption": {
+      "hour": "Theo giờ",
+      "day": "Theo ngày",
+      "week": "Theo tuần"
+    },
+    "unit": {
+      "hour": "Giờ",
+      "day": "Ngày",
+      "week": "Tuần"
+    },
+    "events": "{count, plural, one {# sự kiện} other {# sự kiện}}",
+    "eventNoun": "{count, plural, one {sự kiện} other {sự kiện}}",
+    "active": "{count} đang hoạt động",
+    "less": "Ít hơn",
+    "more": "Nhiều hơn",
+    "scope": {
+      "project": "Toàn bộ dự án",
+      "me": "Hoạt động của tôi"
+    }
+  },
+  "throughput": {
+    "empty": "Không có hoạt động nào trong khoảng thời gian này.",
+    "lastWeeks": "{weeks} tuần qua",
+    "created": "Đã tạo",
+    "closed": "Đã đóng"
+  },
+  "burnup": {
+    "empty": "Không có công việc nào trong khoảng thời gian này.",
+    "scope": "Phạm vi",
+    "started": "Đã bắt đầu",
+    "completed": "Đã hoàn thành",
+    "projection": "Dự phóng",
+    "band": "Dải dự báo",
+    "projected": "Dự kiến {date}",
+    "range": "{from} – {to}",
+    "forecastShape": {
+      "line": "Đường dự báo",
+      "range": "Dải dự báo"
+    },
+    "noForecast": "Không có tiến độ trong {weeks, plural, one {# tuần} other {# tuần}} qua",
+    "allDone": "Đã hoàn thành toàn bộ",
+    "velocity": "{rate}/ngày",
+    "growth": "+{rate}/ngày mới",
+    "target": "Mục tiêu {date}",
+    "targetLabel": "Mục tiêu",
+    "today": "Hôm nay",
+    "wholeProject": "Toàn bộ dự án",
+    "forecastWeeks": "Tỷ lệ qua {weeks, plural, one {# tuần} other {# tuần}}"
+  },
+  "agentRuns": {
+    "empty": "Chưa có lượt chạy tác nhân nào.",
+    "filters": {
+      "all": "Tất cả lượt chạy",
+      "failed": "Thất bại",
+      "pending": "Đang chờ",
+      "success": "Thành công"
+    },
+    "status": {
+      "pending": "đang chờ",
+      "success": "thành công",
+      "failed": "thất bại",
+      "canceled": "đã hủy"
+    },
+    "trigger": {
+      "mention": "chạy khi được nhắc đến trong",
+      "delegation": "chạy khi được ủy quyền",
+      "field": "chạy trên một trường của",
+      "manual": "chạy thủ công",
+      "schedule": "chạy theo lịch trình"
+    }
+  },
+  "agentHealth": {
+    "empty": "Không có lượt chạy tác nhân nào.",
+    "successRate": "tỷ lệ thành công",
+    "runs": "{count, plural, one {# lượt chạy} other {# lượt chạy}}",
+    "failed": "{count} thất bại",
+    "queued": "{count} đang chờ"
+  },
+  "webhookHealth": {
+    "deliveries": "lượt phân phối",
+    "failed": "{count} thất bại",
+    "pending": "{count} đang chờ",
+    "allDelivered": "đã phân phối toàn bộ",
+    "disabled": "{count, plural, one {# điểm cuối bị tắt} other {# điểm cuối bị tắt}}"
+  },
+  "agentWorkload": {
+    "empty": "Không có tác nhân nào trong dự án này.",
+    "agent": "Tác nhân",
+    "delegated": "Được ủy quyền",
+    "runs": "Lượt chạy",
+    "failed": "{count} thất bại",
+    "kind": {
+      "external": "Bên ngoài",
+      "internal": "Nội bộ"
+    }
+  },
+  "defaultWidgets": {
+    "open": "Đang mở",
+    "inProgress": "Đang thực hiện",
+    "backlog": "Tồn đọng",
+    "unassigned": "Chưa phân công"
+  },
+  "watchedMetricsTab": "Chỉ số theo dõi",
+  "watchedMetrics": {
+    "manage": "Quản lý tất cả",
+    "saveStarters": "Lưu bộ chỉ số mẫu",
+    "addMetric": "Thêm chỉ số",
+    "starterPreviewBadge": "Mặc định trực tiếp",
+    "starterBannerTitle": "Đang hiển thị bộ chỉ số trực tiếp mặc định",
+    "starterBannerDescription": "4 chỉ số này được tính trực tiếp từ dữ liệu dự án. Lưu vào dự án để tùy chỉnh ngưỡng, ghim/bỏ ghim hoặc thêm KPI riêng.",
+    "empty": "Chưa có chỉ số theo dõi nào.",
+    "emptyPinned": "Chưa có chỉ số nào được ghim lên Tổng quan.",
+    "emptyFiltered": "Không có chỉ số nào khớp với bộ lọc hiện tại.",
+    "searchPlaceholder": "Tìm kiếm chỉ số...",
+    "clearSearch": "Xóa tìm kiếm",
+    "allCategories": "Tất cả danh mục",
+    "pinnedOnlyFilter": "Chỉ hiện đã ghim",
+    "pinnedBadge": "Đã ghim",
+    "updatedAt": "Cập nhật {date}",
+    "noReadingsYet": "Chưa có số đo",
+    "targetShort": "Mục tiêu {operator} {target}",
+    "targetRule": "Mục tiêu {operator} {target} {unit}",
+    "summary": {
+      "total": "Tổng chỉ số",
+      "healthy": "Đạt chuẩn",
+      "warning": "Cảnh báo",
+      "critical": "Nghiêm trọng"
+    },
+    "status": {
+      "healthy": "Đạt chuẩn",
+      "warning": "Cảnh báo",
+      "critical": "Nghiêm trọng",
+      "no_data": "Chưa có dữ liệu"
+    },
+    "categories": {
+      "delivery": "Bàn giao",
+      "agents": "Tác nhân AI",
+      "quality": "Chất lượng",
+      "reliability": "Độ tin cậy",
+      "product": "Sản phẩm",
+      "mece_v4": "MECE v4",
+      "okr": "OKRs",
+      "custom": "Tùy chỉnh"
+    },
+    "sources": {
+      "manual": "Nhập thủ công",
+      "api_push": "Đẩy qua API",
+      "live_stat": "Thống kê dự án trực tiếp",
+      "live_completion_rate": "Tỷ lệ hoàn thành trực tiếp",
+      "live_agent_health": "Tỷ lệ tác nhân thành công",
+      "live_webhook_health": "Tình trạng Webhook trực tiếp",
+      "live_filter": "Bộ lọc công việc trực tiếp"
+    },
+    "statKeys": {
+      "open": "Công việc đang mở",
+      "inProgress": "Đang thực hiện",
+      "backlog": "Tồn đọng",
+      "overdue": "Quá hạn",
+      "unassigned": "Chưa phân công",
+      "closedLast7d": "Đã đóng (7 ngày qua)"
+    },
+    "actions": {
+      "record": "Ghi số đo",
+      "pin": "Ghim lên Tổng quan",
+      "unpin": "Bỏ ghim khỏi Tổng quan",
+      "edit": "Chỉnh sửa chỉ số",
+      "delete": "Xóa chỉ số"
+    },
+    "settings": {
+      "pinnedOnly": "Chỉ hiển thị chỉ số đã ghim",
+      "category": "Danh mục",
+      "maxItems": "Số lượng tối đa"
+    },
+    "toasts": {
+      "created": "Đã tạo chỉ số theo dõi.",
+      "bootstrapped": "Đã lưu các chỉ số mặc định vào dự án.",
+      "updated": "Đã cập nhật chỉ số theo dõi.",
+      "deleted": "Đã xóa chỉ số theo dõi.",
+      "sampleRecorded": "Đã ghi nhận số đo mới."
+    },
+    "dialog": {
+      "createTitle": "Thêm chỉ số theo dõi",
+      "editTitle": "Chỉnh sửa chỉ số theo dõi",
+      "description": "Thiết lập KPI dự án cần theo dõi, nguồn dữ liệu và các ngưỡng đạt chuẩn / cảnh báo / nghiêm trọng.",
+      "name": "Tên chỉ số",
+      "namePlaceholder": "VD: Tỷ lệ hoàn thành chu kỳ",
+      "metricDescription": "Mô tả",
+      "metricDescriptionPlaceholder": "Ý nghĩa của chỉ số và cách đánh giá...",
+      "category": "Danh mục",
+      "sourceType": "Nguồn dữ liệu",
+      "statKey": "Chỉ số dự án",
+      "windowDays": "Khung thời gian (ngày)",
+      "filterRules": "Bộ lọc công việc khớp",
+      "operator": "Toán tử",
+      "targetValue": "Mục tiêu",
+      "unit": "Đơn vị",
+      "warnThreshold": "Ngưỡng cảnh báo",
+      "critThreshold": "Ngưỡng nghiêm trọng",
+      "initialValue": "Giá trị ban đầu",
+      "externalKey": "Khóa đồng bộ ngoài",
+      "optional": "Tùy chọn",
+      "pinnedToOverview": "Ghim lên Tổng quan",
+      "pinnedHelp": "Hiển thị chỉ số này trong tiện ích Chỉ số theo dõi ở trang Tổng quan.",
+      "createSubmit": "Tạo chỉ số"
+    },
+    "recordDialog": {
+      "title": "Ghi số đo · {name}",
+      "description": "Mục tiêu: {operator} {target} {unit}",
+      "valueLabel": "Giá trị đo được",
+      "valuePlaceholder": "Nhập giá trị số",
+      "noteLabel": "Ghi chú (tùy chọn)",
+      "notePlaceholder": "Bối cảnh hoặc bằng chứng cho số đo này...",
+      "submit": "Lưu số đo",
+      "historyTitle": "Lịch sử đo gần đây",
+      "historyEmpty": "Chưa có số đo nào được ghi."
+    },
+    "deleteDialog": {
+      "title": "Xóa chỉ số theo dõi?",
+      "description": "Thao tác này sẽ xóa vĩnh viễn “{name}” và toàn bộ lịch sử đo."
+    }
+  }
+}

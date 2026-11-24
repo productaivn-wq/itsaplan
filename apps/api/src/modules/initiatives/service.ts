@@ -1,5 +1,5 @@
 import { db, initiative, initiativeLabel, issue, label, projectColumn, user } from '@repo/db';
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql, isNull } from 'drizzle-orm';
 import { labelNames, rowSide } from '#modules/issues/activity';
 import { getMembership } from '#modules/members/service';
 import { HttpError, iso, num } from '#shared/lib';
@@ -43,15 +43,13 @@ async function countsFor(initiativeIds: number[]): Promise<Map<number, Initiativ
   const rows = await db
     .select({
       initiativeId: issue.initiativeId,
-      // An archived issue left unfinished is off the board, so it is not work the
-      // initiative still has to do; a finished one still counts.
-      total: sql<number>`count(*) filter (where ${issue.archivedAt} is null or ${projectColumn.stateType} in ('completed', 'canceled'))`,
+      total: sql<number>`count(*)`,
       completed: sql<number>`count(*) filter (where ${projectColumn.stateType} = 'completed')`,
       canceled: sql<number>`count(*) filter (where ${projectColumn.stateType} = 'canceled')`,
     })
     .from(issue)
     .innerJoin(projectColumn, eq(projectColumn.id, issue.columnId))
-    .where(inArray(issue.initiativeId, initiativeIds))
+    .where(and(inArray(issue.initiativeId, initiativeIds), isNull(issue.archivedAt)))
     .groupBy(issue.initiativeId);
   for (const r of rows) {
     if (r.initiativeId == null) continue;
@@ -175,12 +173,13 @@ export async function listInitiatives(
     .from(initiative)
     .where(where)
     .orderBy(...orderBy);
-  const rows = await q.limit(opts.limit).offset(opts.offset);
-
-  const [{ total }] = await db
-    .select({ total: sql<number>`count(*)` })
-    .from(initiative)
-    .where(where);
+  const [rows, [{ total }]] = await Promise.all([
+    q.limit(opts.limit).offset(opts.offset),
+    db
+      .select({ total: sql<number>`count(*)` })
+      .from(initiative)
+      .where(where),
+  ]);
 
   const ids = rows.map((r) => r.id);
   const [counts, labels] = await Promise.all([countsFor(ids), labelsFor(ids)]);

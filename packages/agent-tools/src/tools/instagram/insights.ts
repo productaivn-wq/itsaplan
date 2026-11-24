@@ -9,7 +9,6 @@ import { timeFilter, toUnixSeconds } from '../time';
 // profile_views, accounts_engaged).
 export const instagramAccountInsights: CustomToolEntry = {
   key: 'instagram_account_insights',
-  group: 'Insights',
   scopes: ['instagram_basic', 'instagram_manage_insights'],
   label: 'Instagram Account Insights',
   description:
@@ -56,7 +55,6 @@ export const instagramAccountInsights: CustomToolEntry = {
 // Reads insights for a single media object.
 export const instagramMediaInsights: CustomToolEntry = {
   key: 'instagram_media_insights',
-  group: 'Insights',
   scopes: ['instagram_basic', 'instagram_manage_insights'],
   label: 'Instagram Media Insights',
   description:

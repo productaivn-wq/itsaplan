@@ -61,9 +61,20 @@ export function fileMarkerUrl(id: string): string {
   return mediaUrl(`/chat-attachments/${id}/raw?download=1`);
 }
 
+export function fileMarkerInlineUrl(id: string): string {
+  return mediaUrl(`/chat-attachments/${id}/raw`);
+}
+
+export function isImageAttachmentFilename(filename: string): boolean {
+  return /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test((filename || '').trim());
+}
+
 function linkFileMarkers(text: string): string {
   return text.replace(FILE_MARKER, (_, name: string, id: string) => {
     const label = name.replace(/[[\]\\]/g, '\\$&');
+    if (isImageAttachmentFilename(name)) {
+      return `![${label}](${fileMarkerInlineUrl(id)})`;
+    }
     return `[${label}](${fileMarkerUrl(id)})`;
   });
 }
@@ -85,10 +96,14 @@ export type MarkdownSegment =
   // every streamed token, so it is what tells an unchanged chart from a new one.
   | { kind: 'chart'; spec: ChartSpec; source: string }
   // An import review card the user confirms or discards (see AgentChatImportCard).
-  | { kind: 'issue-import'; importId: string; source: string };
+  | { kind: 'issue-import'; importId: string; source: string }
+  | { kind: 'diff'; content: string }
+  | { kind: 'mermaid'; content: string };
 
 const CHART_TAG = 'chart';
 const IMPORT_TAG = 'issue-import';
+const DIFF_TAG = 'diff';
+const MERMAID_TAG = 'mermaid';
 
 // The one field an issue-import fence carries: which draft the card shows. The
 // draft itself is read from the API by the card, so a model writing extra JSON
@@ -173,9 +188,19 @@ export function markdownSegments(value: string, options?: HtmlOptions): Markdown
       }
       source = [...(fence.body ? [fence.body] : []), ...lines.slice(i + 1, end)].join('\n');
     }
-    const spec = parseChartSpec(source);
-    const importId = spec ? null : parseImportRef(source);
-    if (spec) {
+    const spec =
+      fence.tag === DIFF_TAG || fence.tag === MERMAID_TAG ? null : parseChartSpec(source);
+    const importId =
+      spec || fence.tag === DIFF_TAG || fence.tag === MERMAID_TAG
+        ? null
+        : parseImportRef(source);
+    if (fence.tag === DIFF_TAG && source.trim()) {
+      flush();
+      segments.push({ kind: 'diff', content: source });
+    } else if (fence.tag === MERMAID_TAG && source.trim()) {
+      flush();
+      segments.push({ kind: 'mermaid', content: source });
+    } else if (spec) {
       flush();
       segments.push({ kind: 'chart', spec, source });
     } else if (importId) {

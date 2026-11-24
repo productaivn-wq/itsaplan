@@ -1,9 +1,8 @@
 import { Elysia } from 'elysia';
-import { errorAnswer } from './shared/lib';
+import { HttpError, pgErrorCode } from './shared/lib';
 import { authContext } from './shared/auth-context';
 import { projectRoutes } from './modules/projects';
 import { teamRoutes } from './modules/teams';
-import { workspaceRoutes } from './modules/workspaces';
 import { memberRoutes } from './modules/members';
 import { roleRoutes } from './modules/roles';
 import { inviteRoutes } from './modules/invites';
@@ -12,13 +11,14 @@ import { issueTypeRoutes } from './modules/issue-types';
 import { labelRoutes } from './modules/labels';
 import { aiAgentRoutes } from './modules/agents/core';
 import { integrationRoutes } from './modules/agents/integrations';
+import { llmRouterRoutes } from './modules/agents/llm-router';
 import { agentSkillRoutes } from './modules/agents/skills';
 import { agentToolRoutes } from './modules/agents/tools';
 import { customFieldRoutes } from './modules/custom-fields';
 import { issueTemplateRoutes } from './modules/issue-templates';
-import { projectTemplateRoutes } from './modules/project-templates';
 import { issueRoutes } from './modules/issues';
 import { initiativeRoutes } from './modules/initiatives';
+import { horizonRoutes } from './modules/horizons';
 import { cycleRoutes } from './modules/cycles';
 import { attachmentRoutes } from './modules/attachments';
 import { chatAttachmentRoutes } from './modules/chat-attachments';
@@ -31,24 +31,23 @@ import { actionRoutes } from './modules/actions';
 import { webhookRoutes } from './modules/webhooks';
 import { gitSettingsRoutes } from './modules/git';
 import { dashboardRoutes } from './modules/dashboards';
+import { directoryRoutes } from './modules/directory';
+import { portfolioRoutes } from './modules/portfolio';
+import { watchedMetricRoutes } from './modules/watched-metrics';
 import { noteBoardRoutes } from './modules/note-boards';
 import { documentRoutes } from './modules/documents';
-import { mentionRoutes } from './modules/mentions';
 import { analyticsRoutes } from './modules/analytics';
 import { chartRoutes } from './modules/charts';
 import { settingsRoutes } from './modules/settings';
-import { godRoutes } from './modules/god';
 import { agentScheduleRoutes } from './modules/agents/schedules';
-import { modelPriceRoutes } from './modules/agents/prices';
-import { runnerQueueRoutes } from './modules/agents/queue';
 import { agentRunnerRoutes } from './modules/agents/runner';
 import { agentChatRoutes } from './modules/agents/chat';
-import { agentInvocationRoutes } from './modules/agents/invocation';
+import { agentHitlRoutes } from './modules/agents/hitl';
+import { mcpClientRoutes } from './modules/mcp-client';
 import { notificationRoutes } from './modules/notifications';
 import { notificationSettingsRoutes } from './modules/notification-settings';
 import { notificationPreferenceRoutes } from './modules/notification-preferences';
 import { userPreferenceRoutes } from './modules/user-preferences';
-import { connectedAppRoutes } from './modules/connected-apps';
 import { telegramRoutes } from './modules/telegram';
 import { syncRoutes } from './modules/sync';
 import { linkPreviewRoutes } from './modules/link-previews';
@@ -67,15 +66,33 @@ import { linkPreviewRoutes } from './modules/link-previews';
 export const planner = new Elysia({ name: 'planner' })
   .use(authContext)
   .onError({ as: 'global' }, ({ code, error, set }) => {
-    const answer = errorAnswer(code, error);
-    if (answer.status === 500) console.error('[planner] unhandled error:', error);
-    set.status = answer.status;
-    return answer.body;
+    if (error instanceof HttpError) {
+      set.status = error.status;
+      return error.code ? { error: error.message, code: error.code } : { error: error.message };
+    }
+    if (code === 'VALIDATION') {
+      set.status = 400;
+      // The validator's first message is enough for the UI; the full report is
+      // large JSON that the client would just show verbatim.
+      const first = (error as { all?: { summary?: string }[] }).all?.[0]?.summary;
+      return { error: first ?? 'Invalid request body' };
+    }
+    if (code === 'NOT_FOUND') {
+      set.status = 404;
+      return { error: 'Not found' };
+    }
+    if (pgErrorCode(error) === '23505') {
+      set.status = 409;
+      return { error: 'A record with this name already exists.' };
+    }
+    // The message stays in the log only. drizzle puts the failed statement and its
+    // parameters in it, and the public routes would hand that to anyone.
+    console.error('[planner] unhandled error:', error);
+    set.status = 500;
+    return { error: 'Internal server error' };
   })
   .use(projectRoutes)
   .use(teamRoutes)
-  .use(projectTemplateRoutes)
-  .use(workspaceRoutes)
   .use(memberRoutes)
   .use(roleRoutes)
   .use(inviteRoutes)
@@ -84,12 +101,14 @@ export const planner = new Elysia({ name: 'planner' })
   .use(labelRoutes)
   .use(aiAgentRoutes)
   .use(integrationRoutes)
+  .use(llmRouterRoutes)
   .use(agentSkillRoutes)
   .use(agentToolRoutes)
   .use(customFieldRoutes)
   .use(issueTemplateRoutes)
   .use(issueRoutes)
   .use(initiativeRoutes)
+  .use(horizonRoutes)
   .use(cycleRoutes)
   .use(attachmentRoutes)
   .use(chatAttachmentRoutes)
@@ -102,24 +121,23 @@ export const planner = new Elysia({ name: 'planner' })
   .use(webhookRoutes)
   .use(gitSettingsRoutes)
   .use(agentScheduleRoutes)
-  .use(modelPriceRoutes)
   .use(agentRunnerRoutes)
-  .use(runnerQueueRoutes)
   .use(agentChatRoutes)
-  .use(agentInvocationRoutes)
+  .use(agentHitlRoutes)
+  .use(mcpClientRoutes)
   .use(dashboardRoutes)
+  .use(directoryRoutes)
+  .use(portfolioRoutes)
+  .use(watchedMetricRoutes)
   .use(noteBoardRoutes)
   .use(documentRoutes)
-  .use(mentionRoutes)
   .use(analyticsRoutes)
   .use(chartRoutes)
   .use(notificationRoutes)
   .use(notificationSettingsRoutes)
   .use(notificationPreferenceRoutes)
   .use(userPreferenceRoutes)
-  .use(connectedAppRoutes)
   .use(telegramRoutes)
   .use(syncRoutes)
   .use(linkPreviewRoutes)
-  .use(settingsRoutes)
-  .use(godRoutes);
+  .use(settingsRoutes);

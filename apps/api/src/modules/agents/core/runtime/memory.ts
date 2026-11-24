@@ -1,7 +1,8 @@
 import { Memory } from '@mastra/memory';
-import { db } from '@repo/db';
-import { sql } from 'drizzle-orm';
-import { likePattern } from '#shared/lib';
+import { PostgresStore } from '@mastra/pg';
+import { db, project, projectDocument } from '@repo/db';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { HttpError } from '#shared/lib';
 import { appendTextPart, toolArgsText, toolText } from '../../chat-parts';
 import { deleteContextUsage } from '../../chat-usage';
 import {
@@ -11,6 +12,7 @@ import {
   FAVORITES_LIMIT,
 } from '../../chat-favorites';
 import {
+  likePattern,
   searchTerm,
   snippetOf,
   summarize,
@@ -18,7 +20,6 @@ import {
   type ThreadRow,
 } from '../../chat-history';
 import { toIso } from '../helpers/dates';
-import { getStore } from './store';
 import type { ChatMessageDTO, ChatMessagePage, ChatPart, ChatThreadPage } from '../../model';
 
 // Conversation memory for internal agents. Threads and their messages are
@@ -43,10 +44,100 @@ const THREAD_PAGE_SIZE = 25;
 // typed.
 const TITLE_LIMIT = 80;
 
-export function buildMemory(lastMessages: number): Memory {
+let store: PostgresStore | null = null;
+let storeInitPromise: Promise<void> | null = null;
+
+function getStore(): PostgresStore {
+  if (!store) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL is required for agent memory');
+    store = new PostgresStore({ id: 'ai-agent-memory', connectionString: url });
+  }
+  return store;
+}
+
+/**
+ * Ensures Mastra PostgresStore tables (`mastra_threads`, `mastra_messages`, etc.)
+ * are initialized once per process before any memory read/write executes.
+ */
+export async function ensureMemoryStoreInitialized(): Promise<void> {
+  if (!storeInitPromise) {
+    storeInitPromise = getStore()
+      .init()
+      .catch((err) => {
+        storeInitPromise = null;
+        throw err;
+      });
+  }
+  await storeInitPromise;
+}
+
+export function assertTenantKnowledgeScope(callerTeamId: number, targetTeamId: number): void {
+  if (callerTeamId !== targetTeamId) {
+    throw new HttpError(
+      403,
+      'Cross-tenant knowledge access is forbidden.',
+      'CROSS_TENANT_FORBIDDEN',
+    );
+  }
+}
+
+export interface TenantKnowledgeHit {
+  id: number;
+  projectId: number;
+  title: string;
+  excerpt: string;
+  updatedAt: string;
+}
+
+export async function searchTenantKnowledge(opts: {
+  teamId: number;
+  projectId: number;
+  query: string;
+  limit?: number;
+}): Promise<TenantKnowledgeHit[]> {
+  const term = opts.query.trim();
+  if (!term) return [];
+  const pattern = `%${term}%`;
+  const rows = await db
+    .select({
+      id: projectDocument.id,
+      projectId: projectDocument.projectId,
+      title: projectDocument.title,
+      content: projectDocument.content,
+      updatedAt: projectDocument.updatedAt,
+    })
+    .from(projectDocument)
+    .innerJoin(project, eq(project.id, projectDocument.projectId))
+    .where(
+      and(
+        eq(project.teamId, opts.teamId),
+        eq(projectDocument.projectId, opts.projectId),
+        or(ilike(projectDocument.title, pattern), ilike(projectDocument.content, pattern)),
+      ),
+    )
+    .orderBy(desc(projectDocument.updatedAt))
+    .limit(Math.max(1, Math.min(20, opts.limit ?? 5)));
+
+  return rows.map((r) => ({
+    id: r.id,
+    projectId: r.projectId,
+    title: r.title,
+    excerpt: r.content.slice(0, 320),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+}
+
+export function buildMemory(
+  lastMessages: number,
+  opts?: { semanticRecall?: boolean },
+): Memory {
   return new Memory({
     storage: getStore(),
-    options: { lastMessages, semanticRecall: false },
+    options: {
+      lastMessages,
+      semanticRecall: opts?.semanticRecall ?? false,
+    },
   });
 }
 
@@ -80,6 +171,7 @@ export async function ensureThread(
   meta: ThreadMeta,
   title: string,
 ): Promise<void> {
+  await ensureMemoryStoreInitialized();
   const memory = getReadMemory();
   if (await memory.getThreadById({ threadId })) return;
   await memory.createThread({
@@ -98,6 +190,7 @@ export async function renameChatThread(
   resourceId: string,
   title: string,
 ): Promise<boolean> {
+  await ensureMemoryStoreInitialized();
   const memory = getReadMemory();
   const thread = await memory.getThreadById({ threadId, resourceId });
   if (!thread) return false;
@@ -108,6 +201,7 @@ export async function renameChatThread(
 // Deletes one of the caller's chat threads with its messages. Returns false when the
 // thread does not exist or belongs to someone else, so the caller maps it to a 404.
 export async function deleteChatThread(threadId: string, resourceId: string): Promise<boolean> {
+  await ensureMemoryStoreInitialized();
   const memory = getReadMemory();
   const thread = await memory.getThreadById({ threadId, resourceId });
   if (!thread) return false;
@@ -117,12 +211,12 @@ export async function deleteChatThread(threadId: string, resourceId: string): Pr
   return true;
 }
 
-// Deletes every thread bound to the given agent, project, issue or schedule, with its
+// Deletes every thread bound to the given agent, project or schedule, with its
 // messages, and returns how many were deleted. Called when that binding goes away.
 export async function deleteThreadsWhere(
-  binding:
-    { agentId: number } | { projectId: number } | { issueId: number } | { scheduleId: number },
+  binding: { agentId: number } | { projectId: number } | { scheduleId: number },
 ): Promise<number> {
+  await ensureMemoryStoreInitialized();
   const memory = getReadMemory();
   const { threads } = await memory.listThreads({ filter: { metadata: binding }, perPage: false });
   for (const thread of threads) {
@@ -141,9 +235,7 @@ export async function listChatThreads(
   agentId: number,
   opts: ThreadListOpts = {},
 ): Promise<ChatThreadPage> {
-  // The queries below read Mastra's tables in raw SQL, which skips its lazy init: an
-  // instance whose agents never ran has no tables yet.
-  await getStore().init();
+  await ensureMemoryStoreInitialized();
   if (opts.favorites) return favoriteChatThreads(resourceId, agentId);
   const term = searchTerm(opts.q);
   const page = opts.page ?? 0;
@@ -265,6 +357,7 @@ export async function ownsChatThread(
   resourceId: string,
   agentId: number,
 ): Promise<boolean> {
+  await ensureMemoryStoreInitialized();
   const thread = await getReadMemory().getThreadById({ threadId, resourceId });
   return thread?.metadata?.agentId === agentId;
 }
@@ -277,6 +370,7 @@ export async function getChatThreadMessages(
   resourceId: string,
   page = 0,
 ): Promise<ChatMessagePage | null> {
+  await ensureMemoryStoreInitialized();
   const memory = getReadMemory();
   const thread = await memory.getThreadById({ threadId, resourceId });
   if (!thread) return null;

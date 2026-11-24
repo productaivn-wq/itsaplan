@@ -72,5 +72,8 @@
   "dragFailed": "تعذّر نقل الدورة",
   "notFound": "الدورة غير موجودة.",
   "defaultName": "سبرنت {n}",
-  "issuesDone": "المهام المنجزة"
+  "issuesDone": "المهام المنجزة",
+  "minutes": "{count, plural, one {# min} other {# mins}}",
+  "minutesShort": "{count}m",
+  "minutesLeft": "{count}m left"
 }

@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Download, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Attachment } from '@/lib/api/endpoints/attachments';
-import { attachmentPreviewKind } from '@/components/common/attachments/attachmentPreviewKind';
+import { isImage, isVideo } from '@/components/common/editor/attachmentEmbed';
 import AttachmentThumb from '@/components/common/attachments/AttachmentThumb';
 import AttachmentViewer from '@/components/common/attachments/AttachmentViewer';
 import ConfirmDialog from '@/components/common/overlay/ConfirmDialog';
@@ -98,7 +98,7 @@ export default function InitiativeAttachments({ initiativeId }: { initiativeId: 
       ) : (
         <ul className="mt-3 space-y-1">
           {items.map((a) => {
-            const viewable = attachmentPreviewKind(a) !== null;
+            const viewable = isImage(a) || isVideo(a);
             return (
               <li
                 key={a.id}
@@ -117,7 +117,7 @@ export default function InitiativeAttachments({ initiativeId }: { initiativeId: 
                   <p className="truncate text-xs" title={a.filename}>
                     {a.filename}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{formatSize(a.sizeBytes)}</p>
+                  <p className="text-xs text-muted-foreground">{formatSize(a.sizeBytes)}</p>
                 </div>
                 <Button variant="ghost" size="icon" className="size-7" asChild>
                   <a

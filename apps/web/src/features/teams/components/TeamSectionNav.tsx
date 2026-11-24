@@ -1,21 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import {
   Bell,
   BookText,
   Bot,
-  ChevronRight,
-  Clock3,
-  Coins,
+  Cpu,
   FolderKanban,
   GitBranch,
   Info,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Layers,
+  Network,
   Plug,
-  Radio,
+  Route,
   ShieldCheck,
   Users,
   Wrench,
@@ -23,174 +19,112 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Team } from '@/lib/api/endpoints/teams';
-import { cn } from '@/lib/utils';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { teamSectionPath, type TeamSection } from '@/utils/paths';
 import { useTeamQuery } from '@/services/teams.service';
-import { useWorkspacesQuery } from '@/services/workspaces.service';
-import { titlePath, useDocumentTitle } from '@/hooks/useDocumentTitle';
-import {
-  activeNavItem,
-  SectionNav,
-  sectionNavIdleClass,
-  sectionNavItemClass,
-  type SectionNavItem,
-} from '@/components/common/page/SectionNav';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { SectionNav, type SectionNavItem } from '@/components/common/page/SectionNav';
 
-// The sections of the open team, as the page's last rail: the team itself, its
-// projects, the roles they assign from and its members, then the AI group — the
-// integration credentials the agents run on, the agents themselves, the skills they
-// load, the tools they can call, the run queue and what they spent — with Git, what MCP
-// clients reach and the notification providers last. The counts come with the team
-// list, so each is shown before its section is opened. A section the caller may not read
-// is left out, and the AI group with it once none of them is readable. Collapsed, the
-// rail shows the icons of every section, the AI group's included, without the group.
-export default function TeamSectionNav({
-  team,
-  collapsed,
-  onToggleCollapsed,
-}: {
-  team: Team;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
-}) {
-  const t = useTranslations('teams.sections');
-  const tNav = useTranslations('nav');
-  const tScreens = useTranslations('meta.screens');
-  const pathname = usePathname();
+// The sections of the open team, organized as three always-visible groups in the
+// second rail: Workspace & Governance, AI & Capabilities, and Platform & Delivery.
+// Counts come with the team list so each section shows its badge before being opened.
+export default function TeamSectionNav({ team }: { team: Team }) {
+  const t = useTranslations('teams');
+  const pathname = useInstantPathname();
   const permissions = useTeamQuery(team.id).data?.permissions;
 
   function section(
     id: TeamSection,
     label: string,
     icon: LucideIcon,
-    count?: number,
+    badge?: number | string,
   ): SectionNavItem {
     return {
       id,
       label,
       icon,
-      badge: count === undefined ? undefined : String(count),
+      badge: badge === undefined ? undefined : String(badge),
       href: teamSectionPath(team.ref, id),
     };
   }
 
-  const runsTeam = team.role === 'owner' || team.role === 'manager';
-  const managesWorkspace =
-    useWorkspacesQuery().data?.some((w) => w.id === team.workspaceId && w.role !== null) ?? false;
-  const top = [
-    section('info', t('info.title'), Info),
-    section('projects', t('projects.title'), FolderKanban, team.projectCount),
-    // The roles are managed by the team's owner and managers, so the section is theirs.
-    ...(runsTeam ? [section('roles', t('roles.title'), ShieldCheck, team.roleCount)] : []),
-    section('members', t('members.title'), Users, team.memberCount),
-  ];
-  const ai = [
-    ...(permissions?.integrations.read
-      ? [section('integrations', t('integrations.title'), Plug, team.integrationCount)]
+  const isManagerOrOwner = team.role === 'owner' || team.role === 'manager';
+
+  const workspace: SectionNavItem[] = [
+    section('capabilities', t('sections.capabilities.title'), Layers),
+    section('projects', t('sections.projects.title'), FolderKanban, team.projectCount),
+    section('org-chart', t('sections.orgChart.title'), Network),
+    ...(isManagerOrOwner
+      ? [section('roles', t('sections.roles.title'), ShieldCheck, team.roleCount)]
       : []),
+    section('members', t('sections.members.title'), Users, team.memberCount),
+    section('info', t('sections.info.title'), Info),
+  ];
+
+  const mcpBadge = team.mcpEnabled
+    ? `${team.mcpEnabledProjectCount ?? 0}/${team.projectCount}`
+    : 'OFF';
+
+  const ai: SectionNavItem[] = [
     ...(permissions?.ai_agents.read
-      ? [section('ai-agents', t('agents.title'), Bot, team.agentCount)]
+      ? [section('ai-agents', t('sections.agents.title'), Bot, team.agentCount)]
       : []),
     ...(permissions?.agent_skills.read
-      ? [section('agent-skills', t('agentSkills.title'), BookText, team.skillCount)]
+      ? [section('agent-skills', t('sections.agentSkills.title'), BookText, team.skillCount)]
       : []),
     ...(permissions?.agent_tools.read
-      ? [section('agent-tools', t('agentTools.title'), Wrench, team.toolCount)]
+      ? [section('agent-tools', t('sections.agentTools.title'), Wrench, team.toolCount)]
       : []),
-    // The runs of every project, for whoever runs the team or its workspace; everyone else
-    // reads them in each project.
-    ...(runsTeam || managesWorkspace ? [section('queue', t('queue.title'), Clock3)] : []),
-    // Whoever runs the team reads every project there, anyone else the projects where
-    // their role grants agent_usage.
-    ...(runsTeam || permissions?.agent_usage.read
-      ? [section('analytics', t('analytics.title'), Coins)]
+    section('mcp', t('sections.mcp.title'), Cpu, mcpBadge),
+    ...(permissions?.integrations.read
+      ? [section('llm-router', t('sections.llmRouter.title'), Route)]
       : []),
   ];
-  // The notification providers are the owner's: nobody else reads or writes them.
-  const bottom = [
-    ...(runsTeam ? [section('git', 'Git', GitBranch)] : []),
-    section('mcp', t('mcp.title'), Radio),
-    ...(team.role === 'owner' ? [section('notifications', t('notifications.title'), Bell)] : []),
+
+  const platform: SectionNavItem[] = [
+    ...(permissions?.integrations.read
+      ? [section('integrations', t('sections.integrations.title'), Plug, team.integrationCount)]
+      : []),
+    ...(isManagerOrOwner
+      ? [section('git', t('sections.git.title'), GitBranch)]
+      : []),
+    ...(team.role === 'owner'
+      ? [section('notifications', t('sections.notifications.title'), Bell)]
+      : []),
   ];
 
-  const active = activeNavItem([...top, ...ai, ...bottom], pathname);
-  const activeId = active?.id ?? null;
-  useDocumentTitle(titlePath(team.name, tScreens('teamSettings'), active?.label));
-  const aiActive = ai.some((entry) => entry.id === activeId);
-  // Null until the user opens or closes the group themselves; until then it follows
-  // whichever section is open.
-  const [toggled, setToggled] = useState<boolean | null>(null);
-  const aiOpen = toggled ?? aiActive;
-
-  const toggleLabel = collapsed ? t('expand') : t('collapse');
-  const toggle = (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
-          aria-label={toggleLabel}
-          aria-expanded={!collapsed}
-          onClick={onToggleCollapsed}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="size-4 rtl:-scale-x-100" />
-          ) : (
-            <PanelLeftClose className="size-4 rtl:-scale-x-100" />
-          )}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="right">{toggleLabel}</TooltipContent>
-    </Tooltip>
-  );
-
-  if (collapsed) {
-    return (
-      <div className="space-y-2">
-        <div className="flex w-8 justify-center">{toggle}</div>
-        <SectionNav
-          sections={[...top, ...ai, ...bottom]}
-          activeId={activeId}
-          label={team.name}
-          collapsed
-        />
-      </div>
-    );
-  }
+  const allSections = [...workspace, ...ai, ...platform];
+  const activeId = allSections.find((entry) => entry.href === pathname)?.id ?? null;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 px-2">
-        <h2 className="min-w-0 truncate text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {team.name}
-        </h2>
-        <div className="ms-auto">{toggle}</div>
+    <div className="space-y-4">
+      <h2 className="truncate px-2 text-xs font-semibold tracking-wide text-foreground">
+        {team.name}
+      </h2>
+
+      <div className="space-y-1">
+        <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          {t('navGroups.workspace')}
+        </p>
+        <SectionNav sections={workspace} activeId={activeId} label={t('navGroups.workspace')} />
       </div>
-      <div className="space-y-0.5">
-        <SectionNav sections={top} activeId={activeId} label={team.name} />
-        {ai.length > 0 && (
-          <Collapsible open={aiOpen} onOpenChange={setToggled}>
-            <CollapsibleTrigger className={cn(sectionNavItemClass, sectionNavIdleClass)}>
-              <Bot className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1 truncate">{tNav('aiTeam')}</span>
-              <ChevronRight
-                className={cn(
-                  'size-4 shrink-0 text-muted-foreground transition-transform duration-150',
-                  aiOpen && 'rotate-90',
-                )}
-              />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="ps-4">
-              <SectionNav sections={ai} activeId={activeId} label={tNav('aiTeam')} />
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-        <SectionNav sections={bottom} activeId={activeId} label={team.name} />
-      </div>
+
+      {ai.length > 0 && (
+        <div className="space-y-1">
+          <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {t('navGroups.ai')}
+          </p>
+          <SectionNav sections={ai} activeId={activeId} label={t('navGroups.ai')} />
+        </div>
+      )}
+
+      {platform.length > 0 && (
+        <div className="space-y-1">
+          <p className="px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {t('navGroups.platform')}
+          </p>
+          <SectionNav sections={platform} activeId={activeId} label={t('navGroups.platform')} />
+        </div>
+      )}
     </div>
   );
 }

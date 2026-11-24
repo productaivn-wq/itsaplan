@@ -19,8 +19,7 @@ import {
 } from '@/components/ui/table';
 
 // The projects of the team. A row opens the project in the side panel; the arrow in
-// its Actions cell opens the project itself, for the active ones the reader is a member
-// of: an archived project is restored before it is opened.
+// its Actions cell opens the project itself, for the ones the reader is a member of.
 export default function TeamProjectsTable({
   projects,
   onSelect,
@@ -71,7 +70,7 @@ export default function TeamProjectsTable({
                 <div className="flex min-w-0 items-start gap-2.5">
                   <Badge
                     variant="outline"
-                    className="min-w-12 shrink-0 justify-center rounded px-1 py-0 font-mono text-[10px] text-muted-foreground"
+                    className="min-w-12 shrink-0 justify-center rounded px-1 py-0 font-mono text-xs text-muted-foreground"
                   >
                     {project.key}
                   </Badge>
@@ -81,11 +80,6 @@ export default function TeamProjectsTable({
                   >
                     {project.name}
                   </span>
-                  {project.archivedAt && (
-                    <Badge variant="secondary" className="shrink-0">
-                      {t('archived')}
-                    </Badge>
-                  )}
                 </div>
               </TableCell>
 
@@ -118,7 +112,7 @@ export default function TeamProjectsTable({
               </TableCell>
 
               <TableCell className="px-3 py-2 text-end">
-                {project.isMember && !project.archivedAt && (
+                {project.isMember && (
                   <Button
                     asChild
                     variant="ghost"

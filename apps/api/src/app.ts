@@ -1,16 +1,17 @@
+import { createHmac, randomBytes } from 'node:crypto';
 import {
   auth,
-  oauthAuthorizationServerMetadata,
-  oauthProtectedResourceMetadata,
-  openIdConfiguration,
-  OIDC_PROVIDER_ID,
+  getSessionFromHeaders,
+  oAuthDiscoveryMetadata,
+  oAuthProtectedResourceMetadata,
   trustedOrigins,
   getAuthSettings,
   hasConfiguredGoogle,
   hasConfiguredOidc,
   getOidcLabel,
 } from '@repo/auth';
-import { db, hasConfiguredEmailProvider, user } from '@repo/db';
+import { db, hasConfiguredEmailProvider, session as sessionTable, user } from '@repo/db';
+import { eq } from 'drizzle-orm';
 import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
 import { Elysia } from 'elysia';
@@ -18,13 +19,10 @@ import { planner } from './planner';
 import { mountMcp } from './mcp/mount';
 import { setMcpApp } from './mcp/app-ref';
 import { gitWebhookRoutes } from './modules/git/webhook';
+import { integrationOAuthCallbackRoutes } from './modules/agents/integrations/oauth-callback';
 import { scimRoutes } from './modules/scim';
-import { currentUserRoutes } from './modules/current-user';
-import { EmbedSitesSchema } from './modules/settings/model';
-import { getEmbedSites } from './modules/settings/service';
 import { syncOidcGroupsAfterCallback } from './modules/scim/oidc-sync';
 import { normalizeOpenApiResponse } from './openapi';
-import { requestTracking } from './shared/request-tracker';
 import pkg from '../../../package.json';
 
 const apiUrl = (process.env.API_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
@@ -49,40 +47,22 @@ JSON errors use \`{ "error": "message" }\` and may also include a stable \`code\
 
 For agent clients, use the MCP endpoint at [${apiUrl}/mcp](${apiUrl}/mcp). SCIM, worker-internal routes, and repository webhooks use the separate credentials shown on their operations.`;
 
-// better-auth serves the OIDC callback at /callback/oidc; identity providers keep the
-// redirect URI they were registered with, which is this path.
-const LEGACY_OIDC_CALLBACK = `/api/auth/oauth2/callback/${OIDC_PROVIDER_ID}`;
-const OIDC_CALLBACK = `/api/auth/callback/${OIDC_PROVIDER_ID}`;
-
-// A browser attaches the session cookie to any request to this origin, including one
-// a page on another origin (a sibling subdomain, say) makes on the visitor's behalf.
-// better-auth guards its own /api/auth/* with an origin check; this extends the same
-// guard to the rest of the api. It only applies to state-changing, cookie-driven
-// requests: an api key or bearer token is not sent automatically by a browser, so it
-// is not a CSRF vector (MCP and SCIM use bearer tokens, webhooks are signed), and the
-// server-side calls the web makes carry neither Origin nor Sec-Fetch-Site.
-const CSRF_SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-// The api's own origin counts too: the /docs page sends its "Try it" requests from it.
-const csrfTrustedOrigins = [...trustedOrigins, new URL(apiUrl).origin];
-
-function isCrossSiteCookieRequest(request: Request): boolean {
-  if (CSRF_SAFE_METHODS.has(request.method)) return false;
-  if (new URL(request.url).pathname.startsWith('/api/auth/')) return false;
-  const cookie = request.headers.get('cookie');
-  if (!cookie || !cookie.includes('session_token')) return false;
-  if (request.headers.get('authorization') || request.headers.get('x-api-key')) return false;
-  const origin = request.headers.get('origin');
-  if (origin !== null) return !csrfTrustedOrigins.includes(origin);
-  // No Origin: trust Sec-Fetch-Site when the browser sent it, allow its absence
-  // (non-browser clients that happen to carry a cookie are not page-driven).
-  const site = request.headers.get('sec-fetch-site');
-  return site !== null && site !== 'same-origin' && site !== 'none';
-}
-
 // The assembled Elysia app, without `.listen()`. `index.ts` imports this and
 // binds the port; tests import it and pass it to Eden Treaty to drive routes in
 // memory (no network). Keep the chain unbroken so `type App` stays accurate.
-export const app = new Elysia()
+let appAliasHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+
+// Disable Bun's native systemRouter so Elysia's AOT router constructs plain
+// configurable params objects; Bun 1.4.x native req.params properties are
+// non-configurable, causing elysia@1.4.32 prepareDefaultInput to throw 500
+// on every route using t.Numeric() params (e.g. /teams/:teamId/*).
+export const app = new Elysia({ systemRouter: false })
+  .onRequest(({ request }) => {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/sync/rev') || url.pathname.includes('/board')) {
+      console.log(`[API ${new Date().toISOString()}] ${request.method} ${url.pathname}${url.search}`);
+    }
+  })
   .use(
     cors({
       origin: trustedOrigins,
@@ -91,14 +71,6 @@ export const app = new Elysia()
       allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
     }),
   )
-  // Before the routes: a hook applies only to the routes registered after it.
-  .use(requestTracking)
-  .onRequest(({ request, set }) => {
-    if (isCrossSiteCookieRequest(request)) {
-      set.status = 403;
-      return { error: 'Cross-site request refused', code: 'CSRF_ORIGIN_REJECTED' };
-    }
-  })
   .onAfterHandle({ as: 'global' }, ({ request, response }) =>
     normalizeOpenApiResponse(request, response),
   )
@@ -126,11 +98,6 @@ export const app = new Elysia()
         tags: [
           { name: 'Projects', description: 'Projects and the full work items view' },
           { name: 'Teams', description: 'Teams that own projects' },
-          {
-            name: 'Project Templates',
-            description: 'Saved project configurations new projects are created from',
-          },
-          { name: 'Workspaces', description: 'Workspaces that own teams, and who manages them' },
           { name: 'Members', description: 'Project membership and roles' },
           { name: 'Roles', description: 'Project roles and their permissions' },
           { name: 'Invites', description: 'Project invites (create, accept, reject)' },
@@ -141,6 +108,11 @@ export const app = new Elysia()
           {
             name: 'Integrations',
             description: 'Stored integration credentials (LLM keys and tool creds)',
+          },
+          {
+            name: 'LLM Router',
+            description:
+              'Sovereign LLMProviderRouter priority, catalog, cooldowns, telemetry, and live diagnostics.',
           },
           { name: 'Agent Skills', description: 'Skill library given to internal agents' },
           {
@@ -186,11 +158,17 @@ export const app = new Elysia()
               'Repository integration: the inbound pull request webhook and its per-project settings',
           },
           { name: 'Agent Schedules', description: 'Recurring tasks for internal agents' },
-          { name: 'Model Prices', description: 'The prices a workspace costs model calls at' },
           { name: 'Dashboards', description: 'Saved analytics dashboards' },
+          {
+            name: 'Directory',
+            description: 'Synced project contacts and communication channels',
+          },
+          {
+            name: 'Watched Metrics',
+            description: 'Per-project watched KPIs, targets, thresholds, and readings',
+          },
           { name: 'Documents', description: 'Shared project Docs pages' },
           { name: 'Link previews', description: 'Public web link metadata' },
-          { name: 'Mentions', description: 'Who an @username reaches where it is written' },
           { name: 'Note boards', description: 'Freeform canvases of sticky notes' },
           { name: 'Notifications', description: "The session user's inbox notifications" },
           { name: 'Sync', description: 'Change markers a client polls for live refresh' },
@@ -275,35 +253,146 @@ export const app = new Elysia()
   // OAuth discovery lives at the API origin because MCP clients resolve the
   // authorization server from protected-resource metadata before entering the
   // Better Auth base path.
-  //
-  // An issuer with a path is looked up with the path after the well-known segment
-  // (RFC 8414 §3), and some clients fall back to OpenID discovery, so each document
-  // answers under any suffix; the proxy decides which of these paths reach the api.
   .get('/.well-known/oauth-authorization-server', ({ request }) =>
-    oauthAuthorizationServerMetadata(request),
+    oAuthDiscoveryMetadata(auth)(request),
   )
-  .get('/.well-known/oauth-authorization-server/*', ({ request }) =>
-    oauthAuthorizationServerMetadata(request),
+  .get('/.well-known/oauth-protected-resource/mcp', ({ request }) =>
+    oAuthProtectedResourceMetadata(auth)(request),
   )
-  .get('/.well-known/openid-configuration', ({ request }) => openIdConfiguration(request))
-  .get('/.well-known/openid-configuration/*', ({ request }) => openIdConfiguration(request))
-  .get('/.well-known/oauth-protected-resource', () => oauthProtectedResourceMetadata())
-  .get('/.well-known/oauth-protected-resource/*', () => oauthProtectedResourceMetadata())
+  // 1-Click Sovereign Agentic OS & Local Google SSO endpoint (SPEC-ITSAPLAN-AUTH-VAULT-311 / hardened by 53.ACT.588 & 53.ACT.592).
+  // Strictly fail-closed in production, non-loopback hosts/peers, and cross-site/non-JSON CSRF requests; requires configured HMAC secret.
+  .post('/api/auth/sso-instant', async ({ request, server }) => {
+    const reqUrl = new URL(request.url);
+    const hostname = reqUrl.hostname.toLowerCase();
+    const isLoopback =
+      hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1' || hostname === '[::1]';
+    const LOOPBACK_PEER_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+    const peerIp = server?.requestIP?.(request)?.address ?? null;
+    const isPeerLoopback = server ? peerIp !== null && LOOPBACK_PEER_IPS.has(peerIp) : true;
+    if (process.env.NODE_ENV === 'production' || !isLoopback || !isPeerLoopback) {
+      return new Response(
+        JSON.stringify({ error: 'Local instant SSO is disabled outside loopback development environments' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const contentType = (request.headers.get('content-type') ?? '').toLowerCase();
+    if (!contentType.startsWith('application/json')) {
+      return new Response(
+        JSON.stringify({ error: 'Local instant SSO requires application/json Content-Type' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const secFetchSite = (request.headers.get('sec-fetch-site') ?? '').trim().toLowerCase();
+    const ALLOWED_FETCH_SITES = new Set(['', 'same-origin', 'same-site', 'none']);
+    if (!ALLOWED_FETCH_SITES.has(secFetchSite)) {
+      return new Response(
+        JSON.stringify({ error: 'Cross-site requests to local instant SSO are forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const origin = (request.headers.get('origin') ?? '').trim().toLowerCase();
+    const ALLOWED_LOOPBACK_ORIGINS = new Set([
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ]);
+    if (origin && !ALLOWED_LOOPBACK_ORIGINS.has(origin)) {
+      return new Response(
+        JSON.stringify({ error: 'Origin is not in the loopback SSO allowlist' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const secret =
+      process.env.ITSAPLAN_RESOLVED_BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      return new Response(
+        JSON.stringify({ error: 'SSO signing secret is not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const owners = await db
+      .select()
+      .from(user)
+      .where(eq(user.role, 'god'));
+    const activeOwner = owners.find((u) => u.active !== false) ?? owners[0];
+    if (!activeOwner) {
+      return new Response(JSON.stringify({ error: 'No active owner account found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const rawToken = randomBytes(24).toString('base64url').slice(0, 32);
+    const sessionId = randomBytes(16).toString('hex');
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    await db.insert(sessionTable).values({
+      id: sessionId,
+      token: rawToken,
+      userId: activeOwner.id,
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+      ipAddress: peerIp ?? '127.0.0.1',
+      userAgent: request.headers.get('user-agent') ?? 'ACCORD-Sovereign-SSO/1.0',
+    });
+    const sig = encodeURIComponent(
+      createHmac('sha256', secret).update(rawToken).digest('base64'),
+    );
+    const secureFlag = reqUrl.protocol === 'https:' ? '; Secure' : '';
+    const cookieVal = `better-auth.session_token=${rawToken}.${sig}; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax${secureFlag}`;
+    return new Response(
+      JSON.stringify({
+        redirect: false,
+        user: {
+          id: activeOwner.id,
+          email: activeOwner.email,
+          name: activeOwner.name,
+          role: activeOwner.role,
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': cookieVal,
+        },
+      },
+    );
+  })
   // better-auth: forward every /api/auth/* request to its handler. The OIDC
   // callback gets one extra step afterwards: folding the provider's `groups` claim
   // into the SCIM group tables, so a group mapped to a project in god mode grants
   // access on an OIDC-only instance too, not just one that also runs a SCIM sync.
   .all('/api/auth/*', async ({ request }) => {
-    const url = new URL(request.url);
-    if (url.pathname === LEGACY_OIDC_CALLBACK) {
-      url.pathname = OIDC_CALLBACK;
-      request = new Request(url.href, request);
-    }
     const response = await auth.handler(request);
-    if (url.pathname === OIDC_CALLBACK) await syncOidcGroupsAfterCallback(response);
+    if (new URL(request.url).pathname.startsWith('/api/auth/oauth2/callback/')) {
+      await syncOidcGroupsAfterCallback(response);
+    }
     return response;
   })
-  .use(currentUserRoutes)
+  // Example protected handler: read the session from better-auth.
+  .get(
+    '/me',
+    async ({ request }) => {
+      const session = await getSessionFromHeaders(request.headers);
+      // A deactivated account is not signed in as far as the app is concerned:
+      // every planner route answers 401 for it, and this is what the screens ask
+      // first. Deactivation arrives over SCIM, after the session was opened.
+      if (!session || session.user.active === false) return { authenticated: false };
+      return { authenticated: true, user: session.user };
+    },
+    {
+      detail: {
+        tags: ['System'],
+        summary: 'Get the current session user',
+        description:
+          'Resolve the request credentials to a session and return the user it belongs to. ' +
+          'Without a session, or for a deactivated account, it answers ' +
+          '`{ authenticated: false }` instead of failing.',
+      },
+    },
+  )
   // What the sign-in and sign-up screens need before there is a session: whether
   // registration is open, invite-only, or closed, and which sign-in methods are
   // offered. Public on purpose — the screens are reached logged out. It carries no
@@ -342,40 +431,49 @@ export const app = new Elysia()
       },
     },
   )
-  // The sites the instance owner lets show the public pages in a frame, which the web app
-  // writes into frame-ancestors on those pages. Public on purpose: the web app's proxy
-  // reads it with no session, and every public page names the same sites in its header.
-  .get('/embed-sites', () => getEmbedSites(), {
-    response: { 200: EmbedSitesSchema },
-    detail: {
-      tags: ['System'],
-      summary: 'Get the sites that may embed public pages',
-      description:
-        'Report the sites that may show the shared work items and views, and the public ' +
-        'pages, in a frame. Public.',
-    },
-  })
   // Root doubles as the liveness/health endpoint.
-  .get('/', () => ({ name: "It's a Plan api", status: 'ok' }), {
+  .get('/', () => ({ name: "ACCORD API (It's a Plan)", product: 'ACCORD', status: 'ok' }), {
     detail: {
       tags: ['System'],
       summary: 'Check that the api is up',
       description: 'Liveness probe: returns the api name and `status: "ok"`.',
     },
   })
+  .get('/health', () => ({ status: 'ok' }), {
+    detail: {
+      tags: ['System'],
+      summary: 'Check that the api is up',
+      description: 'Health probe.',
+    },
+  })
   // Inbound repository webhook receiver (authenticated by its per-project secret).
   .use(gitWebhookRoutes)
+  // Public OAuth2 integration callback (authenticated by AES-GCM sealed state).
+  .use(integrationOAuthCallbackRoutes)
   // SCIM 2.0 provisioning (authenticated by the instance SCIM bearer token). Mounted
   // here rather than under the planner: the planner's session guard would answer 401
   // before the bearer check runs, and its error handler emits a body SCIM does not
   // understand.
   .use(scimRoutes)
+  // Alias /api/projects and /api/projects/* to /projects and /projects/* for REST callers using /api prefix
+  .all('/api/projects', ({ request }) => {
+    const url = new URL(request.url);
+    url.pathname = '/projects';
+    return appAliasHandler!(new Request(url.toString(), request));
+  })
+  .all('/api/projects/*', ({ request }) => {
+    const url = new URL(request.url);
+    url.pathname = url.pathname.replace(/^\/api/, '');
+    return appAliasHandler!(new Request(url.toString(), request));
+  })
   // Planner API: projects, issues, and their dependent entities.
   .use(planner);
 
-// MCP endpoint (/mcp). Added after the chain so `type App` (the Eden client
+appAliasHandler = (req) => app.handle(req);
+
+// MCP endpoint (POST /mcp). Added after the chain so `type App` (the Eden client
 // type) stays the REST surface; the MCP endpoint is JSON-RPC, not called via Eden.
-// Its tools are generated from the routes tagged with mcpTool().
+// Its tools are generated from the planner routes tagged with mcpTool().
 mountMcp(app);
 
 // Hands the assembled app to the internal agent runtime, which builds an agent's

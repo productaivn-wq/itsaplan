@@ -13,17 +13,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSettingsCan } from '../../context/settingsPermission';
 
 // One sortable state row. The whole row is the sortable node; the grip is the
-// drag handle so the Edit/Delete buttons stay clickable.
+// drag handle so the Edit/Delete buttons stay clickable. A backlog state cannot
+// be deleted, so its delete action is hidden.
 export function SettingsStateRow({
   column,
   autoAssignee,
-  deletable,
   onEdit,
   onDelete,
 }: {
   column: Column;
   autoAssignee?: Assignee;
-  deletable: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -71,7 +70,7 @@ export function SettingsStateRow({
               <Avatar
                 name={autoAssignee.name}
                 image={autoAssignee.image}
-                className="size-4 text-[8px]"
+                className="size-4 text-xs"
               />
               {autoAssignee.name}
             </span>
@@ -98,7 +97,7 @@ export function SettingsStateRow({
             <Pencil className="size-4" />
           </Button>
         )}
-        {can('delete') && deletable && (
+        {can('delete') && column.stateType !== 'backlog' && (
           <Button
             variant="ghost"
             size="icon"

@@ -12,7 +12,7 @@ export type ThemePreference = 'light' | 'dark' | 'system';
 
 export type IssueOpenMode = 'panel' | 'page';
 
-export type StartPage = 'inbox' | 'dashboard' | 'work-items' | 'initiatives';
+export type StartPage = 'inbox' | 'dashboard' | 'work-items' | 'initiatives' | 'workspace';
 
 export type IssueStatsView = 'compact' | 'timeline';
 

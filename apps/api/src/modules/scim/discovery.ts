@@ -19,8 +19,7 @@ export const SERVICE_PROVIDER_CONFIG = {
     {
       type: 'oauthbearertoken',
       name: 'OAuth Bearer Token',
-      description:
-        'Authentication with the workspace SCIM token, generated in the workspace settings.',
+      description: 'Authentication with the instance SCIM token, generated in god mode.',
       specUri: 'https://datatracker.ietf.org/doc/html/rfc6750',
       primary: true,
     },
@@ -47,7 +46,7 @@ export const RESOURCE_TYPES = [
     id: 'Group',
     name: 'Group',
     endpoint: '/Groups',
-    description: 'A group of accounts. What it grants is configured in the workspace settings.',
+    description: 'A group of accounts. What it grants is configured in god mode.',
     schema: 'urn:ietf:params:scim:schemas:core:2.0:Group',
     schemaExtensions: [],
     meta: { resourceType: 'ResourceType', location: `${SCIM_BASE_URL}/ResourceTypes/Group` },
@@ -113,7 +112,7 @@ export const SCHEMAS = [
   {
     id: 'urn:ietf:params:scim:schemas:core:2.0:Group',
     name: 'Group',
-    description: 'A group of accounts. What it grants is configured in the workspace settings.',
+    description: 'A group of accounts. What it grants is configured in god mode.',
     attributes: [
       attribute({ name: 'displayName', required: true, uniqueness: 'server' }),
       attribute({

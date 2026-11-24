@@ -1,6 +1,6 @@
 {
   "name": "@itsaplan/runner",
-  "version": "0.8.0",
+  "version": "0.5.2",
   "description": "Runs an Itsaplan external agent's queued tasks and answers its chat on your own machine",
   "keywords": [
     "itsaplan",
@@ -20,8 +20,7 @@
     "antigravity",
     "opencode",
     "pi",
-    "omp",
-    "mastracode"
+    "omp"
   ],
   "homepage": "https://github.com/croffasia/itsaplan/tree/main/packages/runner#readme",
   "repository": {
@@ -54,7 +53,7 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@types/bun": "latest",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.2.0",
     "eslint": "^9.39.0",
     "typescript": "^6.0.3"
   }

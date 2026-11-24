@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { ChevronsUpDown, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Project } from '@/lib/api/endpoints/projects';
-import { BrandMark } from '@/cloud';
+import ItsAPlanMark from '@/components/brand/ItsAPlanMark';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 
 export default function ProjectSwitcherTrigger({
@@ -18,14 +18,14 @@ export default function ProjectSwitcherTrigger({
       title={current ? `${current.name} (${current.key}) · ${current.teamName}` : t('projects')}
       className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
     >
-      <BrandMark className="size-9! shrink-0 text-sidebar-foreground" />
-      <div className="grid min-w-0 flex-1 gap-1 text-start text-sm leading-tight">
-        <span dir="auto" className="truncate font-semibold tracking-tight">
+      <ItsAPlanMark className="size-7! shrink-0 text-sidebar-foreground" />
+      <div className="grid min-w-0 flex-1 gap-0.5 text-xs leading-none">
+        <span dir="auto" className="truncate text-xs font-semibold leading-tight tracking-tight">
           {current?.name ?? t('noProjects')}
         </span>
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           {current && (
-            <span dir="ltr" className="shrink-0 font-mono text-[10px] tracking-wider uppercase">
+            <span dir="ltr" className="shrink-0 font-mono text-xs tracking-wider uppercase">
               {current.key}
             </span>
           )}

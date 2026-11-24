@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { Building2, GanttChart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { openOfficePath, projectPath } from '@/utils/paths';
+import { Button } from '@/components/ui/button';
 import type { Cycle } from '@/lib/api/endpoints/cycles';
 import { CYCLE_STATUS_META } from '@/utils/cycleMeta';
 import { colorDot } from '@/components/common/fields/colorDot';
@@ -33,7 +37,27 @@ export default function CycleHeader({ cycle, projectKey }: { cycle: Cycle; proje
           <span className="max-w-md truncate text-xs text-muted-foreground">{cycle.goal}</span>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => navigateFeatureInstant(`${openOfficePath(projectKey)}?cycle_id=${cycle.id}`)}
+        >
+          <Building2 className="size-3.5" />
+          <span>Office</span>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => navigateFeatureInstant(`${projectPath(projectKey)}/timeline`)}
+        >
+          <GanttChart className="size-3.5" />
+          <span>Timeline</span>
+        </Button>
         <ProgressBar progress={cycle.progress} />
         <CycleActions
           cycle={cycle}

@@ -1,19 +1,17 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDocumentNavigation } from '@/hooks/useDocumentNavigation';
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  BookOpenText,
   Check,
   LoaderCircle,
   Plus,
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Upload,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ProjectDocumentSummary } from '@/lib/api/endpoints/documents';
@@ -67,7 +65,6 @@ export default function DocumentsIndex({
   onSearchChange,
   onTabChange,
   onCreate,
-  onUpload,
   onRetry,
 }: {
   projectKey: string;
@@ -85,7 +82,6 @@ export default function DocumentsIndex({
   onSearchChange: (value: string) => void;
   onTabChange: (tab: DocumentListTab) => void;
   onCreate: (parentId: number | null) => void;
-  onUpload: (file: File) => void;
   onRetry: () => void;
 }) {
   const t = useTranslations('documents');
@@ -105,7 +101,6 @@ export default function DocumentsIndex({
   const setCreatedRange = (range: typeof defaults.range) =>
     setPreferences((p) => ({ ...p, range }));
   const scrollRef = useRef<HTMLDivElement>(null);
-  const uploadInput = useRef<HTMLInputElement>(null);
   const restored = useRef(false);
   const lastScroll = useRef(preferences.scroll);
   useEffect(() => {
@@ -120,31 +115,48 @@ export default function DocumentsIndex({
     [setPreferences],
   );
 
-  const creatorIds = Array.from(
-    new Set(
-      documents.flatMap((document) => (document.createdByUserId ? [document.createdByUserId] : [])),
-    ),
-  ).sort((a, b) => (authorNames[a] ?? a).localeCompare(authorNames[b] ?? b));
-  const now = Date.now();
-  const filteredDocuments = documents.filter((document) => {
-    if (creatorId !== null && document.createdByUserId !== creatorId) return false;
-    if (createdRange === 'all') return true;
-
-    const age = now - Date.parse(document.createdAt);
-    const limit =
-      createdRange === 'today'
-        ? 24 * 60 * 60 * 1000
-        : createdRange === 'week'
-          ? 7 * 24 * 60 * 60 * 1000
-          : 30 * 24 * 60 * 60 * 1000;
-    return age >= 0 && age <= limit;
-  });
-  const filteredIds = new Set(filteredDocuments.map((document) => document.id));
-  const displayDocuments = filteredDocuments.map((document) =>
-    document.parentId !== null && !filteredIds.has(document.parentId)
-      ? { ...document, parentId: null }
-      : document,
+  const moveMutate = move.mutate;
+  const favMutate = favorite.mutate;
+  const handleMove = useCallback(
+    (input: Parameters<typeof moveMutate>[0]) => moveMutate(input),
+    [moveMutate],
   );
+  const handleFavoriteChange = useCallback(
+    (documentId: number, isFavorite: boolean) => favMutate({ documentId, isFavorite }),
+    [favMutate],
+  );
+
+  const creatorIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          documents.flatMap((document) => (document.createdByUserId ? [document.createdByUserId] : [])),
+        ),
+      ).sort((a, b) => (authorNames[a] ?? a).localeCompare(authorNames[b] ?? b)),
+    [documents, authorNames],
+  );
+  const displayDocuments = useMemo(() => {
+    const now = Date.now();
+    const filteredDocuments = documents.filter((document) => {
+      if (creatorId !== null && document.createdByUserId !== creatorId) return false;
+      if (createdRange === 'all') return true;
+
+      const age = now - Date.parse(document.createdAt);
+      const limit =
+        createdRange === 'today'
+          ? 24 * 60 * 60 * 1000
+          : createdRange === 'week'
+            ? 7 * 24 * 60 * 60 * 1000
+            : 30 * 24 * 60 * 60 * 1000;
+      return age >= 0 && age <= limit;
+    });
+    const filteredIds = new Set(filteredDocuments.map((document) => document.id));
+    return filteredDocuments.map((document) =>
+      document.parentId !== null && !filteredIds.has(document.parentId)
+        ? { ...document, parentId: null }
+        : document,
+    );
+  }, [documents, creatorId, createdRange]);
   const filterCount = Number(creatorId !== null) + Number(createdRange !== 'all');
   const sortLabel = {
     position: t('manualOrder'),
@@ -163,256 +175,232 @@ export default function DocumentsIndex({
 
   return (
     <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="shrink-0 border-b bg-background/95 px-4 backdrop-blur md:px-6">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid size-7 shrink-0 place-items-center rounded-md bg-foreground text-background">
-              <BookOpenText className="size-3.5" />
-            </div>
-            <div className="flex min-w-0 items-baseline gap-2">
-              <h1 className="truncate text-sm font-semibold tracking-[-0.01em]">{t('title')}</h1>
+      <h1 className="sr-only">{t('title')}</h1>
+
+      <div className="mx-3 my-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/85 bg-card shadow-[var(--studio-card-shadow)] sm:mx-4">
+        <div className="shrink-0 border-b border-border/70 px-3 py-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <div
+                className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-border/85 bg-muted/65 p-0.5 scrollbar-none"
+                role="tablist"
+              >
+                {DOCUMENT_LIST_TABS.map((option) => {
+                  const active = tab === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      className={cn(
+                        'inline-flex h-8 shrink-0 items-center rounded-full px-3 text-xs whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        active
+                          ? 'bg-foreground font-semibold text-background shadow-xs'
+                          : 'font-medium text-muted-foreground hover:bg-background/60 hover:text-foreground',
+                      )}
+                      onClick={() => onTabChange(option)}
+                    >
+                      {tabLabel(option)}
+                    </button>
+                  );
+                })}
+              </div>
               {!loading && (
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span
+                  data-testid="docs-count-badge"
+                  className="shrink-0 rounded-full bg-muted px-2 py-0.5 font-mono text-xs tabular-nums text-muted-foreground"
+                >
                   {documents.length}
                 </span>
               )}
             </div>
-          </div>
-          {canCreate && (
-            <div className="flex shrink-0 items-center gap-1.5">
-              <input
-                ref={uploadInput}
-                className="sr-only"
-                type="file"
-                accept=".md,.markdown,text/markdown"
-                aria-label={t('uploadMarkdown')}
-                disabled={creating}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.currentTarget.value = '';
-                  if (file) onUpload(file);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 px-2.5 shadow-none"
-                disabled={creating}
-                onClick={() => uploadInput.current?.click()}
-              >
-                <Upload />
-                <span className="hidden sm:inline">{t('uploadMarkdown')}</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 px-2.5 shadow-none"
-                disabled={creating}
-                onClick={() => onCreate(null)}
-              >
-                {creating ? <LoaderCircle className="animate-spin" /> : <Plus />}
-                <span className="hidden sm:inline">{t('newDocument')}</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      </header>
 
-      <div className="shrink-0 border-b px-4 md:px-6">
-        <div
-          className="mx-auto flex w-full max-w-6xl items-center gap-6 overflow-x-auto"
-          role="tablist"
-        >
-          {DOCUMENT_LIST_TABS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="tab"
-              aria-selected={tab === option}
-              className={cn(
-                'relative h-10 shrink-0 px-0.5 text-[13px] font-medium text-muted-foreground transition-colors outline-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-center after:scale-x-0 after:bg-foreground after:transition-transform hover:text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring',
-                tab === option && 'text-foreground after:scale-x-100',
-              )}
-              onClick={() => onTabChange(option)}
-            >
-              {tabLabel(option)}
-            </button>
-          ))}
-        </div>
-      </div>
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:flex-initial">
+              <div className="relative min-w-0 flex-1 sm:w-52 sm:flex-none lg:w-64">
+                <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  className="h-8 rounded-full border-transparent bg-muted/65 ps-8 text-xs shadow-none hover:bg-muted focus-visible:bg-background"
+                  placeholder={t('search')}
+                  aria-label={t('search')}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                />
+              </div>
 
-      <div className="shrink-0 px-4 py-3 md:px-6">
-        <div className="mx-auto flex w-full max-w-6xl items-center gap-1.5">
-          <div className="relative min-w-0 flex-1 sm:max-w-md">
-            <Search className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              className="h-8 border-transparent bg-muted/55 ps-8 text-[13px] shadow-none hover:bg-muted focus-visible:bg-background"
-              placeholder={t('search')}
-              aria-label={t('search')}
-              onChange={(event) => onSearchChange(event.target.value)}
-            />
-          </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-full px-2.5 text-xs text-muted-foreground"
+                    aria-label={t('sort')}
+                  >
+                    <ArrowUpDown className="size-3.5" />
+                    <span className="hidden md:inline">{sortLabel}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-48">
+                  {SORTS.map((option) => (
+                    <DropdownMenuItem key={option} onSelect={() => setSort(option)}>
+                      <Check className={cn('me-1', option !== sort && 'invisible')} />
+                      {option === 'position'
+                        ? t('manualOrder')
+                        : option === 'title'
+                          ? t('nameOrder')
+                          : option === 'created'
+                            ? t('createdOrder')
+                            : t('updatedOrder')}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-muted-foreground"
-                aria-label={t('sort')}
+                size="icon-sm"
+                className="size-8 rounded-full text-muted-foreground"
+                disabled={sort === 'position'}
+                aria-label={sortDirection === 'asc' ? t('sortDescending') : t('sortAscending')}
+                onClick={() => setSortDirection((value) => (value === 'asc' ? 'desc' : 'asc'))}
               >
-                <ArrowUpDown />
-                <span className="hidden md:inline">{sortLabel}</span>
+                {sortDirection === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
-              {SORTS.map((option) => (
-                <DropdownMenuItem key={option} onSelect={() => setSort(option)}>
-                  <Check className={cn('me-1', option !== sort && 'invisible')} />
-                  {option === 'position'
-                    ? t('manualOrder')
-                    : option === 'title'
-                      ? t('nameOrder')
-                      : option === 'created'
-                        ? t('createdOrder')
-                        : t('updatedOrder')}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground"
-            disabled={sort === 'position'}
-            aria-label={sortDirection === 'asc' ? t('sortDescending') : t('sortAscending')}
-            onClick={() => setSortDirection((value) => (value === 'asc' ? 'desc' : 'asc'))}
-          >
-            {sortDirection === 'asc' ? <ArrowUp /> : <ArrowDown />}
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant={filterCount > 0 ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-8 px-2 text-muted-foreground"
-                aria-label={t('filters')}
-              >
-                <SlidersHorizontal />
-                <span className="hidden md:inline">{t('filters')}</span>
-                {filterCount > 0 && (
-                  <span className="min-w-4 rounded-full bg-foreground px-1 text-center text-[10px] leading-4 text-background tabular-nums">
-                    {filterCount}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>{t('createdBy')}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-56">
-                  <DropdownMenuItem onSelect={() => setCreatorId(null)}>
-                    <Check className={cn('me-1', creatorId !== null && 'invisible')} />
-                    {t('anyone')}
-                  </DropdownMenuItem>
-                  {creatorIds.map((id) => (
-                    <DropdownMenuItem key={id} onSelect={() => setCreatorId(id)}>
-                      <Check className={cn('me-1', creatorId !== id && 'invisible')} />
-                      <span className="truncate" dir="auto">
-                        {authorNames[id] ?? t('unknownAuthor')}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>{t('createdDate')}</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {(['all', 'today', 'week', 'month'] as const).map((range) => (
-                    <DropdownMenuItem key={range} onSelect={() => setCreatedRange(range)}>
-                      <Check className={cn('me-1', createdRange !== range && 'invisible')} />
-                      {t(range)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              {filterCount > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setCreatorId(null);
-                      setCreatedRange('all');
-                    }}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={filterCount > 0 ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="h-8 rounded-full px-2.5 text-xs text-muted-foreground"
+                    aria-label={t('filters')}
                   >
-                    {t('clearFilters')}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+                    <SlidersHorizontal className="size-3.5" />
+                    <span className="hidden md:inline">{t('filters')}</span>
+                    {filterCount > 0 && (
+                      <span className="min-w-4 rounded-full bg-foreground px-1 text-center text-xs leading-4 text-background tabular-nums">
+                        {filterCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>{t('createdBy')}</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-56">
+                      <DropdownMenuItem onSelect={() => setCreatorId(null)}>
+                        <Check className={cn('me-1', creatorId !== null && 'invisible')} />
+                        {t('anyone')}
+                      </DropdownMenuItem>
+                      {creatorIds.map((id) => (
+                        <DropdownMenuItem key={id} onSelect={() => setCreatorId(id)}>
+                          <Check className={cn('me-1', creatorId !== id && 'invisible')} />
+                          <span className="truncate" dir="auto">
+                            {authorNames[id] ?? t('unknownAuthor')}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>{t('createdDate')}</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {(['all', 'today', 'week', 'month'] as const).map((range) => (
+                        <DropdownMenuItem key={range} onSelect={() => setCreatedRange(range)}>
+                          <Check className={cn('me-1', createdRange !== range && 'invisible')} />
+                          {t(range)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  {filterCount > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setCreatorId(null);
+                          setCreatedRange('all');
+                        }}
+                      >
+                        {t('clearFilters')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-      <div
-        ref={scrollRef}
-        onScroll={(event) => {
-          lastScroll.current = event.currentTarget.scrollTop;
-        }}
-        className="min-h-0 flex-1 overflow-y-auto px-4 pb-10 md:px-6"
-      >
-        <div className="mx-auto w-full max-w-6xl">
-          {loading ? (
-            <div className="space-y-1 py-1" aria-hidden>
-              <Skeleton className="h-9 w-full rounded-md" />
-              <Skeleton className="h-9 w-[92%] rounded-md" />
-              <Skeleton className="h-9 w-[85%] rounded-md" />
+              {canCreate && (
+                <Button
+                  type="button"
+                  size="sm"
+                  aria-label={t('newDocument')}
+                  className="h-7 shrink-0 rounded-full bg-foreground px-3 text-xs text-background shadow-xs hover:bg-foreground/90"
+                  disabled={creating}
+                  onClick={() => onCreate(null)}
+                >
+                  {creating ? <LoaderCircle className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                  <span className="hidden sm:inline">{t('newDocument')}</span>
+                </Button>
+              )}
             </div>
-          ) : failed ? (
-            <div className="flex min-h-56 flex-col items-center justify-center text-center">
-              <div className="mb-3 grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
-                <RefreshCw className="size-4" />
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          onScroll={(event) => {
+            lastScroll.current = event.currentTarget.scrollTop;
+          }}
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-2 pb-10"
+        >
+          <div className="mx-auto w-full max-w-6xl">
+            {loading ? (
+              <div className="space-y-1 py-1" aria-hidden>
+                <Skeleton className="h-9 w-full rounded-md" />
+                <Skeleton className="h-9 w-[92%] rounded-md" />
+                <Skeleton className="h-9 w-[85%] rounded-md" />
               </div>
-              <p className="text-sm font-medium">{t('loadFailed')}</p>
-              <Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>
-                <RefreshCw />
-                {t('reload')}
-              </Button>
-            </div>
-          ) : (
-            <DocumentTree
-              projectKey={projectKey}
-              documents={displayDocuments}
-              activeId={null}
-              searching={searching}
-              sortBy={sort}
-              sortDirection={sortDirection}
-              canCreate={canCreate}
-              reorderEnabled={
-                canEdit &&
-                tab !== 'favorites' &&
-                tab !== 'archived' &&
-                !searching &&
-                sort === 'position' &&
-                filterCount === 0 &&
-                reorderSafe &&
-                !move.isPending
-              }
-              favoritePending={favorite.isPending}
-              onCreate={onCreate}
-              onMove={(input) => move.mutate(input)}
-              onFavoriteChange={(documentId, isFavorite) =>
-                favorite.mutate({ documentId, isFavorite })
-              }
-            />
-          )}
+            ) : failed ? (
+              <div className="flex min-h-56 flex-col items-center justify-center text-center">
+                <div className="mb-3 grid size-9 place-items-center rounded-full bg-muted text-muted-foreground">
+                  <RefreshCw className="size-4" />
+                </div>
+                <p className="text-sm font-medium">{t('loadFailed')}</p>
+                <Button className="mt-3 rounded-full" variant="outline" size="sm" onClick={onRetry}>
+                  <RefreshCw />
+                  {t('reload')}
+                </Button>
+              </div>
+            ) : (
+              <DocumentTree
+                projectKey={projectKey}
+                documents={displayDocuments}
+                scrollContainerRef={scrollRef}
+                activeId={null}
+                searching={searching}
+                sortBy={sort}
+                sortDirection={sortDirection}
+                canCreate={canCreate}
+                reorderEnabled={
+                  canEdit &&
+                  tab !== 'favorites' &&
+                  tab !== 'archived' &&
+                  !searching &&
+                  sort === 'position' &&
+                  filterCount === 0 &&
+                  reorderSafe &&
+                  !move.isPending
+                }
+                favoritePending={favorite.isPending}
+                onCreate={onCreate}
+                onMove={handleMove}
+                onFavoriteChange={handleFavoriteChange}
+              />
+            )}
+          </div>
         </div>
       </div>
     </main>

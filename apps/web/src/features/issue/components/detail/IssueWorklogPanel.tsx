@@ -9,7 +9,7 @@ import { useSession } from '@/lib/auth-client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatMinutes } from '@/utils/estimate';
 import { Button } from '@/components/ui/button';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import {
   useCreateWorklog,
   useDeleteWorklog,
@@ -37,12 +37,15 @@ export default function IssueWorklogPanel({
   const { can, isOwner } = usePermissions();
   const canLog = can('work_items', 'edit');
   const currentUserId = useSession().data?.user.id ?? null;
-  const { open, toggle } = usePersistedOpen('issue-worklog-open');
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const projectKey = project.project.ref;
   const entries = useWorklogsQuery(issue.id).data ?? [];
+  const { open, setOpen, toggle } = useSmartSectionOpen(
+    'issue-worklog-open-v2',
+    entries.length > 0 || issue.loggedMinutes > 0 || adding,
+  );
   const createWorklog = useCreateWorklog();
   const updateWorklog = useUpdateWorklog();
   const deleteWorklog = useDeleteWorklog();
@@ -56,8 +59,16 @@ export default function IssueWorklogPanel({
           onToggle={toggle}
           tally={issue.loggedMinutes > 0 ? formatMinutes(issue.loggedMinutes) : undefined}
         />
-        {open && canLog && !adding && (
-          <Button variant="ghost" size="sm" className="h-7 gap-1.5" onClick={() => setAdding(true)}>
+        {canLog && !adding && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5"
+            onClick={() => {
+              setOpen(true);
+              setAdding(true);
+            }}
+          >
             <Plus className="size-4" /> {tCommon('add')}
           </Button>
         )}

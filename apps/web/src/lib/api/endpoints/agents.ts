@@ -21,10 +21,6 @@ export interface AgentProject {
   name: string;
 }
 
-// How much a reasoning model thinks before it answers. Null on an agent leaves it to
-// the provider's default.
-export type ReasoningEffort = 'low' | 'medium' | 'high';
-
 // An AI agent of a team: a bot user plus its configuration. `kind` is
 // 'external' (driven by an outside caller through the API) or 'internal' (run by
 // the built-in runtime, so it carries provider/model/instructions/tools). Only an
@@ -46,16 +42,12 @@ export interface AiAgent {
   instructions: string | null;
   tools: string[];
   temperature: number | null;
-  reasoningEffort: ReasoningEffort | null;
   maxSteps: number | null;
-  runTimeoutSec: number | null;
   memoryEnabled: boolean;
   memoryLastMessages: number | null;
   // Run triggers.
   triggerOnMention: boolean;
   triggerOnAssign: boolean;
-  // Off gates only the chat; mentions, delegations and schedules still run the agent.
-  chatEnabled: boolean;
   // The member custom fields that start a run when the agent is set into one, each
   // with the seconds its run waits before the agent may pick it up.
   fieldTriggers: AgentFieldTriggerRead[];
@@ -64,13 +56,9 @@ export interface AiAgent {
   // The member who created the agent, and whose runs an 'owner'-scoped runner is
   // limited to; 'team' scope serves any member's runs.
   ownerUserId: string | null;
-  ownerName: string | null;
   runnerScope: 'owner' | 'team';
   // When the agent's runner last polled, or null while none ever has.
   lastSeenAt: string | null;
-  // Where an external agent's tasks and chat messages are sent instead of being taken
-  // by a runner; null when a runner takes them.
-  invocationUrl: string | null;
   createdAt: string;
   apiKeyStart: string | null;
   // The integration key of the model credential (the provider, e.g. "openai"), or
@@ -81,33 +69,21 @@ export interface AiAgent {
   actionCount: number;
   skillCount: number;
   toolCount: number;
-  // Whether the viewer may act on the agent as a whole (edit, delete, rotate its key,
-  // use its invocation secret): the api refuses a member who shares only some of its
-  // projects.
-  canManage: boolean;
 }
 
 // A run waits as 'pending' until a worker or a runner takes it; 'canceled' is a
 // pending run ended by hand.
 export type AgentRunStatus = 'pending' | 'success' | 'failed' | 'canceled';
 
-export type AgentRunTrigger =
-  'mention' | 'delegation' | 'field' | 'schedule' | 'manual' | 'status' | 'event';
-
-// One row of an agent's autonomous run history. A run triggered on an issue references
-// it; a cron schedule's run and a manual one do not.
+// One row of an agent's autonomous run history. Issue-triggered runs reference an
+// issue; scheduled and manual runs do not.
 export interface AgentRun {
   id: number;
   status: AgentRunStatus;
-  executionState: 'queued' | 'running' | 'success' | 'failed' | 'canceled';
-  trigger: AgentRunTrigger;
+  trigger: 'mention' | 'delegation' | 'field' | 'schedule' | 'manual';
   issueId: number | null;
   issueIdentifier: string | null;
   issueTitle: string | null;
-  // A run started by a mention in a document comment. The title is null for a document
-  // that is private now.
-  documentId: number | null;
-  documentTitle: string | null;
   prompt: string;
   attempts: number;
   lastError: string | null;
@@ -147,19 +123,15 @@ export interface NewAiAgentInput {
   instructions?: string | null;
   tools?: string[];
   temperature?: number | null;
-  reasoningEffort?: ReasoningEffort | null;
   maxSteps?: number | null;
-  runTimeoutSec?: number | null;
   memoryEnabled?: boolean;
   memoryLastMessages?: number | null;
   triggerOnMention?: boolean;
   triggerOnAssign?: boolean;
-  chatEnabled?: boolean;
   fieldTriggers?: AgentFieldTrigger[];
   delegationDelaySec?: number;
   projectIds?: number[];
   runnerScope?: 'owner' | 'team';
-  invocationUrl?: string | null;
 }
 
 export interface AiAgentPatch {
@@ -170,19 +142,15 @@ export interface AiAgentPatch {
   instructions?: string | null;
   tools?: string[];
   temperature?: number | null;
-  reasoningEffort?: ReasoningEffort | null;
   maxSteps?: number | null;
-  runTimeoutSec?: number | null;
   memoryEnabled?: boolean;
   memoryLastMessages?: number | null;
   triggerOnMention?: boolean;
   triggerOnAssign?: boolean;
-  chatEnabled?: boolean;
   fieldTriggers?: AgentFieldTrigger[];
   delegationDelaySec?: number;
   projectIds?: number[];
   runnerScope?: 'owner' | 'team';
-  invocationUrl?: string | null;
 }
 
 // One event of a streamed agent run (mirrors the API's AgentRunEvent). `text` is a
@@ -191,13 +159,101 @@ export interface AiAgentPatch {
 // conversation thread id; `error` reports a failure that happened mid-run.
 export type AgentRunEvent =
   | { type: 'text'; value: string }
+  | { type: 'thinking'; value: string }
   | { type: 'tool-start'; toolCallId: string; toolName: string; args?: string }
   // An external agent's runner sends a call's arguments after the call itself, in
   // pieces; an internal agent has them all at its start.
   | { type: 'tool-args'; toolCallId: string; delta: string }
   | { type: 'tool-end'; toolCallId: string; result?: string }
+  | {
+      type: 'approval-required';
+      approvalId: string;
+      toolCallId: string;
+      toolName: string;
+      args?: string;
+      requireSod?: boolean;
+    }
+  | {
+      type: 'artifact';
+      artifactId: string;
+      kind: 'diff' | 'code' | 'mermaid' | 'markdown';
+      title: string;
+      content: string;
+      language?: string;
+    }
+  | {
+      type: 'subagent-spawn';
+      subagentId: string;
+      role: string;
+      task: string;
+    }
+  | {
+      type: 'subagent-done';
+      subagentId: string;
+      status: 'completed' | 'failed';
+      summary?: string;
+    }
+  | { type: 'thread'; threadId: string }
   | { type: 'done'; threadId: string | null }
   | { type: 'error'; message: string };
+
+export interface TeamBudgetPolicyDto {
+  teamId: number;
+  monthlyTokenBudget: number;
+  monthlyUsdCeilingMicros: number;
+  softAlertPct: number;
+  hardStopEnabled: boolean;
+  usage: {
+    allowed: boolean;
+    spentMicros: number;
+    capMicros: number;
+    spentTokens: number;
+    tokenCap: number;
+    utilizationPct: number;
+    softAlertTriggered: boolean;
+    hardStopped: boolean;
+    reason?: string;
+  };
+}
+
+export interface AgentApprovalRequestDto {
+  id: string;
+  teamId: number;
+  projectId: number;
+  agentId: number;
+  threadId: string | null;
+  toolCallId: string;
+  toolName: string;
+  kind: 'approval' | 'ask_user' | 'plan_proposal';
+  payload: Record<string, unknown>;
+  requestedByUserId: string | null;
+  decidedByUserId: string | null;
+  requireSod: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  decisionNote: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface McpConnectionDto {
+  id: number;
+  teamId: number;
+  name: string;
+  transport: 'streamable-http' | 'sse';
+  endpointUrl: string;
+  hasHeaders: boolean;
+  enabled: boolean;
+  allowedTools: string[];
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceStateDto {
+  projectId: number;
+  state: Record<string, unknown>;
+  updatedAt: string | null;
+}
 
 // AI agents: a team's bot users and their configuration. Pass projectId to list only
 // the agents working in one project of the team. The plaintext key is returned only
@@ -208,11 +264,10 @@ export const listAiAgents = (teamId: number, projectId?: number) =>
     `/teams/${teamId}/ai-agents${projectId != null ? `?projectId=${projectId}` : ''}`,
   );
 
-// What a screen needs to name an agent; any member of the project reads it.
-export type ProjectAgent = Pick<AiAgent, 'id' | 'name' | 'kind' | 'model'>;
-
-export const listProjectAgents = (projectKey: string) =>
-  request<ProjectAgent[]>(`/projects/${projectKey}/ai-agents/options`);
+export const ensureDefaultWorkspaceAgent = (projectKey: string) =>
+  request<AiAgent>(`/projects/${projectKey}/ai-agents/ensure-default`, {
+    method: 'POST',
+  });
 
 export const listAgentTools = (teamId: number) =>
   request<AgentTool[]>(`/teams/${teamId}/ai-agents/tools`);
@@ -234,32 +289,6 @@ export const regenerateAiAgentKey = (teamId: number, agentId: number) =>
     method: 'POST',
   });
 
-// How the endpoint at the invocation URL answered a test ping. `status` is null when no
-// answer arrived.
-export interface InvocationTestResult {
-  ok: boolean;
-  timedOut: boolean;
-  status: number | null;
-  error: string | null;
-  responseBody: string | null;
-  durationMs: number;
-}
-
-// The key the requests to an external agent's invocation URL are signed with. Null
-// until the agent first gets a URL.
-export const getInvocationSecret = (teamId: number, agentId: number) =>
-  request<{ secret: string | null }>(`/teams/${teamId}/ai-agents/${agentId}/invocation-secret`);
-
-export const rotateInvocationSecret = (teamId: number, agentId: number) =>
-  request<{ secret: string }>(`/teams/${teamId}/ai-agents/${agentId}/invocation-secret`, {
-    method: 'POST',
-  });
-
-export const testInvocation = (teamId: number, agentId: number) =>
-  request<InvocationTestResult>(`/teams/${teamId}/ai-agents/${agentId}/invocation-test`, {
-    method: 'POST',
-  });
-
 export const deleteAiAgent = (teamId: number, agentId: number) =>
   request<void>(`/teams/${teamId}/ai-agents/${agentId}`, { method: 'DELETE' });
 
@@ -268,23 +297,71 @@ export const listAgentRuns = (teamId: number, agentId: number, before?: number) 
     `/teams/${teamId}/ai-agents/${agentId}/runs?limit=25${before ? `&before=${before}` : ''}`,
   );
 
-export interface ExternalRunEvent {
-  type: string;
-  toolCallId?: string;
-  toolCallName?: string;
-  delta?: string;
-  content?: string;
-  message?: string;
-}
-export interface ExternalRunTrace {
-  attempt: number;
-  previousAttempt: number | null;
-  sessionId: string | null;
-  sessionUrl: string | null;
-  truncated: boolean;
-  events: { event: ExternalRunEvent; receivedAt: string }[];
-}
-export const getExternalRunTrace = (runId: number, attempt?: number) =>
-  request<ExternalRunTrace | null>(
-    `/agent-runs/${runId}/trace${attempt == null ? '' : `?attempt=${attempt}`}`,
+export const listProjectApprovals = (
+  projectKey: string,
+  status?: 'pending' | 'approved' | 'rejected' | 'expired',
+) =>
+  request<{ items: AgentApprovalRequestDto[] }>(
+    `/projects/${projectKey}/ai-agents/approvals${status ? `?status=${status}` : ''}`,
   );
+
+export const decideProjectApproval = (
+  projectKey: string,
+  approvalId: string,
+  decision: 'approved' | 'rejected',
+  note?: string | null,
+) =>
+  request<AgentApprovalRequestDto>(
+    `/projects/${projectKey}/ai-agents/approvals/${encodeURIComponent(approvalId)}/decide`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ decision, ...(note ? { note } : {}) }),
+    },
+  );
+
+export const getWorkspaceState = (projectKey: string) =>
+  request<WorkspaceStateDto>(`/projects/${projectKey}/workspace-state`);
+
+export const saveWorkspaceState = (projectKey: string, state: Record<string, unknown>) =>
+  request<WorkspaceStateDto>(`/projects/${projectKey}/workspace-state`, {
+    method: 'PUT',
+    body: JSON.stringify({ state }),
+  });
+
+export const listTeamMcpConnections = (teamId: number) =>
+  request<McpConnectionDto[]>(`/teams/${teamId}/mcp-connections`);
+
+export const createTeamMcpConnection = (
+  teamId: number,
+  input: {
+    name: string;
+    transport?: 'streamable-http' | 'sse';
+    endpointUrl: string;
+    headers?: Record<string, string>;
+    allowedTools?: string[];
+  },
+) =>
+  request<McpConnectionDto>(`/teams/${teamId}/mcp-connections`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+
+export const deleteTeamMcpConnection = (teamId: number, connectionId: number) =>
+  request<void>(`/teams/${teamId}/mcp-connections/${connectionId}`, { method: 'DELETE' });
+
+export const getTeamBudgetPolicy = (teamId: number) =>
+  request<TeamBudgetPolicyDto>(`/teams/${teamId}/budget-policy`);
+
+export const updateTeamBudgetPolicy = (
+  teamId: number,
+  body: {
+    monthlyTokenBudget: number;
+    monthlyUsdCeilingMicros: number;
+    softAlertPct?: number;
+    hardStopEnabled: boolean;
+  },
+) =>
+  request<TeamBudgetPolicyDto>(`/teams/${teamId}/budget-policy`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });

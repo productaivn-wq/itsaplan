@@ -4,7 +4,7 @@ import type { IssueLinkInputKind, IssueRelations } from '@/lib/api/endpoints/iss
 import { usePermissions } from '@/hooks/usePermissions';
 import { LINK_RELATIONS, inverseRelation, linkRelation, storedKind } from '@/utils/issueLinks';
 import { useLinkRelationLabel } from '@/hooks/useLinkRelationLabel';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import { useLinkIssues, useUnlinkIssues } from '../../services/links.service';
 import { useSetRelatedIssueState } from '../../services/relatedIssues.service';
 import NewIssueModal from '../create/NewIssueModal';
@@ -43,12 +43,12 @@ export default function IssueLinksPanel({
   const canCreate = !readOnly && can('work_items', 'create');
   const [adding, setAdding] = useState<IssueLinkInputKind | null>(null);
   const [creating, setCreating] = useState<IssueLinkInputKind | null>(null);
-  const { open, toggle } = usePersistedOpen('issue-links-open');
+  const links = issue.links;
+  const { open, setOpen, toggle } = useSmartSectionOpen('issue-links-open-v2', links.length > 0);
   const linkIssues = useLinkIssues();
   const unlinkIssues = useUnlinkIssues();
   const setState = useSetRelatedIssueState(project.project.ref, issue.id);
 
-  const links = issue.links;
   if (readOnly && links.length === 0) return null;
 
   const groups = LINK_RELATIONS.map((relation) => ({
@@ -64,12 +64,23 @@ export default function IssueLinksPanel({
       {/* Fixed height: the Add button only renders while the section is open, and
           without it the row would shrink to the height of the heading text. */}
       <div className={`flex h-7 items-center justify-between gap-3 ${open ? 'mb-3' : ''}`}>
-        <IssueSectionHeading label={t('title')} open={open} onToggle={toggle} />
-        {open && canEdit && (
+        <IssueSectionHeading
+          label={t('title')}
+          tally={links.length > 0 ? String(links.length) : undefined}
+          open={open}
+          onToggle={toggle}
+        />
+        {canEdit && (
           <IssueLinksAddMenu
             canCreate={canCreate}
-            onLinkExisting={setAdding}
-            onCreateNew={setCreating}
+            onLinkExisting={(relation) => {
+              setOpen(true);
+              setAdding(relation);
+            }}
+            onCreateNew={(relation) => {
+              setOpen(true);
+              setCreating(relation);
+            }}
           />
         )}
       </div>

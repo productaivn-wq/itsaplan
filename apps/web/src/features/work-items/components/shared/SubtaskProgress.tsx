@@ -33,7 +33,7 @@ export function SubtaskProgress({
     </>
   );
   const className =
-    'flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums';
+    'flex shrink-0 items-center gap-1 text-xs text-muted-foreground tabular-nums';
   const Chevron = open ? ChevronDown : ChevronRight;
 
   return (
@@ -49,7 +49,7 @@ export function SubtaskProgress({
               e.preventDefault();
               onToggle();
             }}
-            className={cn(className, '-mx-1 rounded px-1 hover:bg-accent/50 hover:text-foreground')}
+            className={cn(className, '-mx-1 min-h-8 rounded px-2 hover:bg-accent/50 hover:text-foreground')}
           >
             <Chevron className="size-3" />
             {tally}

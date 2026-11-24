@@ -1,0 +1,555 @@
+{
+  "uc_id": "UC-010",
+  "spec_id": "SPEC-53.ACT.500",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-010",
+    "FR-053",
+    "FR-054",
+    "FR-055",
+    "FR-056",
+    "FR-057",
+    "FR-058",
+    "FR-059",
+    "FR-060"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC010-01",
+      "slice_id": "UC-010.S01",
+      "fr_ref": "FR-053",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state"
+      },
+      "expected": {
+        "zone_count": 8,
+        "mascot_count": 2,
+        "has_stations": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-02",
+      "slice_id": "UC-010.S02",
+      "fr_ref": "FR-054",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/templates"
+      },
+      "expected": {
+        "min_templates": 4,
+        "includes": "research_citation"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-03",
+      "slice_id": "UC-010.S02",
+      "fr_ref": "FR-054",
+      "category": "positive",
+      "input": {
+        "title": "Đối chiếu kiến trúc Open Office V30",
+        "template_id": "research_citation",
+        "lead_agent_id": "@research",
+        "acceptance_criteria": [
+          "Đủ trích dẫn ev_<sha256>"
+        ],
+        "confidence_pct": 92
+      },
+      "expected": {
+        "status": "IN_PROGRESS",
+        "current_run_number": 1
+      }
+    },
+    {
+      "tc_id": "TC-UC010-04",
+      "slice_id": "UC-010.S03",
+      "fr_ref": "FR-056",
+      "category": "positive",
+      "input": {
+        "operation": "verify_event_hash_chain"
+      },
+      "expected": {
+        "is_chain_valid": true,
+        "genesis_anchor": "GENESIS"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-05",
+      "slice_id": "UC-010.S03",
+      "fr_ref": "FR-055",
+      "category": "stateful",
+      "input": {
+        "rework_cycles": 2,
+        "reasons": [
+          "Thiếu trích dẫn CV-018",
+          "Bổ sung bảng Cam kết vs Thực tế"
+        ]
+      },
+      "expected": {
+        "run_count": 3,
+        "run_statuses": [
+          "RETURNED_FOR_REWORK",
+          "RETURNED_FOR_REWORK",
+          "IN_PROGRESS"
+        ]
+      }
+    },
+    {
+      "tc_id": "TC-UC010-06",
+      "slice_id": "UC-010.S04",
+      "fr_ref": "FR-057",
+      "category": "positive",
+      "input": {
+        "evidence_summary": "Đã niêm phong 5 mã băm ev_*",
+        "evidence_links": [
+          "10_SPECS/SPEC-53.ACT.499.md"
+        ]
+      },
+      "expected": {
+        "status": "AWAITING_HITL",
+        "in_needs_my_action": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-07",
+      "slice_id": "UC-010.S04",
+      "fr_ref": "FR-057",
+      "category": "positive",
+      "input": {
+        "decision": "APPROVE",
+        "approver_id": "hum-phuong-vo",
+        "acceptance_verified": true,
+        "actual_minutes": 28,
+        "actual_tokens": 11800
+      },
+      "expected": {
+        "status": "DONE",
+        "delta_minutes": -7,
+        "delta_tokens": -2200
+      }
+    },
+    {
+      "tc_id": "TC-UC010-08",
+      "slice_id": "UC-010.S05",
+      "fr_ref": "FR-058",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/analytics"
+      },
+      "expected": {
+        "event_log_reconciled": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-09",
+      "slice_id": "UC-010.S05",
+      "fr_ref": "FR-058",
+      "category": "positive",
+      "input": {
+        "bridge_dispatcher": "UNIFIED_VIBE_DISPATCHER_361",
+        "ui_validator": "GW-UIUX-01"
+      },
+      "expected": {
+        "roundtrip_ok": true,
+        "layer0_score": 1.0
+      }
+    },
+    {
+      "tc_id": "TC-UC010-10",
+      "slice_id": "UC-010.S02",
+      "fr_ref": "FR-054",
+      "category": "adversarial",
+      "input": {
+        "title": "Invalid Empty Criteria",
+        "lead_agent_id": "@antigravity",
+        "acceptance_criteria": []
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "ACCEPTANCE_CRITERIA_REQUIRED"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-11",
+      "slice_id": "UC-010.S02",
+      "fr_ref": "FR-054",
+      "category": "adversarial",
+      "input": {
+        "title": "Invalid Confidence",
+        "lead_agent_id": "@antigravity",
+        "acceptance_criteria": [
+          "Criterion 1"
+        ],
+        "confidence_pct": 135
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "INVALID_CONFIDENCE_PCT"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-12",
+      "slice_id": "UC-010.S04",
+      "fr_ref": "FR-057",
+      "category": "adversarial",
+      "input": {
+        "evidence_summary": "",
+        "evidence_links": []
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "EVIDENCE_REQUIRED"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-13",
+      "slice_id": "UC-010.S04",
+      "fr_ref": "FR-057",
+      "category": "adversarial",
+      "input": {
+        "decision": "APPROVE",
+        "lead_agent_id": "@research",
+        "approver_id": "@research",
+        "acceptance_verified": true
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "SOD_VIOLATION"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-14",
+      "slice_id": "UC-010.S04",
+      "fr_ref": "FR-057",
+      "category": "adversarial",
+      "input": {
+        "decision": "APPROVE",
+        "approver_id": "hum-phuong-vo",
+        "acceptance_verified": false
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "ACCEPTANCE_NOT_VERIFIED"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-15",
+      "slice_id": "UC-010.S03",
+      "fr_ref": "FR-056",
+      "category": "adversarial",
+      "input": {
+        "sql_tamper": [
+          "UPDATE open_office_event_log",
+          "DELETE FROM open_office_event_log"
+        ]
+      },
+      "expected": {
+        "rejected": true,
+        "error_code": "APPEND_ONLY_VIOLATION"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-16",
+      "slice_id": "UC-010.S06",
+      "fr_ref": "FR-059",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state",
+        "scope": "project",
+        "project_key": "PM",
+        "real_agent_allowlist": [
+          "@antigravity",
+          "@research",
+          "@orchestrator",
+          "@qualitygate",
+          "@claude",
+          "@codex"
+        ]
+      },
+      "expected": {
+        "fake_crowd_sprites": 0,
+        "crowd_extra_stations": 0,
+        "agents_projected": 6,
+        "has_live_subagents": true,
+        "scope_toggle_supported": [
+          "project_pm",
+          "portfolio_30_projects"
+        ],
+        "station_layout": "960x560"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-17",
+      "slice_id": "UC-010.S06",
+      "fr_ref": "FR-059",
+      "category": "positive",
+      "input": {
+        "operation": "click_agent_inspector",
+        "agent_id": "@orchestrator",
+        "tabs": [
+          "doing_now",
+          "going_to_do_next",
+          "memory_lessons",
+          "cross_module_hub"
+        ]
+      },
+      "expected": {
+        "tab_count": 4,
+        "max_items_per_tab": 6,
+        "doing_now_fields": [
+          "active_issue",
+          "agent_run_id",
+          "live_activity",
+          "quick_steer_available"
+        ],
+        "going_to_do_next_fields": [
+          "wbs_steps",
+          "queued_issues",
+          "agent_schedule_crons"
+        ],
+        "layer0_rule_of_6_compliant": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-18",
+      "slice_id": "UC-010.S06",
+      "fr_ref": "FR-059",
+      "category": "positive",
+      "input": {
+        "operation": "verify_cross_module_links",
+        "team_ref": "team-accord",
+        "project_key": "PM",
+        "agent_id": "@research",
+        "issue_seq": "PM-42"
+      },
+      "expected": {
+        "routes": {
+          "work_items": "/team-accord/PM",
+          "issue_detail": "/team-accord/issue/PM-42",
+          "shell_open_issue": "ShellCtx.onOpenIssue",
+          "agent_chat_1on1": "ShellCtx.onChatWithAgent(@research)",
+          "docs_weknora": "/team-accord/PM/docs",
+          "shell_open_weknora": "ShellCtx.onOpenWeKnoraChat('memory')",
+          "inbox": "/team-accord/PM/inbox",
+          "schedules": "/team-accord/PM/agents/schedules",
+          "agent_skills": "/team-accord/settings/agent-skills",
+          "mcp": "/team-accord/PM/mcp",
+          "vault": "/team-accord/PM/vault"
+        },
+        "dead_links_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC010-19",
+      "slice_id": "UC-010.S06",
+      "fr_ref": "FR-060",
+      "category": "positive",
+      "input": {
+        "operation": "delegate_1card_task",
+        "lead_agent_id": "@codex",
+        "intent_prompt": "Triển khai gateway kiểm tra AST Scion Ledger",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "drafted_criteria_count": 3,
+        "confidence_pct_generated": 95,
+        "estimated_minutes_generated": 25,
+        "estimated_tokens_generated": 8500,
+        "creates_itsaplan_issue": true,
+        "creates_agent_run": true,
+        "headless_execution": true,
+        "target_status": "AWAITING_HITL"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-20",
+      "slice_id": "UC-010.S06",
+      "fr_ref": "FR-060",
+      "category": "positive",
+      "input": {
+        "operation": "rework_fix_mom",
+        "contract_id": "OOC-0003",
+        "feedback_line": "Fix mõm: Luôn kiểm tra bounds GW-EFF-01 trước khi parse AST",
+        "target_zone": "academy",
+        "agent_id": "@claude"
+      },
+      "expected": {
+        "lesson_crystallized_in": "open_office_lessons",
+        "lesson_category": "Đào Tạo",
+        "spawns_run_number": 2,
+        "waypoint_graph_routing": "wooden_doorway_and_corridors",
+        "zero_canvas_collapse_origin": true,
+        "status": "IN_PROGRESS"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-21",
+      "uc_id": "UC-010",
+      "category": "positive",
+      "description": "Zero-Duplication Open Office removes department-pills-row, duplicate sidebar room grid, and duplicate dock CTA",
+      "expected": {
+        "department_pills_row": 0,
+        "duplicate_room_grid": 0,
+        "right_rail_above_fold": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-22",
+      "uc_id": "UC-010",
+      "category": "positive",
+      "description": "Inline 2-step contract dispatch & quick steer execute at 0px scroll with canvas immersion >= 0.56",
+      "expected": {
+        "max_steps": 2,
+        "scroll_y": 0,
+        "min_immersion_ratio": 0.56
+      }
+    },
+    {
+      "tc_id": "TC-UC010-25",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S08",
+      "fr_ref": "FR-076",
+      "category": "positive",
+      "description": "V62 3-Mode Spatial Sub-Tabs switch cleanly and V48 Bulk Dry-Run Dispatch (btn-toggle-bulk-dispatch) previews batch contracts without premature mutation",
+      "input": {
+        "operation": "bulk_dry_run_dispatch_preview",
+        "spatial_modes": ["pixel_map", "kanban_contracts", "timeline_telemetry"],
+        "trigger_id": "btn-toggle-bulk-dispatch",
+        "dry_run": true,
+        "contracts": [
+          {
+            "title": "Audit UC-010 S08 spatial tabs",
+            "lead_agent_id": "@codex",
+            "acceptance_criteria": ["All 3 spatial sub-tabs mount with 0 horizontal overflow"]
+          },
+          {
+            "title": "Verify V48 bulk dry-run diff",
+            "lead_agent_id": "@research",
+            "acceptance_criteria": ["Dry-run count matches queued targets before commit"]
+          }
+        ]
+      },
+      "expected": {
+        "modes_rendered": 3,
+        "dry_run_preview_count": 2,
+        "db_contracts_mutated_before_confirm": 0,
+        "status": "DRY_RUN_READY"
+      }
+    },
+    {
+      "tc_id": "TC-UC010-26",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S09",
+      "fr_ref": "FR-075",
+      "category": "positive",
+      "description": "DB-persisted department positions and agent seat assignments survive reload in open_office_org_governance with /agents JTBD-4 parity",
+      "input": {
+        "operation": "save_department_seat_governance",
+        "table": "open_office_org_governance",
+        "key": "dept_seat_layout:PM",
+        "value_json": {
+          "departments": {
+            "exec_hq": { "x": 480, "y": 196 },
+            "ai_dev": { "x": 806, "y": 196 }
+          },
+          "seats": {
+            "@antigravity": { "zone_id": "exec_hq", "seat_id": "exec-seat-01" },
+            "@codex": { "zone_id": "ai_dev", "seat_id": "dev-seat-02" }
+          }
+        },
+        "verify_agents_jtbd4_parity": true
+      },
+      "expected": {
+        "persisted_table": "open_office_org_governance",
+        "reload_restores_positions": true,
+        "agents_jtbd4_parity": true,
+        "updated_at_present": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-27",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S09",
+      "fr_ref": "FR-075",
+      "category": "positive",
+      "description": "S7 10s Undo toast restores prior department positions and seat assignments in open_office_org_governance when undone within 10s",
+      "input": {
+        "operation": "undo_seat_governance_within_s7_window",
+        "undo_window_ms": 10000,
+        "trigger_after_ms": 3500,
+        "key": "dept_seat_layout:PM"
+      },
+      "expected": {
+        "s7_toast_window_seconds": 10,
+        "reverted_cleanly": true,
+        "open_office_org_governance_restored": true
+      }
+    },
+    {
+      "tc_id": "TC-UC010-28",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S09",
+      "fr_ref": "FR-075",
+      "category": "adversarial",
+      "description": "Invalid department zone, duplicate seat conflict, or expired S7 10s undo window fails closed without corrupting open_office_org_governance",
+      "input": {
+        "operation": "save_department_seat_governance_invalid",
+        "zone_id": "unknown_room",
+        "duplicate_seat_id": "exec-seat-01",
+        "elapsed_after_save_ms": 11500
+      },
+      "expected": {
+        "http_status": 400,
+        "error_code": "INVALID_SEAT_GOVERNANCE_OR_UNDO_EXPIRED",
+        "partial_mutation_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC010-29",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S08",
+      "fr_ref": "FR-076",
+      "category": "adversarial",
+      "description": "Progressive V48 Bulk Dry-Run Dispatch fails closed when target batch is empty or contains invalid agent/criteria entries",
+      "input": {
+        "operation": "bulk_dry_run_dispatch_invalid",
+        "trigger_id": "btn-toggle-bulk-dispatch",
+        "contracts": [
+          {
+            "title": "",
+            "lead_agent_id": "@unknown_agent",
+            "auto_draft_criteria": false,
+            "acceptance_criteria": []
+          }
+        ]
+      },
+      "expected": {
+        "http_status": 400,
+        "error_code": "BULK_DISPATCH_VALIDATION_FAILED",
+        "contracts_created": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC010-30",
+      "uc_id": "UC-010",
+      "slice_id": "UC-010.S10",
+      "fr_ref": "FR-076",
+      "category": "positive",
+      "description": "V45 Fullscreen Evidence Reader, V61 Interactive Criteria Ticking, Copy Slip, and V43 8-Stage Badges verify contract deliverable proof",
+      "input": {
+        "operation": "verify_v45_v61_v43_evidence_surface",
+        "contract_id": "OOC-0008",
+        "toggle_criteria_indices": [0, 1, 2],
+        "copy_slip": true,
+        "open_fullscreen_reader": true
+      },
+      "expected": {
+        "fullscreen_reader_open": true,
+        "all_criteria_checked": true,
+        "copy_slip_digest_non_empty": true,
+        "v43_stage_badges_count": 8
+      }
+    }
+  ]
+}

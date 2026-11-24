@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   type CyclePatch,
   type NewCycleInput,
@@ -51,6 +57,7 @@ export function usePlannedCyclesQuery(projectKey: string | null) {
     queryKey: qk.plannedCycles(projectKey ?? ''),
     queryFn: () => listPlannedCycles(projectKey!),
     enabled: projectKey != null,
+    placeholderData: keepPreviousData,
   });
 }
 

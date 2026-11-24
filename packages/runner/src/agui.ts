@@ -14,7 +14,45 @@ export type AgUiEvent =
   | { type: 'TOOL_CALL_START'; toolCallId: string; toolCallName: string; parentMessageId: string }
   | { type: 'TOOL_CALL_ARGS'; toolCallId: string; delta: string }
   | { type: 'TOOL_CALL_END'; toolCallId: string }
-  | { type: 'TOOL_CALL_RESULT'; messageId: string; toolCallId: string; content: string };
+  | { type: 'TOOL_CALL_RESULT'; messageId: string; toolCallId: string; content: string }
+  | { type: 'THINKING_DELTA'; delta: string; messageId?: string }
+  | {
+      type: 'APPROVAL_REQUIRED';
+      approvalId: string;
+      toolCallId: string;
+      toolName: string;
+      args?: string;
+      requireSod?: boolean;
+    }
+  | {
+      type: 'APPROVAL_DECISION';
+      approvalId: string;
+      decision: 'approved' | 'rejected';
+      deciderUserId?: string;
+      note?: string;
+    }
+  | { type: 'ASK_USER'; approvalId: string; question: string; options?: string[] }
+  | { type: 'PLAN_PROPOSAL'; approvalId: string; title: string; steps: string[] }
+  | {
+      type: 'ARTIFACT_EMIT';
+      artifactId: string;
+      kind: 'diff' | 'code' | 'mermaid' | 'markdown';
+      title: string;
+      content: string;
+      language?: string;
+    }
+  | {
+      type: 'SUBAGENT_SPAWN';
+      subagentId: string;
+      role: string;
+      task: string;
+    }
+  | {
+      type: 'SUBAGENT_DONE';
+      subagentId: string;
+      status: 'completed' | 'failed';
+      summary?: string;
+    };
 
 // What one model call of the answer read and wrote, normalised across the commands: the
 // tokens read include the ones read from cache, which several of them report apart. It
@@ -27,16 +65,13 @@ export interface ContextUsage {
 
 // Text is sent in batches rather than per chunk: a token at a time would be a request
 // per token, and the reader cannot tell the difference at this size anyway.
-const FLUSH_CHARS = 1500;
+const FLUSH_CHARS = 300;
 // The server's own cap on one text event. Longer output is split across events.
 const DELTA_LIMIT = 12_000;
 // A tool's arguments and result are reported whole: cutting one breaks the JSON the chat
 // indents and highlights. An outsized one is cut from the front, where a long output says
 // least.
 const TOOL_TEXT_LIMIT = 32_000;
-// Node's stripVTControlCharacters leaves the `u` of ESC [<u behind.
-// eslint-disable-next-line no-control-regex
-const TERMINAL_CODES = /\x1b\[[0-?]*[ -/]*[@-~]/g;
 
 // Produces the events of one answer and hands them to `send` in batches. The caller
 // writes the command's output as it arrives and calls flush on a timer, so a long
@@ -44,10 +79,6 @@ const TERMINAL_CODES = /\x1b\[[0-?]*[ -/]*[@-~]/g;
 export class AnswerStream {
   private readonly messageId: string;
   private queued: AgUiEvent[] = [];
-  // The batch a send failed on. The server may have stored it before the answer was lost,
-  // and it takes a stored batch back only as a replay of the same events, so this goes out
-  // again unchanged, ahead of anything newer.
-  private unsent: AgUiEvent[] = [];
   private text = '';
   private started = false;
   private line = '';
@@ -61,16 +92,10 @@ export class AnswerStream {
   private openTextPart = '';
   private readonly openToolCalls = new Set<string>();
   private readonly closedToolCalls = new Set<string>();
-  private mastraMessageId: string | undefined;
   // Whether the command reported partial text of its own. Its final message repeats
   // that text, and emitting both would say everything twice.
   private sawPartialText = false;
   private sawAnyText = false;
-  // The text since the last tool call, and the last such stretch that held any. A run
-  // reports the stretch the agent ended on as its output: what it wrote before a tool
-  // call is narration on the way to it.
-  private segment = '';
-  private lastSegment = '';
   // The flush in flight, so the next one waits for it instead of racing it.
   private sending: Promise<void> = Promise.resolve();
   private readonly usage: UsageReader;
@@ -102,18 +127,14 @@ export class AnswerStream {
     return this.sessionId;
   }
 
-  answer(): string {
-    return (this.segment.trim() ? this.segment : this.lastSegment).trim();
-  }
-
   // The size of the conversation's context after this answer, as the reader saw it.
   contextUsage(): ContextUsage | null | undefined {
     return this.usage.value();
   }
 
   // Two flushes can overlap — the timer and the close — so they are chained to keep the
-  // events in the order they were produced. A batch that fails to send is held for the
-  // next flush to send again.
+  // events in the order they were produced. A batch that fails to send goes back to the
+  // front of the queue for the next flush to carry.
   async flush(): Promise<void> {
     const sending = this.sending.catch(() => {}).then(() => this.sendQueued());
     this.sending = sending.catch(() => {});
@@ -122,13 +143,14 @@ export class AnswerStream {
 
   private async sendQueued(): Promise<void> {
     this.drainText();
-    while (this.unsent.length > 0 || this.queued.length > 0) {
-      if (this.unsent.length === 0) {
-        this.unsent = this.queued;
-        this.queued = [];
-      }
-      await this.send(this.unsent);
-      this.unsent = [];
+    if (this.queued.length === 0) return;
+    const batch = this.queued;
+    this.queued = [];
+    try {
+      await this.send(batch);
+    } catch (err) {
+      this.queued.unshift(...batch);
+      throw err;
     }
   }
 
@@ -162,7 +184,6 @@ export class AnswerStream {
     if (!text) return;
     this.sawAnyText = true;
     this.text += text;
-    this.segment += text;
     if (this.text.length >= FLUSH_CHARS) this.drainText();
   }
 
@@ -194,9 +215,7 @@ export class AnswerStream {
     } catch {
       // Output that is not the format it was configured with still has something to say.
       // A CLI writing its own diagnostics to stdout alongside the stream lands here too.
-      // Mastra Code writes a terminal reset to stdout as it exits.
-      const plain = trimmed.replace(TERMINAL_CODES, '').trim();
-      if (plain) this.appendText(`${plain}\n`);
+      this.appendText(`${trimmed}\n`);
       return;
     }
     // A line that parses to null, a number or a string carries none of the fields below,
@@ -222,45 +241,6 @@ export class AnswerStream {
       case 'pi-json':
         this.readPiLine(parsed as PiJsonLine);
         break;
-      case 'mastracode-jsonl':
-        this.readMastraLine(parsed as MastraLine);
-        break;
-    }
-  }
-
-  // A new thread is named on thread_created, before the answer. The task arrives as a
-  // message of its own under the role `signal`, so only the deltas of an assistant message
-  // count. The closing result repeats the text, and carries the error of a failed run:
-  // Mastra Code writes nothing to stderr in this mode.
-  private readMastraLine(message: MastraLine): void {
-    switch (message.type) {
-      case 'thread_created':
-        if (message.thread?.id) this.sessionId ??= message.thread.id;
-        return;
-      case 'message_start':
-        if (message.message?.role === 'assistant') this.mastraMessageId = message.message.id;
-        return;
-      case 'message_update':
-        if (message.id === this.mastraMessageId && message.event?.type === 'text-delta') {
-          this.appendText(message.event.delta ?? '');
-        }
-        return;
-      case 'tool_start':
-        if (message.toolCallId) {
-          this.pushToolCall(
-            message.toolCallId,
-            message.toolName ?? 'tool',
-            JSON.stringify(message.args ?? {}),
-          );
-        }
-        return;
-      case 'tool_end':
-        if (message.toolCallId)
-          this.pushToolResult(message.toolCallId, toolResultText(message.result));
-        return;
-      case 'result':
-        if (!this.sawAnyText) this.appendText(message.text || message.error?.message || '');
-        return;
     }
   }
 
@@ -292,7 +272,7 @@ export class AnswerStream {
       case 'tool_execution_end': {
         if (!message.toolCallId || this.closedToolCalls.has(message.toolCallId)) return;
         this.closedToolCalls.add(message.toolCallId);
-        this.pushToolResult(message.toolCallId, toolResultText(message.result));
+        this.pushToolResult(message.toolCallId, piResultText(message.result));
         return;
       }
       case 'message_end':
@@ -387,42 +367,14 @@ export class AnswerStream {
       return;
     }
     const item = message.item;
-    if (!item) return;
-    if (message.type === 'item.completed' && item.type === 'agent_message' && item.text) {
+    if (message.type !== 'item.completed' || !item) return;
+    if (item.type === 'agent_message' && item.text) {
       this.appendText(item.text);
       return;
     }
-    if (
-      !item.id ||
-      !['command_execution', 'mcp_tool_call', 'file_change', 'web_search'].includes(item.type ?? '')
-    )
-      return;
-    if (!['item.started', 'item.completed'].includes(message.type ?? '')) return;
-    if (!this.openToolCalls.has(item.id)) {
-      this.openToolCalls.add(item.id);
-      const name = item.type === 'command_execution' ? 'shell' : (item.tool ?? item.type ?? 'tool');
-      const args =
-        item.command ?? JSON.stringify(item.arguments ?? item.changes ?? { query: item.query });
-      this.pushToolCall(item.id, name, args);
-    }
-    if (message.type === 'item.completed' && !this.closedToolCalls.has(item.id)) {
-      this.closedToolCalls.add(item.id);
-      let result = item.aggregated_output;
-      if (
-        result == null ||
-        item.status === 'failed' ||
-        (item.exit_code != null && item.exit_code !== 0)
-      ) {
-        result = JSON.stringify({
-          status: item.status,
-          exitCode: item.exit_code,
-          output: item.aggregated_output,
-          result: item.result,
-          error: item.error,
-          changes: item.changes,
-        });
-      }
-      this.pushToolResult(item.id, result);
+    if (item.type === 'command_execution' && item.id) {
+      this.pushToolCall(item.id, 'shell', item.command ?? '');
+      this.pushToolResult(item.id, item.aggregated_output ?? '');
     }
   }
 
@@ -505,7 +457,6 @@ export class AnswerStream {
   // it and the words said after it.
   private pushToolCall(toolCallId: string, toolCallName: string, args: string): void {
     this.drainText();
-    this.closeSegment();
     this.queued.push(
       { type: 'TOOL_CALL_START', toolCallId, toolCallName, parentMessageId: this.messageId },
       { type: 'TOOL_CALL_ARGS', toolCallId, delta: tail(args, TOOL_TEXT_LIMIT) },
@@ -513,14 +464,8 @@ export class AnswerStream {
     );
   }
 
-  private closeSegment(): void {
-    if (this.segment.trim()) this.lastSegment = this.segment;
-    this.segment = '';
-  }
-
   private pushToolResult(toolCallId: string, content: string): void {
     this.drainText();
-    this.closeSegment();
     this.queued.push({
       type: 'TOOL_CALL_RESULT',
       messageId: this.messageId,
@@ -597,20 +542,7 @@ export class UsageReader {
       case 'pi-json':
         this.readPi(parsed as PiJsonLine);
         return;
-      case 'mastracode-jsonl':
-        this.readMastra(parsed as MastraLine);
-        return;
     }
-  }
-
-  // usage_update reports one model call. promptTokens is the number Mastra Code itself
-  // shows as the size of the conversation.
-  private readMastra(message: MastraLine): void {
-    if (message.type !== 'usage_update' || !message.usage) return;
-    this.last = {
-      inputTokens: message.usage.promptTokens ?? 0,
-      outputTokens: message.usage.completionTokens ?? 0,
-    };
   }
 
   // Claude reports one model call in two events: message_start opens it with the tokens
@@ -697,7 +629,7 @@ function textOfResult(content: unknown): string {
   return '';
 }
 
-function toolResultText(result: unknown): string {
+function piResultText(result: unknown): string {
   if (result && typeof result === 'object' && !Array.isArray(result) && 'content' in result) {
     return textOfResult(result.content);
   }
@@ -736,14 +668,6 @@ interface CodexLine {
     text?: string;
     command?: string;
     aggregated_output?: string;
-    exit_code?: number;
-    status?: string;
-    tool?: string;
-    arguments?: unknown;
-    result?: unknown;
-    error?: unknown;
-    changes?: unknown;
-    query?: string;
   };
 }
 
@@ -834,22 +758,6 @@ interface PiJsonLine {
   args?: unknown;
   result?: unknown;
   message?: { role?: string; content?: unknown };
-}
-
-// The parts of Mastra Code's --output jsonl this adapter reads.
-interface MastraLine {
-  type?: string;
-  id?: string;
-  thread?: { id?: string };
-  message?: { id?: string; role?: string };
-  event?: { type?: string; delta?: string };
-  toolCallId?: string;
-  toolName?: string;
-  args?: unknown;
-  result?: unknown;
-  usage?: { promptTokens?: number; completionTokens?: number };
-  text?: string;
-  error?: { message?: string };
 }
 
 interface StreamEvent {

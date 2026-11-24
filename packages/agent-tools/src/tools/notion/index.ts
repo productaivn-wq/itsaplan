@@ -1,4 +1,5 @@
 import type { Integration } from '../../types';
+import { OAUTH2_PROVIDER_SPECS } from '../../oauth-catalog';
 import { notionSearch } from './search';
 import { notionReadPage } from './read-page';
 import { notionCreatePage } from './create-page';
@@ -11,6 +12,8 @@ import { notionAddComment } from './add-comment';
 export const notion: Integration = {
   key: 'notion',
   label: 'Notion',
+  authModes: ['oauth2', 'api_key'],
+  oauth2: OAUTH2_PROVIDER_SPECS.notion,
   credentialSchema: [
     {
       key: 'token',

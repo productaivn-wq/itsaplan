@@ -4,11 +4,6 @@
   "copyKey": "Clé",
   "description": "Description",
   "issueTypes": "Types de tickets",
-  "templates": "Modèles",
-  "blank": "Projet vierge",
-  "blankHint": "États par défaut et les types de tickets choisis",
-  "startFrom": "Partir de",
-  "continue": "Continuer",
   "typesCreated": "{count, plural, one {# type de ticket sera créé} other {# types de tickets seront créés}}",
   "defaultType": "Les nouveaux tickets reçoivent le type {type} par défaut. Les types sont modifiables dans les paramètres.",
   "presets": {
@@ -38,7 +33,6 @@
     "issueTypes": "Types de tickets",
     "labels": "Étiquettes",
     "customFields": "Champs personnalisés",
-    "issueTemplates": "Modèles de tickets",
     "views": "Vues",
     "dashboards": "Tableaux de bord",
     "documents": "Documents",
@@ -53,5 +47,16 @@
   "create": "Créer le projet",
   "copyAction": "Copier le projet",
   "defaultAgents": "Agents ajoutés à ce projet : {names}",
-  "copyName": "{name} (copie)"
+  "copyName": "{name} (copie)",
+  "primaryLocation": "Primary storing location (optional)",
+  "primaryLocationPlaceholder": "~/workspace or https://drive.google.com/...",
+  "tabGeneral": "General",
+  "tabChannels": "Channels & Groups",
+  "tabContacts": "Contacts",
+  "tabLocations": "Locations",
+  "channelsHint": "Add Zalo, Telegram, Discord, Email, or Messenger channels and groups where agents collect context.",
+  "contactsHint": "Add project contacts, RACI roles, and messaging handles for agent coordination.",
+  "locationsHint": "Add local folders, Google Drive links, Git repos, or knowledge bases where project files live.",
+  "setupSummary": "{channels} channels/groups · {contacts} contacts · {locations} locations",
+  "nextStep": "Next →"
 }

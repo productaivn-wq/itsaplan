@@ -1,6 +1,5 @@
 import type { IssueLinkRef } from '@/lib/api/endpoints/issues';
 import { type Maps } from '@/utils/project';
-import { noDragProps } from '@/lib/dnd';
 import { cn } from '@/lib/utils';
 import { LINK_RELATION_ICONS } from '@/utils/issueLinks';
 import { useLinkRelationLabel } from '@/hooks/useLinkRelationLabel';
@@ -47,9 +46,9 @@ export function IssueCardLinks({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  // The card below starts a drag on press and opens itself on
-                  // click; a link row must do neither.
-                  {...noDragProps}
+                  // The card below starts a drag on pointerdown and opens itself
+                  // on click; a link row must do neither.
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -60,7 +59,7 @@ export function IssueCardLinks({
                     onOpen && 'cursor-pointer hover:bg-muted/70',
                   )}
                 >
-                  <span className="flex min-w-0 items-center gap-1.5 text-[10px] tracking-wide text-muted-foreground/70">
+                  <span className="flex min-w-0 items-center gap-1.5 text-xs tracking-wide text-muted-foreground/70">
                     {named && (
                       <>
                         {/* Being blocked is the one relation that holds the issue
@@ -77,7 +76,7 @@ export function IssueCardLinks({
                       </>
                     )}
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 font-mono text-[10px] text-foreground/80">
+                  <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-foreground/80">
                     {column && (
                       <span
                         className="size-1.5 shrink-0 rounded-full"

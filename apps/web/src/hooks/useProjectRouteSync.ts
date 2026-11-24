@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import type { Project } from '@/lib/api/endpoints/projects';
 import { projectPath } from '@/utils/paths';
 import {
@@ -22,7 +23,7 @@ export function useProjectRouteSync({
   projectKey: string | null;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const prefsQuery = useAccountPreferencesQuery();
   const { mutate: saveLastProject, isPending: savingPrefs } = useUpdateAccountPreferences();
 

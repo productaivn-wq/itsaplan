@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import type { UIEvent, WheelEvent } from 'react';
 import type { ChatMessage, ChatStatus, PendingMessage } from '@/hooks/useAgentChat';
+import type { ChatViewPreferences } from '@/features/ai-chat/types/workspaceControls';
 import { dayKey } from '@/utils/dates';
 import AgentChatMessage from './AgentChatMessage';
 import AgentChatPendingMessage from './AgentChatPendingMessage';
@@ -25,20 +26,37 @@ export function AgentChatTranscript({
   activeTool,
   pending,
   onRemovePending,
+  onSteerPending,
+  onDecideApproval,
   hasEarlierMessages = false,
   isLoadingEarlier = false,
   onLoadEarlier,
+  projectKey,
+  viewPrefs,
+  onOpenArtifact,
 }: {
   messages: ChatMessage[];
   status: ChatStatus;
   activeTool: string | null;
   pending: PendingMessage[];
   onRemovePending: (id: string) => void;
+  onSteerPending?: (id: string) => void;
+  onDecideApproval?: (approvalId: string, decision: 'approved' | 'rejected') => void;
   hasEarlierMessages?: boolean;
   isLoadingEarlier?: boolean;
   onLoadEarlier?: () => void;
+  projectKey?: string;
+  viewPrefs?: Partial<ChatViewPreferences>;
+  onOpenArtifact?: (artifactId: string) => void;
 }) {
   const t = useTranslations('common.agentChat');
+  const widthClass =
+    viewPrefs?.width === 'narrow'
+      ? 'max-w-2xl'
+      : viewPrefs?.width === 'wide'
+        ? 'max-w-5xl'
+        : 'max-w-3xl';
+  const compact = viewPrefs?.density === 'compact';
 
   let statusLabel: string;
   if (status === 'queued') statusLabel = t('waitingForRunner');
@@ -89,7 +107,7 @@ export function AgentChatTranscript({
       >
         <MessageScrollerContent
           aria-busy={status !== 'ready' || isLoadingEarlier}
-          className="mx-auto w-full max-w-3xl gap-6 p-4 pb-10"
+          className={`mx-auto w-full ${widthClass} ${compact ? 'gap-3 px-4 py-2.5 pb-6' : 'gap-6 p-4 pb-10'}`}
         >
           {messages.map((message, index) => {
             const previous = messages[index - 1];
@@ -99,6 +117,10 @@ export function AgentChatTranscript({
                 message={message}
                 complete={status === 'ready' || index < messages.length - 1}
                 showDate={!previous || dayKey(previous.createdAt) !== dayKey(message.createdAt)}
+                onDecideApproval={onDecideApproval}
+                projectKey={projectKey}
+                viewPrefs={viewPrefs}
+                onOpenArtifact={onOpenArtifact}
               />
             );
           })}
@@ -116,6 +138,7 @@ export function AgentChatTranscript({
               key={message.id}
               message={message}
               onRemove={onRemovePending}
+              onSteer={onSteerPending}
             />
           ))}
         </MessageScrollerContent>

@@ -14,7 +14,6 @@ const userTag = z.object({
 // fetch.
 export const instagramCreateMediaContainer: CustomToolEntry = {
   key: 'instagram_create_media_container',
-  group: 'Publishing',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Create Media Container',
   description:
@@ -88,7 +87,6 @@ export const instagramCreateMediaContainer: CustomToolEntry = {
 // Creates a carousel parent container from previously created child containers.
 export const instagramCreateCarousel: CustomToolEntry = {
   key: 'instagram_create_carousel',
-  group: 'Publishing',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Create Carousel Container',
   description:
@@ -122,7 +120,6 @@ export const instagramCreateCarousel: CustomToolEntry = {
 // Reads a container's processing status.
 export const instagramContainerStatus: CustomToolEntry = {
   key: 'instagram_container_status',
-  group: 'Publishing',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Container Status',
   description:
@@ -141,7 +138,6 @@ export const instagramContainerStatus: CustomToolEntry = {
 // Publishes a finished container.
 export const instagramPublishMedia: CustomToolEntry = {
   key: 'instagram_publish_media',
-  group: 'Publishing',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Publish Media',
   description:
@@ -167,7 +163,6 @@ const publishItem = z.object({
 // are not supported.
 export const instagramPublishPost: CustomToolEntry = {
   key: 'instagram_publish_post',
-  group: 'Publishing',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Publish Post',
   description:

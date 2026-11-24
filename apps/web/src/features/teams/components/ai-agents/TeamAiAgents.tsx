@@ -63,8 +63,8 @@ export default function TeamAiAgents() {
       ) : agents.length === 0 ? (
         <EmptyState title={t('empty')} description={t('emptyHint')} />
       ) : (
-        <div className="space-y-4">
-          <Table className="min-w-[1000px] table-fixed">
+        <div className="space-y-4 overflow-x-auto">
+          <Table className="w-full min-w-0">
             <colgroup>
               <col className="w-[32%]" />
               <col className="w-[18%]" />

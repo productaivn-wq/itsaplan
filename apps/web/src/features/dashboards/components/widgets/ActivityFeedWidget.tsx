@@ -109,7 +109,7 @@ export default function ActivityFeedWidget({
             <div className="min-w-0 flex-1">
               <span className="text-foreground/80">{a.actorName ?? t('someone')}</span>{' '}
               <span className="text-muted-foreground">{verb(a.kind, a.action)}</span>{' '}
-              <Link href={issuePath(projectKey, a.issueSequence)} className="hover:underline">
+              <Link href={issuePath(projectKey, a.issueSequence)} className="inline-flex min-h-8 items-center hover:underline">
                 {projectKey}-{a.issueSequence}
               </Link>
               <span className="ml-1 text-xs text-muted-foreground/70">

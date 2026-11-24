@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useRef } from 'react';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
 import {
   useBoardIssuesQuery,
   useProjectQuery,
@@ -11,8 +11,10 @@ import { ApiError } from '@/lib/api/core/client';
 import { applyFilters } from '@/utils/filters';
 import { withoutShownSubtasks } from '@/utils/subtasks';
 import { viewPath } from '@/utils/paths';
-import { usePermissions } from '@/hooks/usePermissions';
 import { useViewEditor } from '@/hooks/useViewEditor';
+import { useLiveRefresh } from '@/hooks/useLiveRefresh';
+import { revScope } from '@/utils/revScopes';
+import { qk } from '@/services/queryKeys';
 
 function errorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -22,17 +24,31 @@ function errorMessage(error: unknown): string | null {
 // The project state behind the Shell: the project list, the composed project, the
 // saved views and the view editor, plus the load/error flags the Shell renders
 // from. Kept out of the Shell so it stays a composition of chrome and overlays.
-export function useShellProject(projectKey: string | null, activeViewId: number | null) {
-  const router = useRouter();
-
+export function useShellProject(
+  projectKey: string | null,
+  activeViewId: number | null,
+  onBoard: boolean = true,
+) {
   const projectsQuery = useProjectsQuery();
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+
+  // Keep board issues enabled across sibling feature switches within the same project
+  // once the board has been loaded, preventing query toggling & ShellCtx churn.
+  const loadedBoardProjectRef = useRef<string | null>(null);
+  if (onBoard && projectKey) {
+    loadedBoardProjectRef.current = projectKey;
+  }
 
   // The board loads as two queries: the scaffold (columns/types/labels/fields/
   // viewer) and the issues. They are composed into one project object here so every
   // child reads project.issues as before.
   const projectQuery = useProjectQuery(projectKey);
-  const boardIssuesQuery = useBoardIssuesQuery(projectKey);
+  const keepBoardEnabled =
+    onBoard || (projectKey != null && loadedBoardProjectRef.current === projectKey);
+  const boardIssuesQuery = useBoardIssuesQuery(projectKey, keepBoardEnabled);
+  if (boardIssuesQuery.data && projectKey) {
+    loadedBoardProjectRef.current = projectKey;
+  }
   const scaffold = projectQuery.data ?? null;
   // The cycle options join the composite so grouping by cycle can lay out a lane
   // per cycle a board plans into, not only per cycle an issue is already in. The
@@ -45,6 +61,9 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
         ? {
             ...scaffold,
             issues: boardIssuesQuery.data?.issues ?? [],
+            totalCount: boardIssuesQuery.data?.totalCount,
+            truncated: boardIssuesQuery.data?.truncated,
+            columnTotals: boardIssuesQuery.data?.columnTotals,
             plannedCycles: cyclesQuery.data ?? [],
           }
         : null,
@@ -54,38 +73,40 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
   const viewsQuery = useViewsQuery(projectKey);
   const views = useMemo(() => viewsQuery.data ?? [], [viewsQuery.data]);
 
+  const projectId = scaffold?.project.id ?? null;
+  useLiveRefresh({
+    scope: projectId ? revScope.project(projectId) : null,
+    targets: [
+      qk.projects,
+      ...(projectKey ? [qk.project(projectKey)] : []),
+      ...(projectKey && keepBoardEnabled ? [qk.boardIssues(projectKey)] : []),
+    ],
+  });
+
+  useLiveRefresh({
+    scope: projectId && keepBoardEnabled ? revScope.board(projectId) : null,
+    targets: [
+      ...(projectKey && keepBoardEnabled
+        ? [qk.boardIssues(projectKey), qk.cycleOptions(projectKey)]
+        : []),
+      ...(projectKey ? [qk.analyticsForProject(projectKey)] : []),
+    ],
+  });
+
+  useLiveRefresh({
+    scope: projectId ? revScope.agents(projectId) : null,
+    targets: [qk.anyAiAgents, ...(projectKey ? [qk.analyticsForProject(projectKey)] : [])],
+  });
+
   // Saved-views, layout, display and filter editing for the current project. The
   // active view is the route param; selecting a view navigates.
-  const { can, isMember } = usePermissions(project);
-  const editor = useViewEditor(
-    projectKey,
-    views,
-    activeViewId,
-    (id) => projectKey && router.push(viewPath(projectKey, id)),
-    isMember && can('views', 'read'),
+  const handleSelectView = useCallback(
+    (id: number | null) => {
+      if (projectKey) navigateFeatureInstant(viewPath(projectKey, id));
+    },
+    [projectKey],
   );
-
-  // An address naming a view the caller cannot see (deleted, or someone else's
-  // private view) falls back to All instead of waiting for it, once a fetch started
-  // after the address arrived has answered, or failed: the cached list may predate a
-  // view just made.
-  const missingView =
-    activeViewId != null &&
-    viewsQuery.data !== undefined &&
-    !viewsQuery.isFetching &&
-    !views.some((v) => v.id === activeViewId);
-  const [checked, setChecked] = useState<{ viewId: number; at: number } | null>(null);
-  const { refetch: refetchViews, dataUpdatedAt, errorUpdatedAt } = viewsQuery;
-  const viewsUpdatedAt = Math.max(dataUpdatedAt, errorUpdatedAt);
-  useEffect(() => {
-    if (!missingView || !projectKey || activeViewId == null) return;
-    if (checked?.viewId !== activeViewId) {
-      setChecked({ viewId: activeViewId, at: Date.now() });
-      void refetchViews();
-    } else if (viewsUpdatedAt >= checked.at) {
-      router.replace(viewPath(projectKey, null));
-    }
-  }, [missingView, projectKey, activeViewId, checked, refetchViews, viewsUpdatedAt, router]);
+  const editor = useViewEditor(projectKey, views, activeViewId, handleSelectView);
 
   // The project with the active filters applied to its issues: the active view's
   // own conditions plus any ad-hoc ones. Subtasks are then left out of every
@@ -105,9 +126,12 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
   // filter by issueTypeId locally.
   const customFields = useMemo(() => project?.customFields ?? [], [project]);
 
-  // Gates the create-issue keyboard shortcut; the header and command palette gate their
-  // own controls via usePermissions.
-  const canCreateIssue = can('work_items', 'create');
+  // The Shell provides the permission context, so the viewer is read directly
+  // rather than through usePermissions. Gates the create-issue keyboard shortcut;
+  // the header and command palette gate their own controls via usePermissions.
+  const viewer = project?.viewer ?? null;
+  const canCreateIssue =
+    !!viewer && (viewer.role === 'owner' || project?.permissions.work_items?.create === true);
 
   // The scaffold is the membership check; the issues and the views carry their own
   // resource. A 403 on one of those is a role that does not grant it, not a project
@@ -125,7 +149,6 @@ export function useShellProject(projectKey: string | null, activeViewId: number 
     project,
     filteredProject,
     views,
-    viewsFailed: viewsQuery.isError,
     editor,
     customFields,
     canCreateIssue,

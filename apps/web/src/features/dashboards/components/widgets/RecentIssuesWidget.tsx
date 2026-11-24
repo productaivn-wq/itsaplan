@@ -68,7 +68,7 @@ export default function RecentIssuesWidget({
               <li key={issue.id}>
                 <Link
                   href={issuePath(projectKey, issue.sequenceNumber)}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                  className="flex min-h-8 items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
                 >
                   <span
                     className="size-2.5 shrink-0 rounded-full"

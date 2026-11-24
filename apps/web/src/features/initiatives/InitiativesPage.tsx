@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
 import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
@@ -10,7 +11,7 @@ import { useShell } from '@/context/shellContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useInitiativeCountsQuery, useInitiativesQuery } from '@/services/initiatives.service';
 import { INITIATIVE_SORTS, type InitiativeSort } from '@/lib/api/endpoints/initiatives';
-import { useDndSensors } from '@/lib/dnd';
+import { useStripSortSensors } from '@/lib/dnd';
 import { initiativesTabPath, type InitiativesTab } from '@/utils/paths';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList } from '@/components/ui/tabs';
@@ -37,7 +38,7 @@ export default function InitiativesPage({ tab }: { tab: InitiativesTab }) {
   const searchParams = useSearchParams();
   const [creating, setCreating] = useState(false);
   const { order, reorder } = useInitiativeTabOrder();
-  const sensors = useDndSensors();
+  const sensors = useStripSortSensors();
 
   const projectKey = project?.project.ref ?? null;
   const activeTab = INITIATIVE_TABS.find((item) => item.value === tab)!;
@@ -75,7 +76,7 @@ export default function InitiativesPage({ tab }: { tab: InitiativesTab }) {
   // A tab is its own route and carries no query, so switching one drops the page and
   // the sorting of the tab left behind.
   const changeTab = (next: InitiativesTab) => {
-    router.push(initiativesTabPath(project.project.ref, next));
+    navigateFeatureInstant(initiativesTabPath(project.project.ref, next));
   };
 
   const changePage = (next: number) => {
@@ -101,23 +102,14 @@ export default function InitiativesPage({ tab }: { tab: InitiativesTab }) {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-lg font-semibold">{t('title')}</h1>
-        {can('initiatives', 'create') && (
-          <Button size="sm" className="h-8 gap-1.5" onClick={() => setCreating(true)}>
-            <Plus className="size-3.5" />
-            {t('newInitiative')}
-          </Button>
-        )}
-      </div>
-
-      <div className="min-w-0 px-4 pb-2">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <h1 className="sr-only">{t('title')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6">
         {/* The open tab comes from the route, and each trigger navigates on click
             (see InitiativeTabTrigger), so Radix drives no selection of its own:
             manual activation keeps focus from switching tabs mid-drag. */}
         <Tabs value={tab} activationMode="manual">
-          <TabsList variant="line" className="overflow-x-auto">
+          <TabsList className="inline-flex h-auto items-center gap-0.5 overflow-x-auto rounded-full border border-border/85 bg-muted/65 p-0.5">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -137,6 +129,38 @@ export default function InitiativesPage({ tab }: { tab: InitiativesTab }) {
             </DndContext>
           </TabsList>
         </Tabs>
+
+        {can('initiatives', 'create') && (
+          <Button
+            size="sm"
+            className="h-9 gap-1.5 rounded-full bg-foreground px-3.5 text-xs text-background hover:bg-foreground/90"
+            onClick={() => setCreating(true)}
+          >
+            <Plus className="size-3.5" />
+            {t('newInitiative')}
+          </Button>
+        )}
+      </div>
+
+      <div className="mx-4 mb-2.5 sm:mx-6">
+        <div className="studio-kpi-band grid grid-cols-2 divide-y divide-border/75 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+          {[
+            { label: t('tabs.all'), value: counts?.total ?? total, dot: 'bg-foreground/70' },
+            { label: t('tabs.active'), value: counts?.active ?? 0, dot: 'bg-emerald-500' },
+            { label: t('tabs.planned'), value: counts?.planned ?? 0, dot: 'bg-amber-500' },
+            { label: t('tabs.completed'), value: counts?.completed ?? 0, dot: 'bg-sky-500' },
+          ].map((kpi) => (
+            <div key={kpi.label} className="px-3 py-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <span className={`size-1.5 rounded-full ${kpi.dot}`} />
+                <span>{kpi.label}</span>
+              </div>
+              <div className="mt-0.5 font-heading text-xl font-bold tracking-tight text-foreground tabular-nums">
+                {kpi.value}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <InitiativesList

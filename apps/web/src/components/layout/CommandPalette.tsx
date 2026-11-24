@@ -1,16 +1,11 @@
 import { Fragment, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { useIssueSearchQuery, useOtherProjectIssueSearch } from '@/services/issues.service';
-import { issuePath } from '@/utils/paths';
+import { useIssueSearchQuery } from '@/services/issues.service';
 import type { Command, CommandPage, CommandSection } from '@/utils/commands';
 import { substringFilter } from '@/utils/commandFilter';
 import CommandPaletteDocuments from './CommandPaletteDocuments';
 import CommandPaletteIssues from '@/components/layout/CommandPaletteIssues';
-import CommandPaletteOtherIssues from './CommandPaletteOtherIssues';
-import CommandPaletteScope from './CommandPaletteScope';
-import { usePaletteSearchScope } from './hooks/usePaletteSearchScope';
 import CommandPaletteRow from '@/components/layout/CommandPaletteRow';
 import {
   CommandDialog,
@@ -25,28 +20,25 @@ import {
 // for the issue in front of the user, then the board, the general commands, the
 // project list and every section they may open. A command with a submenu opens a
 // second level (status, priority, assignee, labels); Backspace on an empty input
-// goes back. While the user is typing, an "Issues" group lists issues of the current
-// project the server matches by identifier, title, description, number or custom
-// fields (archived issues included), and the last groups list the matches in every
-// other project the user can read, one group per project. While a project is open, a
-// switch narrows the search to it.
+// goes back. While the user is typing, a last "Issues" group lists issues the
+// server matches by identifier, title, description, number or custom fields
+// (archived issues included), so a search separates sections, commands and issues.
 export default function CommandPalette({
   open,
   onOpenChange,
   sections,
   currentProjectKey,
-  currentProjectId,
+  hasProject,
   onOpenIssue,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sections: CommandSection[];
   currentProjectKey: string | null;
-  currentProjectId: number | null;
+  hasProject: boolean;
   onOpenIssue: (sequenceNumber: number) => void;
 }) {
   const t = useTranslations('palette');
-  const router = useRouter();
   const [query, setQuery] = useState('');
   const [page, setPage] = useState<CommandPage | null>(null);
 
@@ -74,14 +66,6 @@ export default function CommandPalette({
   const debounced = useDebouncedValue(query, 250);
   const search = useIssueSearchQuery(currentProjectKey, debounced, { enabled: open && !page });
   const hits = search.data ?? [];
-  const { scope, setScope } = usePaletteSearchScope();
-  const allProjects = currentProjectKey === null || scope === 'all';
-  const others = useOtherProjectIssueSearch(
-    debounced,
-    { key: currentProjectKey, id: currentProjectId },
-    { enabled: open && !page && allProjects },
-  );
-  const hasProject = currentProjectId !== null;
   const searching = query.trim().length > 0;
 
   function run(command: Command) {
@@ -109,9 +93,6 @@ export default function CommandPalette({
           }
         }}
       />
-      {!page && currentProjectKey !== null && (
-        <CommandPaletteScope scope={scope} onChange={setScope} />
-      )}
       <CommandList>
         <CommandEmpty>{t('noResults')}</CommandEmpty>
         {page ? (
@@ -121,16 +102,27 @@ export default function CommandPalette({
             ))}
           </CommandGroup>
         ) : (
-          sections.map((section, i) => (
-            <Fragment key={section.id}>
-              {i > 0 && <CommandSeparator />}
-              <CommandGroup heading={section.heading}>
-                {section.items.map((command) => (
-                  <CommandPaletteRow key={command.id} command={command} onRun={run} />
-                ))}
-              </CommandGroup>
-            </Fragment>
-          ))
+          sections.map((section, i) => {
+            let displayItems = section.items;
+            if (!searching && section.id === 'projects' && section.items.length > 10) {
+              const active = section.items.find((item) => item.checked);
+              const firstTen = section.items.slice(0, 10);
+              displayItems =
+                active && !firstTen.includes(active)
+                  ? [active, ...firstTen.slice(0, 9)]
+                  : firstTen;
+            }
+            return (
+              <Fragment key={section.id}>
+                {i > 0 && <CommandSeparator />}
+                <CommandGroup heading={section.heading}>
+                  {displayItems.map((command) => (
+                    <CommandPaletteRow key={command.id} command={command} onRun={run} />
+                  ))}
+                </CommandGroup>
+              </Fragment>
+            );
+          })
         )}
         <CommandPaletteDocuments
           projectKey={currentProjectKey}
@@ -142,23 +134,11 @@ export default function CommandPalette({
             palette would list the entire project on open. */}
         {!page && hasProject && searching && (hits.length > 0 || search.isFetching) && (
           <CommandPaletteIssues
-            heading={t('issues')}
             hits={hits}
             fetching={search.isFetching}
-            onOpenIssue={(hit) => {
+            onOpenIssue={(seq) => {
               onOpenChange(false);
-              onOpenIssue(hit.sequenceNumber);
-            }}
-          />
-        )}
-        {!page && searching && (others.hits.length > 0 || others.fetching) && (
-          <CommandPaletteOtherIssues
-            hits={others.hits}
-            fetching={others.fetching}
-            loadingHeading={hasProject ? t('otherProjectIssues') : t('issues')}
-            onOpenIssue={(hit) => {
-              onOpenChange(false);
-              router.push(issuePath(hit.projectRef, hit.sequenceNumber));
+              onOpenIssue(seq);
             }}
           />
         )}

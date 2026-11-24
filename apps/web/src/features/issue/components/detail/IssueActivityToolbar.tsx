@@ -5,6 +5,9 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFeedCountsQuery } from '../../services/comments.service';
 import type { ActivityFeedView, ActivityTab } from '../../hooks/useActivityFeedView';
 
+// The row over the activity log: its tabs with how many entries each holds, and the
+// switches for grouping by status and for the order.
+
 const TABS = [
   { tab: 'all', label: 'feedTabAll' },
   { tab: 'comments', label: 'feedTabComments' },
@@ -15,11 +18,9 @@ const TABS = [
 export default function IssueActivityToolbar({
   issueId,
   view,
-  canReadAgentRuns,
 }: {
   issueId: number;
   view: ActivityFeedView;
-  canReadAgentRuns: boolean;
 }) {
   const t = useTranslations('issue');
   const counts = useFeedCountsQuery(issueId).data;
@@ -28,46 +29,37 @@ export default function IssueActivityToolbar({
     <div className="flex items-center gap-2">
       <TabsList variant="line" className="h-8 min-w-0 flex-1 overflow-x-auto">
         {TABS.map(({ tab, label }) => (
-          <TabsTrigger key={tab} value={tab} className="text-[13px]">
+          <TabsTrigger key={tab} value={tab} className="text-xs">
             {t(label)}
             {counts && (
-              <span className="text-[11px] font-normal text-muted-foreground tabular-nums">
+              <span className="text-xs font-normal text-muted-foreground tabular-nums">
                 {counts[tab]}
               </span>
             )}
           </TabsTrigger>
         ))}
-        {canReadAgentRuns && (
-          <TabsTrigger value="agentRuns" className="text-[13px]">
-            {t('agentRuns.title')}
-          </TabsTrigger>
-        )}
       </TabsList>
-      {view.tab !== 'agentRuns' && (
-        <>
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-pressed={view.grouped}
-            title={t('feedGroupByStatus')}
-            onClick={() => view.setGrouped(!view.grouped)}
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground aria-pressed:bg-accent aria-pressed:text-foreground"
-          >
-            <Layers className="size-3.5" />
-            {t('feedStatus')}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            title={t('feedChangeOrder')}
-            onClick={() => view.setOrder(view.order === 'desc' ? 'asc' : 'desc')}
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-          >
-            <ArrowDownUp className="size-3.5" />
-            {t(view.order === 'desc' ? 'feedNewest' : 'feedOldest')}
-          </Button>
-        </>
-      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-pressed={view.grouped}
+        title={t('feedGroupByStatus')}
+        onClick={() => view.setGrouped(!view.grouped)}
+        className="h-7 gap-1.5 px-2 text-xs text-muted-foreground aria-pressed:bg-accent aria-pressed:text-foreground"
+      >
+        <Layers className="size-3.5" />
+        {t('feedStatus')}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        title={t('feedChangeOrder')}
+        onClick={() => view.setOrder(view.order === 'desc' ? 'asc' : 'desc')}
+        className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+      >
+        <ArrowDownUp className="size-3.5" />
+        {t(view.order === 'desc' ? 'feedNewest' : 'feedOldest')}
+      </Button>
     </div>
   );
 }

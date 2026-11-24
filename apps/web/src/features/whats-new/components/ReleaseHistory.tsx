@@ -1,11 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { ExternalLink, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import type { UpdateStatus } from '@/lib/api/endpoints/updates';
 import TakeoverScreen from '@/components/common/page/TakeoverScreen';
 import { Button } from '@/components/ui/button';
-import { useCheckForUpdates } from '@/services/updates.service';
+import { useCheckForUpdatesMutation } from '@/services/updates.service';
 import { formatDateTime } from '@/utils/dates';
 import { cn } from '@/lib/utils';
 import { releaseSections } from './ReleaseSections';
@@ -23,18 +23,13 @@ export default function ReleaseHistory({
 }) {
   const t = useTranslations('updates');
   const tCommon = useTranslations('common');
-  const check = useCheckForUpdates();
+  const check = useCheckForUpdatesMutation();
 
   const sections = releaseSections(status.releases, {
     empty: t('noNotes'),
     current: status.currentVersion,
     badges: { current: t('badgeRunning'), new: t('badgeNew') },
   });
-
-  // Derived from a release link, so the repository is not hardcoded here. Only feed
-  // entries carry one.
-  const allReleasesUrl =
-    status.releases.find((r) => r.url)?.url?.replace(/\/tag\/[^/]*$/, '') ?? null;
 
   return (
     <TakeoverScreen
@@ -60,19 +55,6 @@ export default function ReleaseHistory({
             </p>
           )}
         </div>
-      }
-      navFooter={
-        allReleasesUrl && (
-          <a
-            href={allReleasesUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          >
-            {t('allReleases')}
-            <ExternalLink className="size-3.5" />
-          </a>
-        )
       }
       actionLabel={tCommon('close')}
       onAction={onClose}

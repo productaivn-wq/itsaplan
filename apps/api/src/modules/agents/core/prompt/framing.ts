@@ -30,12 +30,6 @@ export interface RunForPrompt {
   threadContext: string | null;
   // The comment that mentioned the agent, so it can answer in the same thread.
   sourceActivityId: number | null;
-  // Set on a mention in a document comment, which has no issue: the document, the text
-  // its thread is about, and the thread's first comment, which the answer goes under.
-  documentId: number | null;
-  documentTitle: string | null;
-  documentQuote: string | null;
-  threadRootId: string | null;
 }
 
 // System-instruction block describing how this run was started, so the agent knows
@@ -43,18 +37,17 @@ export interface RunForPrompt {
 // a clarifying question, so the agent acts on reasonable assumptions instead of asking.
 // Kept in the system prompt (not the framed user message) so it outweighs the task
 // text and applies even when a schedule's task prompt is vague.
-export function runModePreamble(run: Pick<RunForPrompt, 'trigger' | 'documentId'>): string {
+export function runModePreamble(trigger: RunForPrompt['trigger']): string {
   const lines = ['## Run mode'];
-  if (run.trigger === 'schedule' || run.trigger === 'manual') {
+  if (trigger === 'schedule' || trigger === 'manual') {
     lines.push(
       'This run was started automatically on a schedule, not by a person. No human is',
       'watching it and no one will answer questions. Complete the task with your tools,',
       'making reasonable assumptions; never ask for clarification or wait for input.',
     );
   } else {
-    const subject = run.documentId != null ? 'a document' : 'an issue';
     lines.push(
-      `You are running autonomously in response to activity on ${subject}. No human is`,
+      'You are running autonomously in response to activity on an issue. No human is',
       'waiting to answer you, so do not ask clarifying questions or wait for confirmation;',
       'make the most reasonable assumption and carry the work out with your tools.',
     );
@@ -66,59 +59,38 @@ export function framePrompt(run: RunForPrompt): string {
   if (run.trigger === 'schedule' || run.trigger === 'manual') {
     return `Carry out the following task:\n\n${run.prompt}`;
   }
-  if (run.documentId != null) return frameDocumentMention(run);
-  if (run.trigger === 'status' || run.trigger === 'event' || run.trigger === 'field') {
-    return frameIssueTask(run);
-  }
   const ref = run.issueIdentifier ?? `#${run.issueId}`;
   const titled = run.issueTitle ? `${ref} "${run.issueTitle}"` : ref;
   return run.trigger === 'delegation' ? frameDelegation(run, titled) : frameMention(run, titled);
 }
 
 function frameDelegation(run: RunForPrompt, titled: string): string {
-  return [
+  const lines = [
     `Issue ${titled} of your project has been delegated to you. Carry it out.`,
     'Read the issue for context, then do the work it needs with your tools. Add a',
     'question comment only when you genuinely cannot proceed without a human answer.',
-    ...assigneeLines(run),
+  ];
+  if (run.assigneeUsername) {
+    lines.push(
+      '',
+      'Whenever you comment on this issue, tag the responsible assignee',
+      `@${run.assigneeUsername} so they are notified.`,
+    );
+  } else {
+    lines.push(
+      '',
+      'This issue has no assignee. Before you comment, call get_project and read',
+      "the members' descriptions; tag the one member whose role best fits this work. If",
+      'none clearly fits, tag a project owner. Tag exactly one person.',
+    );
+  }
+  lines.push(
     '',
     'When you are done, add a comment to the issue with the add_comment tool',
     `(issueId ${run.issueId}) describing what you did, and set the issue's status with`,
     'the update_issue tool. Do not mention yourself.',
-  ].join('\n');
-}
-
-// The run's prompt already names the issue and what put the agent on it: the member field
-// it was set into, or what happened to the issue followed by the schedule's task.
-// Moving the issue on is left to that task: a status schedule is often one step of
-// several, each started by the column before it.
-function frameIssueTask(run: RunForPrompt): string {
-  return [
-    run.prompt,
-    '',
-    'Read the issue for context, then carry out the task above with your tools. Add a',
-    'question comment only when you genuinely cannot proceed without a human answer.',
-    ...assigneeLines(run),
-    '',
-    'When you are done, add a comment to the issue with the add_comment tool',
-    `(issueId ${run.issueId}) describing what you did. Do not mention yourself.`,
-  ].join('\n');
-}
-
-function assigneeLines(run: RunForPrompt): string[] {
-  if (run.assigneeUsername) {
-    return [
-      '',
-      'Whenever you comment on this issue, tag the responsible assignee',
-      `@${run.assigneeUsername} so they are notified.`,
-    ];
-  }
-  return [
-    '',
-    'This issue has no assignee. Before you comment, call get_project and read',
-    "the members' descriptions; tag the one member whose role best fits this work. If",
-    'none clearly fits, tag a project owner. Tag exactly one person.',
-  ];
+  );
+  return lines.join('\n');
 }
 
 function frameMention(run: RunForPrompt, titled: string): string {
@@ -151,41 +123,6 @@ function frameMention(run: RunForPrompt, titled: string): string {
     );
   }
   lines.push('', 'The comment that mentioned you:', '', run.prompt);
-  return lines.join('\n');
-}
-
-// Only a comment in a document starts a run, never its text: one that tags the agent,
-// or a reply right after the agent's own comment.
-function frameDocumentMention(run: RunForPrompt): string {
-  const titled = `"${run.documentTitle?.trim() || 'Untitled'}" (documentId ${run.documentId})`;
-  const args = run.threadRootId
-    ? `documentId ${run.documentId}, parentId ${run.threadRootId}`
-    : `documentId ${run.documentId}`;
-  const mentionsAgent =
-    !!run.agentUsername &&
-    parseMentionHandles(run.prompt).includes(run.agentUsername.toLowerCase());
-  const lines = [
-    mentionsAgent
-      ? `You were mentioned in a comment on the document ${titled} of your project.`
-      : `Someone answered your comment on the document ${titled} of your project.`,
-    'Work out what the comment is asking for and do it with your tools, then reply by',
-    `adding one comment to its thread with the add_document_comment tool (${args})`,
-    'with the result or answer. Keep it short. Read the document with the get_document',
-    'tool when the answer depends on its text.',
-    'Do not mention yourself.',
-  ];
-  if (run.documentQuote) {
-    lines.push('', 'The thread is about this text of the document:', '', run.documentQuote);
-  }
-  if (run.threadContext) {
-    lines.push('', 'The comments above it in the thread, oldest first:', '', run.threadContext);
-  }
-  lines.push(
-    '',
-    mentionsAgent ? 'The comment that mentioned you:' : 'The answer to your comment:',
-    '',
-    run.prompt,
-  );
   return lines.join('\n');
 }
 
@@ -237,6 +174,158 @@ export function projectsPreamble(
     '',
     '',
   ].join('\n');
+}
+
+export interface ProjectDirectoryContext {
+  contacts: Array<{
+    name: string;
+    role: string;
+    raciRole: string;
+    primaryEmail: string;
+    phone: string;
+    channelHandles: Record<string, unknown>;
+  }>;
+  channels: Array<{
+    platform: string;
+    threadType: string;
+    displayName: string;
+    targetId: string;
+    aliases: string[];
+    status: string;
+  }>;
+  storageLocations: Array<{
+    kind: string;
+    label: string;
+    uriOrPath: string;
+    accessScope: string;
+    isPrimary: boolean;
+    description: string;
+  }>;
+}
+
+const MAX_PROMPT_LOCATIONS = 12;
+const MAX_PROMPT_CHANNELS = 15;
+const MAX_PROMPT_CONTACTS = 15;
+
+function formatHandleSummary(handles: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [k, v] of Object.entries(handles)) {
+    if (!v || typeof k !== 'string') continue;
+    if (k.toLowerCase().includes('secret') || k.toLowerCase().includes('token')) continue;
+    if (typeof v === 'string' && v.trim()) {
+      parts.push(`${k}: ${v.trim()}`);
+    } else if (typeof v === 'object' && v !== null) {
+      const rec = v as Record<string, unknown>;
+      const direct = typeof rec.direct === 'string' ? rec.direct.trim() : '';
+      const groups = Array.isArray(rec.groups)
+        ? rec.groups.filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+        : [];
+      if (direct) parts.push(`${k}: ${direct}`);
+      if (groups.length > 0) parts.push(`${k} groups: ${groups.join(', ')}`);
+    }
+  }
+  return parts.join('; ');
+}
+
+export function projectDirectoryPreamble(dir?: ProjectDirectoryContext | null): string {
+  if (!dir) return '';
+  const { contacts, channels, storageLocations } = dir;
+  if (contacts.length === 0 && channels.length === 0 && storageLocations.length === 0) {
+    return '';
+  }
+
+  const lines: string[] = [
+    '## Project Directory & Information Sources',
+    'Use these configured storing locations, channels/groups, and contacts to collect context and coordinate work. Call `get_project_directory` for the complete live list.',
+    '',
+  ];
+
+  if (storageLocations.length > 0) {
+    lines.push('### Storing Locations');
+    for (const loc of storageLocations.slice(0, MAX_PROMPT_LOCATIONS)) {
+      const primaryTag = loc.isPrimary ? '[PRIMARY] ' : '';
+      const desc = loc.description?.trim() ? ` — ${loc.description.trim()}` : '';
+      lines.push(
+        `- ${primaryTag}[${loc.kind} | ${loc.accessScope}] ${loc.label}: \`${loc.uriOrPath}\`${desc}`,
+      );
+    }
+    if (storageLocations.length > MAX_PROMPT_LOCATIONS) {
+      lines.push(`- …and ${storageLocations.length - MAX_PROMPT_LOCATIONS} more location(s).`);
+    }
+    lines.push('');
+  }
+
+  if (channels.length > 0) {
+    lines.push('### Channels & Groups');
+    for (const ch of channels.slice(0, MAX_PROMPT_CHANNELS)) {
+      const ttype = (ch.threadType || 'GROUP').toUpperCase();
+      const target = ch.targetId ? ` target=\`${ch.targetId}\`` : '';
+      const aliases = ch.aliases?.length ? ` (aliases: ${ch.aliases.slice(0, 4).join(', ')})` : '';
+      lines.push(
+        `- [${ttype}] ${ch.displayName} (${ch.platform}, ${ch.status})${target}${aliases}`,
+      );
+    }
+    if (channels.length > MAX_PROMPT_CHANNELS) {
+      lines.push(`- …and ${channels.length - MAX_PROMPT_CHANNELS} more channel(s)/group(s).`);
+    }
+    lines.push('');
+  }
+
+  if (contacts.length > 0) {
+    lines.push('### Key Contacts');
+    for (const c of contacts.slice(0, MAX_PROMPT_CONTACTS)) {
+      const rolePart = c.role ? ` — ${c.role}` : '';
+      const meta: string[] = [];
+      if (c.primaryEmail) meta.push(`email: ${c.primaryEmail}`);
+      if (c.phone) meta.push(`phone: ${c.phone}`);
+      const h = formatHandleSummary(c.channelHandles ?? {});
+      if (h) meta.push(h);
+      const suffix = meta.length > 0 ? ` (${meta.join(' · ')})` : '';
+      lines.push(`- ${c.name} [${c.raciRole}]${rolePart}${suffix}`);
+    }
+    if (contacts.length > MAX_PROMPT_CONTACTS) {
+      lines.push(`- …and ${contacts.length - MAX_PROMPT_CONTACTS} more contact(s).`);
+    }
+    lines.push('');
+  }
+
+  lines.push('');
+  return lines.join('\n');
+}
+
+export function multiProjectDirectoryPreamble(
+  entries: Array<{ key: string; name: string; directory: ProjectDirectoryContext }>,
+): string {
+  const nonEmpty = entries.filter(
+    (e) =>
+      e.directory.storageLocations.length > 0 ||
+      e.directory.channels.length > 0 ||
+      e.directory.contacts.length > 0,
+  );
+  if (nonEmpty.length === 0) return '';
+  if (nonEmpty.length === 1) return projectDirectoryPreamble(nonEmpty[0]!.directory);
+
+  const lines: string[] = ['## Project Directories & Information Sources', ''];
+  for (const entry of nonEmpty.slice(0, 10)) {
+    const locs = entry.directory.storageLocations
+      .slice(0, 3)
+      .map((l) => `${l.isPrimary ? '[PRIMARY] ' : ''}${l.label}: \`${l.uriOrPath}\``)
+      .join('; ');
+    const chans = entry.directory.channels
+      .slice(0, 4)
+      .map((c) => `[${c.threadType}] ${c.displayName} (${c.platform})`)
+      .join('; ');
+    const contacts = entry.directory.contacts
+      .slice(0, 4)
+      .map((c) => `${c.name} [${c.raciRole}]`)
+      .join('; ');
+    lines.push(`- **${entry.key}** (${entry.name}):`);
+    if (locs) lines.push(`  - Locations: ${locs}`);
+    if (chans) lines.push(`  - Channels/Groups: ${chans}`);
+    if (contacts) lines.push(`  - Contacts: ${contacts}`);
+  }
+  lines.push('', '');
+  return lines.join('\n');
 }
 
 // Only the chat paths carry this: a chart is drawn where the answer is read in the

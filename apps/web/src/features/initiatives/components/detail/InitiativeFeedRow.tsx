@@ -12,6 +12,7 @@ import {
   Calendar,
   Tag,
   Flag,
+  MessageSquare,
 } from 'lucide-react';
 import type { InitiativeFeedItem } from '@/lib/api/endpoints/initiatives';
 import { useRelativeTime } from '@/context/relativeTimeContext';
@@ -102,7 +103,8 @@ export default function InitiativeFeedRow({
     }
   };
 
-  const Icon = (item.action && ICON[item.action]) || CircleDot;
+  const Icon =
+    (item.kind === 'comment' ? MessageSquare : item.action && ICON[item.action]) || CircleDot;
   const actor = item.actorName ?? t('system');
   return (
     <li className="flex items-center gap-2.5 text-xs">
@@ -110,7 +112,16 @@ export default function InitiativeFeedRow({
         <Icon className="size-3" />
       </span>
       <span className="min-w-0 text-muted-foreground">
-        <span className="font-medium">{actor}</span> {describe(item)}
+        {item.kind === 'comment' ? (
+          <>
+            <span className="font-medium">{actor}</span>:{' '}
+            <span className="text-foreground">{item.body ?? ''}</span>
+          </>
+        ) : (
+          <>
+            <span className="font-medium">{actor}</span> {describe(item)}
+          </>
+        )}
         {item.source === 'issue' && item.issueIdentifier != null && (
           <>
             {' '}

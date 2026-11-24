@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { assertProjectWritable, requireUser } from '#shared/access';
+import { requireUser } from '#shared/access';
 import { authContext } from '#shared/auth-context';
 import { guards } from '#shared/guards';
 import { noContent } from '#shared/http';
@@ -14,14 +14,8 @@ import {
   createProjectBody,
   updateProjectBody,
 } from '#modules/projects/model';
-import {
-  createProject,
-  deleteProject,
-  setProjectArchived,
-  updateProject,
-} from '#modules/projects/service';
+import { createProject, deleteProject, updateProject } from '#modules/projects/service';
 import { copyProject } from '#modules/projects/copy';
-import { createProjectFromTemplate } from '#modules/project-templates/service';
 import {
   TeamDetailResponse,
   TeamListResponse,
@@ -35,6 +29,8 @@ import {
   TeamResponse,
   createTeamBody,
   setTeamMemberRoleBody,
+  setupTeamBody,
+  SetupTeamResponse,
   teamMemberParams,
   teamParams,
   teamProjectListQuery,
@@ -46,7 +42,6 @@ import {
 } from './model';
 import {
   createTeam,
-  deleteTeam,
   getTeam,
   getTeamProject,
   leaveTeam,
@@ -56,6 +51,7 @@ import {
   listTeamProjects,
   listTeams,
   removeTeamMember,
+  setupTeam,
   updateTeam,
   setTeamMcp,
   getTeamProjectDefaults,
@@ -71,7 +67,8 @@ async function requireTeamProject(teamId: number, projectId: number): Promise<vo
 }
 
 // The teams the session user belongs to. A team owns projects and its own member
-// list. Only the owner of a workspace creates a team in it, and becomes the team's owner.
+// list; an account creates its own after registration, and may create more, becoming
+// their owner.
 export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] } })
   .use(authContext)
   .use(guards)
@@ -93,6 +90,27 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
     },
   )
 
+  .post(
+    '/teams/setup',
+    async ({ body, user }) => {
+      const current = requireUser(user);
+      const name = body.name?.trim();
+      if (!name) throw new HttpError(400, 'Team name is required');
+      if (body.slug !== undefined && !/^[a-z][a-z0-9-]{1,39}$/.test(body.slug)) {
+        throw new HttpError(400, 'Invalid team slug');
+      }
+      return setupTeam(current.id, body);
+    },
+    {
+      body: setupTeamBody,
+      response: { 200: SetupTeamResponse, ...errors(400, 401, 403, 409) },
+      detail: {
+        summary: 'Idempotently set up a team, projects, and members',
+        ...mcpTool('setup_team', { idempotentHint: true }),
+      },
+    },
+  )
+
   .get(
     '/teams/:teamId',
     async ({ membership }) => {
@@ -110,6 +128,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
           'A team, with how many projects, members, roles and integration credentials it ' +
           'holds, and what you may do with them. Its members and its projects are listed ' +
           'by their own routes.',
+        ...mcpTool('get_team'),
       },
     },
   )
@@ -135,6 +154,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
           'One page of the members of a team you belong to, by name. `search` matches the ' +
           'name, the address or the handle, and `kind` narrows the list to the people or to ' +
           'the AI agents.',
+        ...mcpTool('list_team_members'),
       },
     },
   )
@@ -157,8 +177,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
         summary: 'List team projects',
         description:
           'One page of the projects a team owns, by key. `search` matches the key or the ' +
-          'name. An owner or a manager, and anyone whose workspace role reaches the team, sees ' +
-          'them all; anyone else only the ones they belong to.',
+          'name. An owner or a manager sees them all; anyone else only the ones they belong to.',
       },
     },
   )
@@ -270,7 +289,10 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
       params: teamParams,
       body: updateTeamProjectDefaultsBody,
       response: { 200: TeamProjectDefaultsResponse, ...errors(400, 401, 403, 404) },
-      detail: { summary: "Set the team's default agents for new projects" },
+      detail: {
+        summary: "Set the team's default agents for new projects",
+        ...mcpTool('set_team_project_defaults'),
+      },
     },
   )
 
@@ -280,16 +302,15 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
       const name = body.name.trim();
       if (!name) throw new HttpError(400, 'Team name is required');
       set.status = 201;
-      return createTeam(name, body.slug, requireUser(user).id, body.workspaceId);
+      return createTeam(name, body.slug, requireUser(user).id);
     },
     {
       body: createTeamBody,
-      response: { 201: TeamResponse, ...errors(400, 401, 403, 409) },
+      response: { 201: TeamResponse, ...errors(400, 401, 409) },
       detail: {
         summary: 'Create a team',
-        description:
-          'Create a team in a workspace and become its owner. The workspace decides who may: ' +
-          'its owner, also its admins, or anyone in its teams.',
+        description: 'Create a team and become its owner.',
+        ...mcpTool('create_team'),
       },
     },
   )
@@ -309,26 +330,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
       detail: {
         summary: 'Update a team',
         description: 'Rename a team you own, or set the slug its web URLs use.',
-      },
-    },
-  )
-
-  .delete(
-    '/teams/:teamId',
-    async ({ membership }) => {
-      await deleteTeam(membership.teamId);
-      return noContent();
-    },
-    {
-      teamOwner: true,
-      params: teamParams,
-      response: { 204: t.Void(), ...errors(401, 403, 404, 409) },
-      detail: {
-        summary: 'Delete a team',
-        description:
-          'Delete a team you own, with its members, roles, invites, skills, tools and ' +
-          'integrations. A team that holds a project or an AI agent is refused until those ' +
-          'are gone. Irreversible.',
+        ...mcpTool('update_team'),
       },
     },
   )
@@ -337,10 +339,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
     '/teams/:teamId/projects',
     async ({ body, membership, set }) => {
       set.status = 201;
-      const { templateId, ...input } = body;
-      return templateId === undefined
-        ? createProject(input, membership.userId, membership.teamId)
-        : createProjectFromTemplate(membership.teamId, templateId, input, membership.userId);
+      return createProject(body, membership.userId, membership.teamId);
     },
     {
       teamManager: true,
@@ -348,15 +347,11 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
       body: createProjectBody,
       response: { 201: ProjectResponse, ...errors(400, 401, 403, 404, 409) },
       detail: {
-        summary: 'Create a project',
+        summary: 'Create a project in a team',
         description:
-          'Create a project in a team you own or manage and become its owner. `key` is the ' +
-          "immutable prefix for issue ids, unique within the team (e.g. 'MKT' -> 'MKT-1'). " +
-          'Seeds the default columns and the issue types of the chosen `preset`, or copies ' +
-          'what the project template `templateId` holds. Over MCP, ' +
-          'uses the team from your key when there is one; otherwise call list_teams and pass ' +
-          'teamId.',
-        ...mcpTool('create_project'),
+          'Create a project the team owns and become its owner. Takes the same body as ' +
+          'create_project, which creates in the team you own.',
+        ...mcpTool('create_team_project'),
       },
     },
   )
@@ -367,7 +362,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
       await requireTeamProject(membership.teamId, params.projectId);
       const { include, ...meta } = body;
       set.status = 201;
-      return copyProject(params.projectId, meta, membership.userId, membership.teamId, include);
+      return copyProject(params.projectId, meta, membership.userId, include, membership.teamId);
     },
     {
       teamManager: true,
@@ -386,9 +381,8 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
 
   .patch(
     '/teams/:teamId/projects/:projectId',
-    async ({ body, membership, params, request }) => {
+    async ({ body, membership, params }) => {
       await requireTeamProject(membership.teamId, params.projectId);
-      await assertProjectWritable(params.projectId, request.method);
       const updated = await updateProject(params.projectId, body);
       if (!updated) throw new HttpError(404, 'Project not found');
       return updated;
@@ -405,44 +399,6 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
           'only when it does not match the key pattern, for example one that starts with a ' +
           'digit. A key that another project of the team has is refused with 409.',
       },
-    },
-  )
-
-  .post(
-    '/teams/:teamId/projects/:projectId/archive',
-    async ({ membership, params }) => {
-      await requireTeamProject(membership.teamId, params.projectId);
-      const updated = await setProjectArchived(params.projectId, true);
-      if (!updated) throw new HttpError(404, 'Project not found');
-      return updated;
-    },
-    {
-      teamManager: true,
-      params: teamProjectParams,
-      response: { 200: ProjectResponse, ...errors(401, 403, 404) },
-      detail: {
-        summary: 'Archive a project of the team',
-        description:
-          'Archive a project the team owns. It leaves the project lists of its members and ' +
-          'list_projects, becomes read-only, and its agent schedules stop running. Nothing ' +
-          'in it is deleted, and it can still be copied or deleted.',
-      },
-    },
-  )
-
-  .post(
-    '/teams/:teamId/projects/:projectId/restore',
-    async ({ membership, params }) => {
-      await requireTeamProject(membership.teamId, params.projectId);
-      const updated = await setProjectArchived(params.projectId, false);
-      if (!updated) throw new HttpError(404, 'Project not found');
-      return updated;
-    },
-    {
-      teamManager: true,
-      params: teamProjectParams,
-      response: { 200: ProjectResponse, ...errors(401, 403, 404) },
-      detail: { summary: 'Restore an archived project of the team' },
     },
   )
 
@@ -483,6 +439,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
         description:
           'Set what a member ranks as in the team. Only an owner grants the owner rank or ' +
           'changes what another owner holds.',
+        ...mcpTool('update_team_member_role'),
       },
     },
   )
@@ -504,6 +461,7 @@ export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] 
           'Remove a member from the team and from every project the team owns. The issues ' +
           'they were assigned to and the work they logged stay as they are. A membership a ' +
           'provisioned group granted is managed by the identity provider.',
+        ...mcpTool('remove_team_member', { destructiveHint: true }),
       },
     },
   )

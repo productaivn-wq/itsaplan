@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type Dashboard,
   listDashboards,
@@ -15,6 +15,7 @@ export function useDashboardsQuery(projectKey: string | null) {
     queryKey: qk.dashboards(projectKey ?? ''),
     queryFn: () => listDashboards(projectKey!),
     enabled: projectKey != null,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,0 +1,79 @@
+{
+  "title": "Chu kỳ",
+  "newCycle": "Chu kỳ mới",
+  "status": {
+    "upcoming": "Sắp tới",
+    "active": "Đang hoạt động",
+    "completed": "Đã hoàn thành"
+  },
+  "views": {
+    "table": "Bảng",
+    "timeline": "Dòng thời gian"
+  },
+  "columns": {
+    "name": "Tên",
+    "dates": "Thời gian",
+    "length": "Thời lượng",
+    "issues": "Công việc",
+    "progress": "Tiến độ"
+  },
+  "emptyTitle": "Chưa có chu kỳ nào",
+  "emptyDescription": "Chu kỳ là khoảng thời gian cố định để nhóm lên kế hoạch cho các công việc.",
+  "nothingPlannedTitle": "Chưa có kế hoạch",
+  "nothingPlannedDescription": "Dòng thời gian hiển thị các chu kỳ đang hoạt động và sắp tới. Các chu kỳ đã kết thúc nằm trong bảng.",
+  "options": "Tùy chọn chu kỳ",
+  "transferIssues": "{count, plural, one {Chuyển # công việc chưa hoàn thành} other {Chuyển # công việc chưa hoàn thành}}",
+  "finishedEarly": "Kết thúc sớm, dự kiến kết thúc vào {date}",
+  "form": {
+    "editTitle": "Chỉnh sửa chu kỳ",
+    "newTitle": "Chu kỳ mới",
+    "name": "Tên",
+    "goal": "Mục tiêu",
+    "goalPlaceholder": "Chu kỳ này cần bàn giao những gì?",
+    "length": "Thời lượng",
+    "starts": "Bắt đầu",
+    "ends": "Kết thúc",
+    "create": "Tạo chu kỳ",
+    "saveFailed": "Không thể lưu chu kỳ"
+  },
+  "weeks": "{count, plural, one {# tuần} other {# tuần}}",
+  "minutes": "{count, plural, one {# phút} other {# phút}}",
+  "minutesShort": "{count}p",
+  "minutesLeft": "còn {count}p",
+  "transfer": {
+    "title": "Chuyển công việc chưa hoàn thành",
+    "description": "Các công việc chưa hoàn thành sẽ chuyển sang chu kỳ bạn chọn. Công việc đã hoàn thành và đã hủy sẽ ở lại đây.",
+    "moveTo": "Chuyển đến",
+    "noCycle": "Không có chu kỳ",
+    "submit": "Chuyển công việc",
+    "moving": "Đang chuyển…",
+    "moved": "{count, plural, one {Đã chuyển # công việc} other {Đã chuyển # công việc}}",
+    "failed": "Không thể chuyển công việc"
+  },
+  "finish": {
+    "action": "Kết thúc chu kỳ",
+    "title": "Kết thúc chu kỳ sớm",
+    "description": "{cycle} sẽ kết thúc hôm nay thay vì {date}. Bạn không thể mở lại chu kỳ này. {count, plural, =0 {Không còn công việc dở dang.} one {# công việc chưa hoàn thành sẽ ở lại chu kỳ này.} other {# công việc chưa hoàn thành sẽ ở lại chu kỳ này.}}",
+    "submit": "Kết thúc chu kỳ"
+  },
+  "startNext": {
+    "action": "Bắt đầu chu kỳ tiếp theo hôm nay",
+    "title": "Bắt đầu chu kỳ tiếp theo ngay hôm nay",
+    "description": "{cycle} sẽ kết thúc hôm nay và bạn không thể mở lại. {next} bắt đầu hôm nay và vẫn kết thúc vào {date}. {count, plural, =0 {Không có công việc nào chuyển tiếp.} one {# công việc chưa hoàn thành sẽ chuyển sang chu kỳ mới.} other {# công việc chưa hoàn thành sẽ chuyển sang chu kỳ mới.}} Công việc đã hoàn thành và đã hủy sẽ ở lại {cycle}.",
+    "submit": "Bắt đầu chu kỳ tiếp theo",
+    "started": "{cycle} đã bắt đầu. {count, plural, =0 {Không có công việc nào chuyển tiếp.} one {# công việc đã chuyển tiếp.} other {# công việc đã chuyển tiếp.}}"
+  },
+  "delete": {
+    "title": "Xóa chu kỳ",
+    "description": "{cycle} sẽ bị xóa vĩnh viễn. {count, plural, =0 {Chu kỳ này không chứa công việc nào.} one {# công việc sẽ ở lại trong dự án nhưng không thuộc chu kỳ nào.} other {# công việc sẽ ở lại trong dự án nhưng không thuộc chu kỳ nào.}}"
+  },
+  "details": "Chi tiết chu kỳ",
+  "goal": "Mục tiêu",
+  "noGoal": "Chưa đặt mục tiêu.",
+  "progress": "Tiến độ",
+  "openCycle": "Mở chu kỳ",
+  "dragFailed": "Không thể di chuyển chu kỳ",
+  "notFound": "Không tìm thấy chu kỳ.",
+  "defaultName": "Sprint {n}",
+  "issuesDone": "Công việc đã hoàn thành"
+}

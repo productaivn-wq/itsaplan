@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia';
-import { verifyScimToken } from '@repo/auth';
+import { isScimEnabled, verifyScimToken } from '@repo/auth';
 import { HttpError } from '#shared/lib';
 import { noContent } from '#shared/http';
 import {
@@ -14,9 +14,8 @@ import {
   memberIds,
   parseFilter,
   parsePatch,
-  readAccountEmail,
   readEmail,
-  readUserNameEmail,
+  readAccountEmail,
   scimErrorBody,
   splitName,
   toListResponse,
@@ -52,8 +51,7 @@ import {
 } from './service';
 
 // SCIM 2.0 provisioning (RFC 7643 / 7644). An identity provider pushes users and
-// groups here with a SCIM bearer token, and every request acts for the provider it
-// opens: the instance's (`workspaceId` null) or a workspace's.
+// groups here with the instance's SCIM bearer token.
 
 function extractToken(authorization: string | undefined): string | null {
   return authorization?.match(/^Bearer\s+(.+)$/i)?.[1] ?? null;
@@ -64,25 +62,6 @@ function extractToken(authorization: string | undefined): string | null {
 // provisioning run over something harmless. The shapes are checked in resource.ts,
 // which raises SCIM errors rather than the planner's validation error.
 const anyBody = { body: t.Any() };
-
-// The name and address of the account. The instance's provider keeps them in step. For a
-// workspace's they are the person's own, not the workspace's, so a provider that sends
-// them on every sync gets them accepted and left as they are.
-const ACCOUNT_ATTRIBUTE = /^(username|displayname|name(\..+)?|emails(\[.*])?(\..+)?)$/;
-
-// What one PATCH operation on an account attribute sets. `name` is the name before it,
-// which a partial name change completes.
-function accountOp(path: string, value: unknown, name: string): { email?: string; name?: string } {
-  if (path === 'username') return { email: readUserNameEmail(value) };
-  if (path.startsWith('emails')) return { email: readEmail(value) };
-  if (path === 'displayname' || path === 'name.formatted') return { name: asString(value, 'name') };
-  if (path === 'name') return { name: joinName(value as never, name) };
-  if (path === 'name.givenname' || path === 'name.familyname') {
-    const key = path === 'name.givenname' ? 'givenName' : 'familyName';
-    return { name: joinName({ ...splitName(name), [key]: asString(value, 'name') }, name) };
-  }
-  return {};
-}
 
 // A create or replace body, cast and checked. Guards the four spots that read
 // `doc.<attribute>` straight off the request body: without this, a request that
@@ -116,14 +95,14 @@ const scimHandlers = new Elysia({
   .onParse(({ request, contentType }) => {
     if (contentType?.includes('json')) return request.json();
   })
-  .resolve(async ({ headers, set }) => {
+  .onBeforeHandle(async ({ headers, set }) => {
     set.headers['content-type'] = SCIM_CONTENT_TYPE;
     const token = extractToken(headers.authorization);
     // One answer for "off", "no token" and "wrong token": whether provisioning is
     // configured is not something an unauthenticated caller should learn.
-    const provider = token ? await verifyScimToken(token) : null;
-    if (!provider) throw new ScimError(401, 'Invalid or missing SCIM bearer token');
-    return { workspaceId: provider.workspaceId };
+    if (!token || !(await isScimEnabled()) || !(await verifyScimToken(token))) {
+      throw new ScimError(401, 'Invalid or missing SCIM bearer token');
+    }
   })
 
   // ── Discovery ───────────────────────────────────────────────────────────────
@@ -175,9 +154,9 @@ const scimHandlers = new Elysia({
 
   .get(
     '/Users',
-    async ({ workspaceId, query }) => {
+    async ({ query }) => {
       const page = requestedPage(query);
-      const { records, total } = await listScimUsers(workspaceId, {
+      const { records, total } = await listScimUsers({
         filter: parseFilter(query.filter, USER_FILTER_ATTRIBUTES),
         ...page,
       });
@@ -192,16 +171,16 @@ const scimHandlers = new Elysia({
 
   .post(
     '/Users',
-    async ({ workspaceId, body, set }) => {
+    async ({ body, set }) => {
       const doc = asDoc(body);
       const email = readAccountEmail(doc);
-      const record = await createScimUser(workspaceId, {
+      const record = await createScimUser({
         email,
         name: joinName(doc.name as never, (doc.displayName as string) || email),
         active: doc.active === undefined ? true : asBoolean(doc.active),
         externalId: typeof doc.externalId === 'string' ? doc.externalId : null,
       });
-      await syncEmbeddedGroups(workspaceId, record.id, groupDisplayNames(doc.groups));
+      await syncEmbeddedGroups(record.id, groupDisplayNames(doc.groups));
       set.status = 201;
       return toScimUser(record);
     },
@@ -212,38 +191,26 @@ const scimHandlers = new Elysia({
     },
   )
 
-  .get(
-    '/Users/:id',
-    async ({ workspaceId, params }) => toScimUser(await requireUser(workspaceId, params.id)),
-    {
-      params: resourceParams,
-      response: { 200: ScimUserResponse, ...scimErrors(401, 404) },
-      detail: { summary: 'Get one provisioned user' },
-    },
-  )
+  .get('/Users/:id', async ({ params }) => toScimUser(await requireUser(params.id)), {
+    params: resourceParams,
+    response: { 200: ScimUserResponse, ...scimErrors(401, 404) },
+    detail: { summary: 'Get one provisioned user' },
+  })
 
   .put(
     '/Users/:id',
-    async ({ workspaceId, params, body }) => {
+    async ({ params, body }) => {
+      const current = await requireUser(params.id);
       const doc = asDoc(body);
-      const account =
-        workspaceId === null
-          ? {
-              email: readAccountEmail(doc),
-              name: joinName(
-                doc.name as never,
-                (doc.displayName as string) || (await requireUser(workspaceId, params.id)).name,
-              ),
-            }
-          : {};
-      const updated = await updateScimUser(workspaceId, params.id, {
-        ...account,
+      const email = readAccountEmail(doc);
+      const updated = await updateScimUser(params.id, {
+        email,
+        name: joinName(doc.name as never, (doc.displayName as string) || current.name),
         active: doc.active === undefined ? true : asBoolean(doc.active),
         externalId: typeof doc.externalId === 'string' ? doc.externalId : null,
       });
-      const record = requireUpdated(updated, 'User', params.id);
-      await syncEmbeddedGroups(workspaceId, params.id, groupDisplayNames(doc.groups));
-      return toScimUser(record);
+      await syncEmbeddedGroups(params.id, groupDisplayNames(doc.groups));
+      return toScimUser(requireUpdated(updated, 'User', params.id));
     },
     {
       params: resourceParams,
@@ -255,13 +222,11 @@ const scimHandlers = new Elysia({
 
   .patch(
     '/Users/:id',
-    async ({ workspaceId, params, body }) => {
+    async ({ params, body }) => {
+      const current = await requireUser(params.id);
       const patch: { email?: string; name?: string; active?: boolean; externalId?: string | null } =
         {};
-      const ops = parsePatch(body);
-      // The address comes from `emails` when the request carries it, as on a create.
-      const sendsEmails = ops.some((op) => op.path!.toLowerCase().startsWith('emails'));
-      for (const op of ops) {
+      for (const op of parsePatch(body)) {
         const path = op.path!.toLowerCase();
         if (op.op === 'remove') {
           // The only removable attribute is the deprovisioning flag; everything
@@ -273,15 +238,23 @@ const scimHandlers = new Elysia({
           continue;
         }
         if (path === 'active') patch.active = asBoolean(op.value);
+        else if (path === 'username') patch.email = asString(op.value, 'userName');
         else if (path === 'externalid') patch.externalId = asString(op.value, 'externalId');
-        else if (!ACCOUNT_ATTRIBUTE.test(path)) {
+        else if (path === 'displayname' || path === 'name.formatted') {
+          patch.name = asString(op.value, 'name');
+        } else if (path === 'name') {
+          patch.name = joinName(op.value as never, current.name);
+        } else if (path === 'name.givenname' || path === 'name.familyname') {
+          const parts = splitName(patch.name ?? current.name);
+          const key = path === 'name.givenname' ? 'givenName' : 'familyName';
+          patch.name = joinName({ ...parts, [key]: asString(op.value, 'name') }, current.name);
+        } else if (path.startsWith('emails')) {
+          patch.email = readEmail(op.value);
+        } else {
           throw new ScimError(400, `Attribute '${op.path}' is not writable`, 'invalidPath');
-        } else if (workspaceId === null && !(path === 'username' && sendsEmails)) {
-          const name = patch.name ?? (await requireUser(workspaceId, params.id)).name;
-          Object.assign(patch, accountOp(path, op.value, name));
         }
       }
-      const updated = await updateScimUser(workspaceId, params.id, patch);
+      const updated = await updateScimUser(params.id, patch);
       return toScimUser(requireUpdated(updated, 'User', params.id));
     },
     {
@@ -294,8 +267,8 @@ const scimHandlers = new Elysia({
 
   .delete(
     '/Users/:id',
-    async ({ workspaceId, params }) => {
-      await deleteScimUser(workspaceId, params.id);
+    async ({ params }) => {
+      await deleteScimUser(params.id);
       return noContent();
     },
     {
@@ -309,9 +282,9 @@ const scimHandlers = new Elysia({
 
   .get(
     '/Groups',
-    async ({ workspaceId, query }) => {
+    async ({ query }) => {
       const page = requestedPage(query);
-      const { records, total } = await listScimGroups(workspaceId, {
+      const { records, total } = await listScimGroups({
         filter: parseFilter(query.filter, GROUP_FILTER_ATTRIBUTES),
         ...page,
       });
@@ -326,9 +299,9 @@ const scimHandlers = new Elysia({
 
   .post(
     '/Groups',
-    async ({ workspaceId, body, set }) => {
+    async ({ body, set }) => {
       const doc = asDoc(body);
-      const record = await createScimGroup(workspaceId, {
+      const record = await createScimGroup({
         displayName: asString(doc.displayName, 'displayName'),
         externalId: typeof doc.externalId === 'string' ? doc.externalId : null,
         members: doc.members === undefined ? [] : memberIds(doc.members),
@@ -343,22 +316,18 @@ const scimHandlers = new Elysia({
     },
   )
 
-  .get(
-    '/Groups/:id',
-    async ({ workspaceId, params }) => toScimGroup(await requireGroup(workspaceId, params.id)),
-    {
-      params: resourceParams,
-      response: { 200: ScimGroupResponse, ...scimErrors(401, 404) },
-      detail: { summary: 'Get one provisioned group' },
-    },
-  )
+  .get('/Groups/:id', async ({ params }) => toScimGroup(await requireGroup(params.id)), {
+    params: resourceParams,
+    response: { 200: ScimGroupResponse, ...scimErrors(401, 404) },
+    detail: { summary: 'Get one provisioned group' },
+  })
 
   .put(
     '/Groups/:id',
-    async ({ workspaceId, params, body }) => {
-      await requireGroup(workspaceId, params.id);
+    async ({ params, body }) => {
+      await requireGroup(params.id);
       const doc = asDoc(body);
-      const updated = await updateScimGroup(workspaceId, params.id, {
+      const updated = await updateScimGroup(params.id, {
         displayName: asString(doc.displayName, 'displayName'),
         externalId: typeof doc.externalId === 'string' ? doc.externalId : null,
         members: doc.members === undefined ? [] : memberIds(doc.members),
@@ -375,8 +344,8 @@ const scimHandlers = new Elysia({
 
   .patch(
     '/Groups/:id',
-    async ({ workspaceId, params, body }) => {
-      const current = await requireGroup(workspaceId, params.id);
+    async ({ params, body }) => {
+      const current = await requireGroup(params.id);
       const patch: { displayName?: string; externalId?: string | null; members?: string[] } = {};
       let members = new Set(current.members.map((member) => member.userId));
       let membersChanged = false;
@@ -401,7 +370,7 @@ const scimHandlers = new Elysia({
         else throw new ScimError(400, `Attribute '${op.path}' is not writable`, 'invalidPath');
       }
       if (membersChanged) patch.members = [...members];
-      const updated = await updateScimGroup(workspaceId, params.id, patch);
+      const updated = await updateScimGroup(params.id, patch);
       return toScimGroup(requireUpdated(updated, 'Group', params.id));
     },
     {
@@ -414,8 +383,8 @@ const scimHandlers = new Elysia({
 
   .delete(
     '/Groups/:id',
-    async ({ workspaceId, params }) => {
-      if (!(await deleteScimGroup(workspaceId, params.id))) {
+    async ({ params }) => {
+      if (!(await deleteScimGroup(params.id))) {
         throw new ScimError(404, `Group '${params.id}' not found`);
       }
       return noContent();
@@ -462,14 +431,14 @@ function requireUpdated<T>(record: T | null, resource: string, id: string): T {
   return record;
 }
 
-async function requireUser(workspaceId: number | null, id: string) {
-  const record = await getScimUser(workspaceId, id);
+async function requireUser(id: string) {
+  const record = await getScimUser(id);
   if (!record) throw new ScimError(404, `User '${id}' not found`);
   return record;
 }
 
-async function requireGroup(workspaceId: number | null, id: string) {
-  const record = await getScimGroup(workspaceId, id);
+async function requireGroup(id: string) {
+  const record = await getScimGroup(id);
   if (!record) throw new ScimError(404, `Group '${id}' not found`);
   return record;
 }

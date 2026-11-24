@@ -19,27 +19,37 @@ function apiOrigin(): string {
 // pictures, and the /media proxy on this origin. blob: is fetched too: the image
 // annotator reads a file picked in the new issue modal through its blob: URL. React
 // evals in development only, to rebuild server error stacks in the browser.
-// The attachment previews run WebAssembly engines: 'wasm-unsafe-eval' lets them
-// compile and allows no JavaScript eval. The PDF engine starts its worker from a
-// blob: URL, and a document's embedded fonts are loaded from blob: URLs.
-// `frameAncestors` are the sites that may show the page in a frame; none by default.
-export function contentSecurityPolicy(frameAncestors: string[] = []): string {
+function vaultOrigins(): string[] {
+  if (process.env.ITSAPLAN_ALLOW_HOST_BRIDGE !== 'true') {
+    return [];
+  }
+  const override = process.env.VAULT_BRIDGE_URL || process.env.NEXT_PUBLIC_VAULT_BRIDGE_URL;
+  if (override) {
+    try {
+      return [new URL(override).origin];
+    } catch {
+      return [];
+    }
+  }
+  return ['http://127.0.0.1:8765', 'http://localhost:8765'];
+}
+
+export function contentSecurityPolicy(): string {
   const scriptSources =
     process.env.NODE_ENV === 'development'
       ? "'self' 'unsafe-inline' 'unsafe-eval'"
-      : "'self' 'unsafe-inline' 'wasm-unsafe-eval'";
+      : "'self' 'unsafe-inline'";
   return [
     "default-src 'self'",
     `script-src ${scriptSources}`,
-    "worker-src 'self' blob:",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https: http:",
     "media-src 'self' data: blob: https: http:",
-    "font-src 'self' data: blob:",
-    `connect-src 'self' blob: ${apiOrigin()}`.trimEnd(),
+    "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+    `connect-src ${["'self'", 'blob:', apiOrigin(), ...vaultOrigins()].filter(Boolean).join(' ')}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    `frame-ancestors ${frameAncestors.length > 0 ? frameAncestors.join(' ') : "'none'"}`,
+    "frame-ancestors 'none'",
   ].join('; ');
 }

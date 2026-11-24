@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ChevronRight, FileText, GripVertical, LockKeyhole, Plus, Star } from 'lucide-react';
@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { documentPath } from '@/utils/paths';
 
-export default function SortableDocumentRow({
+function SortableDocumentRow({
   projectKey,
   document,
   depth,
@@ -22,6 +22,7 @@ export default function SortableDocumentRow({
   canCreate,
   reorderEnabled,
   favoritePending,
+  virtualStart,
   children,
   onToggle,
   onCreate,
@@ -37,15 +38,16 @@ export default function SortableDocumentRow({
   canCreate: boolean;
   reorderEnabled: boolean;
   favoritePending: boolean;
+  virtualStart?: number;
   children?: ReactNode;
-  onToggle: () => void;
-  onCreate: () => void;
-  onFavoriteChange: () => void;
+  onToggle: (documentId: number) => void;
+  onCreate: (documentId: number) => void;
+  onFavoriteChange: (documentId: number, isFavorite: boolean) => void;
 }) {
   const t = useTranslations('documents');
   const draggable = reorderEnabled && !document.isLocked;
   const sortable = useSortable({ id: document.id, disabled: !draggable });
-  const title = document.title.trim() || t('untitled');
+  const title = document.title.replace(/`/g, '').trim() || t('untitled');
   const style = {
     transform: CSS.Translate.toString(sortable.transform),
     transition: sortable.transition,
@@ -54,32 +56,48 @@ export default function SortableDocumentRow({
 
   return (
     <li
-      ref={sortable.setNodeRef}
-      style={{ transform: style.transform, transition: style.transition }}
       role="treeitem"
       aria-level={depth + 1}
       aria-selected={active}
       aria-expanded={nested && hasChildren ? !collapsed : undefined}
-      className={cn(sortable.isDragging && 'relative z-20')}
+      style={
+        virtualStart !== undefined
+          ? {
+              position: 'absolute',
+              top: 0,
+              insetInlineStart: 0,
+              width: '100%',
+              transform: `translateY(${virtualStart}px)`,
+            }
+          : undefined
+      }
+      className={cn(sortable.isDragging && (virtualStart !== undefined ? 'z-20' : 'relative z-20'))}
     >
-      <div style={{ paddingInlineStart: style.paddingInlineStart }}>
+      <div
+        ref={sortable.setNodeRef}
+        style={{
+          transform: style.transform,
+          transition: style.transition,
+          paddingInlineStart: style.paddingInlineStart,
+        }}
+      >
         <div
           className={cn(
-            'group/row relative flex h-9 items-center rounded-md pe-1 text-[13px] transition-[background-color,box-shadow,opacity] duration-150 outline-none',
+            'group/row relative flex h-9 items-center rounded-md pe-1 text-xs transition-[background-color,box-shadow,opacity] duration-150 outline-none',
             active
               ? 'bg-accent font-medium text-accent-foreground'
               : 'text-foreground focus-within:bg-muted/65 hover:bg-muted/65',
             sortable.isDragging && 'bg-background opacity-90 shadow-lg ring-1 ring-border',
           )}
         >
-          <div className="grid size-6 shrink-0 place-items-center">
+          <div className="grid size-8 shrink-0 place-items-center">
             <Button
               type="button"
               variant="ghost"
               size="icon-xs"
               disabled={!draggable}
               className={cn(
-                'size-6 cursor-grab touch-none text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing',
+                'size-8 cursor-grab touch-none text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 active:cursor-grabbing',
                 !draggable && 'invisible',
               )}
               aria-label={t('movePage', { title })}
@@ -97,10 +115,10 @@ export default function SortableDocumentRow({
               type="button"
               variant="ghost"
               size="icon-xs"
-              className={cn('size-6 shrink-0 text-muted-foreground', !hasChildren && 'invisible')}
+              className={cn('size-8 shrink-0 text-muted-foreground', !hasChildren && 'invisible')}
               aria-label={collapsed ? t('expand') : t('collapse')}
               aria-expanded={hasChildren ? !collapsed : undefined}
-              onClick={onToggle}
+              onClick={() => onToggle(document.id)}
             >
               <ChevronRight
                 className={cn(
@@ -113,6 +131,7 @@ export default function SortableDocumentRow({
 
           <Link
             href={documentPath(projectKey, document.id)}
+            prefetch={false}
             className="flex min-w-0 flex-1 items-center gap-2 self-stretch rounded-sm pe-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             aria-current={active ? 'page' : undefined}
           >
@@ -136,13 +155,13 @@ export default function SortableDocumentRow({
             size="icon-xs"
             disabled={favoritePending}
             className={cn(
-              'size-6 shrink-0 text-muted-foreground opacity-0 transition-[color,opacity] group-focus-within/row:opacity-100 group-hover/row:opacity-100',
+              'size-8 shrink-0 text-muted-foreground opacity-0 transition-[color,opacity] group-focus-within/row:opacity-100 group-hover/row:opacity-100',
               document.isFavorite &&
                 'text-amber-500 opacity-100 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300',
             )}
             aria-label={document.isFavorite ? t('removeFavorite') : t('addFavorite')}
             aria-pressed={document.isFavorite}
-            onClick={onFavoriteChange}
+            onClick={() => onFavoriteChange(document.id, !document.isFavorite)}
           >
             <Star className={cn('size-3.5', document.isFavorite && 'fill-current')} />
           </Button>
@@ -152,9 +171,9 @@ export default function SortableDocumentRow({
               type="button"
               variant="ghost"
               size="icon-xs"
-              className="size-6 shrink-0 text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+              className="size-8 shrink-0 text-muted-foreground opacity-0 transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100"
               aria-label={t('newSubpage', { title })}
-              onClick={onCreate}
+              onClick={() => onCreate(document.id)}
             >
               <Plus className="size-3.5" />
             </Button>
@@ -165,3 +184,5 @@ export default function SortableDocumentRow({
     </li>
   );
 }
+
+export default memo(SortableDocumentRow);

@@ -1,42 +1,30 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { removeMember } from '@/lib/api/endpoints/members';
 import {
+  type CopyProjectIncludeKey,
   createTeamProject,
   copyTeamProject,
   updateTeamProject,
-  archiveTeamProject,
-  restoreTeamProject,
   deleteTeamProject,
 } from '@/lib/api/endpoints/teams';
 import {
   type Project,
   type ProjectPreferencePatch,
-  type ProjectSearchFilters,
   listProjects,
-  searchProjects,
   getProject,
   getBoardIssues,
   updateProject,
   updateProjectPreferences,
 } from '@/lib/api/endpoints/projects';
-import { nextPageParam } from '@/lib/api/core/paging';
+import type {
+  UpsertProjectChannelInput,
+  UpsertProjectContactInput,
+  UpsertProjectStorageLocationInput,
+} from '@/lib/api/endpoints/directory';
 import { qk } from '@/services/queryKeys';
 
 export function useProjectsQuery() {
   return useQuery({ queryKey: qk.projects, queryFn: () => listProjects() });
-}
-
-const PROJECT_SEARCH_PAGE = 30;
-
-export function useProjectSearchQuery(filters: ProjectSearchFilters, enabled = true) {
-  return useInfiniteQuery({
-    queryKey: qk.projectSearch(filters),
-    queryFn: ({ pageParam }) =>
-      searchProjects(filters, { page: pageParam, pageSize: PROJECT_SEARCH_PAGE }),
-    initialPageParam: 1,
-    getNextPageParam: nextPageParam,
-    enabled,
-  });
 }
 
 export function useUpdateProjectPreferences() {
@@ -62,15 +50,18 @@ export function useProjectQuery(projectKey: string | null) {
     queryKey: qk.project(projectKey ?? ''),
     queryFn: () => getProject(projectKey!),
     enabled: projectKey != null,
+    placeholderData: keepPreviousData,
   });
 }
 
 // The board's issues plus its change marker, loaded alongside the scaffold.
-export function useBoardIssuesQuery(projectKey: string | null) {
+export function useBoardIssuesQuery(projectKey: string | null, enabled: boolean = true) {
   return useQuery({
     queryKey: qk.boardIssues(projectKey ?? ''),
     queryFn: () => getBoardIssues(projectKey!),
-    enabled: projectKey != null,
+    enabled: projectKey != null && enabled,
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -109,9 +100,11 @@ export function useCreateProject() {
         key: string;
         name: string;
         description?: string;
-        include?: Record<string, boolean>;
+        include?: Partial<Record<CopyProjectIncludeKey, boolean>>;
         preset?: string;
-        templateId?: number;
+        contacts?: UpsertProjectContactInput[];
+        channels?: UpsertProjectChannelInput[];
+        storageLocations?: UpsertProjectStorageLocationInput[];
       };
     }) =>
       copyFromId == null
@@ -123,6 +116,7 @@ export function useCreateProject() {
       // yet and App's "unknown project key" guard bounces back to the first project.
       qc.setQueryData<Project[]>(qk.projects, (prev) => (prev ? [...prev, project] : [project]));
       void qc.invalidateQueries({ queryKey: qk.projects });
+      void qc.invalidateQueries({ queryKey: qk.projectDirectory(project.ref) });
       // The team panel lists the projects of the team, so it gains the new one.
       void qc.invalidateQueries({ queryKey: qk.team(project.teamId) });
       void qc.invalidateQueries({ queryKey: qk.teams });
@@ -192,27 +186,6 @@ export function useUpdateTeamProject() {
       if (updated.ref !== projectKey) qc.removeQueries({ queryKey: qk.project(projectKey) });
       else void qc.invalidateQueries({ queryKey: qk.project(projectKey) });
       void qc.invalidateQueries({ queryKey: qk.team(teamId) });
-    },
-  });
-}
-
-// The project list carries only active projects, so it is refetched either way.
-export function useSetTeamProjectArchived() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      teamId,
-      projectId,
-      archived,
-    }: {
-      teamId: number;
-      projectId: number;
-      archived: boolean;
-    }) =>
-      archived ? archiveTeamProject(teamId, projectId) : restoreTeamProject(teamId, projectId),
-    onSuccess: (_project, { teamId }) => {
-      void qc.invalidateQueries({ queryKey: qk.projects });
-      void qc.invalidateQueries({ queryKey: qk.anyTeamProjects(teamId) });
     },
   });
 }

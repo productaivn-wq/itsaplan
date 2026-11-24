@@ -1,11 +1,9 @@
 import { db, documentComment } from '@repo/db';
 import { user } from '@repo/db/schema';
-import { and, asc, desc, eq, or } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { HttpError } from '#shared/lib';
-import { addedMentionHandles, parseMentionHandles } from '#shared/mentions';
 import { collaborationSchema } from './collaboration-schema';
 import { lockVisibleDocument } from './collaboration';
-import { fanOutCommentMentions } from './mentions';
 
 export async function listDocumentComments(projectId: number, documentId: number, userId: string) {
   return db.transaction(async (tx) => {
@@ -36,15 +34,13 @@ export async function addDocumentComment(
     quote?: string;
     from?: number;
     to?: number;
-    version?: number;
+    version: number;
   },
 ) {
-  const { comment, answeredUserId } = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const document = await lockVisibleDocument(tx, projectId, documentId, userId);
     if (document.archivedAt) throw new HttpError(409, 'Archived documents cannot be commented on');
     if (!input.body.trim()) throw new HttpError(400, 'A comment cannot be empty');
-    // A reply answers the comment just before it in the thread.
-    let answeredUserId: string | null = null;
     if (input.parentId) {
       const [parent] = await tx
         .select()
@@ -53,16 +49,7 @@ export async function addDocumentComment(
           and(eq(documentComment.id, input.parentId), eq(documentComment.documentId, documentId)),
         );
       if (!parent || parent.parentId) throw new HttpError(404, 'Comment thread not found');
-      const [previous] = await tx
-        .select({ authorId: documentComment.authorId })
-        .from(documentComment)
-        .where(or(eq(documentComment.id, parent.id), eq(documentComment.parentId, parent.id)))
-        .orderBy(desc(documentComment.createdAt), desc(documentComment.id))
-        .limit(1);
-      answeredUserId = previous?.authorId ?? null;
     } else {
-      if (input.version === undefined)
-        throw new HttpError(400, 'A new thread needs the document version');
       if (document.version !== input.version)
         throw new HttpError(409, 'The selection changed. Select the text again.');
       if (
@@ -91,17 +78,9 @@ export async function addDocumentComment(
         from: input.parentId ? null : input.from,
         to: input.parentId ? null : input.to,
       })
-      .returning({ id: documentComment.id, body: documentComment.body });
-    return { comment: comment!, answeredUserId };
+      .returning({ id: documentComment.id });
+    return comment!;
   });
-  await fanOutCommentMentions({
-    projectId,
-    documentId,
-    comment: { ...comment, authorId: userId },
-    handles: parseMentionHandles(comment.body),
-    answeredUserId,
-  });
-  return { id: comment.id };
 }
 export async function updateDocumentComment(
   projectId: number,
@@ -110,36 +89,27 @@ export async function updateDocumentComment(
   commentId: string,
   input: { body?: string; resolved?: boolean },
 ) {
-  const body = input.body?.trim();
-  const comment = await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     await lockVisibleDocument(tx, projectId, documentId, userId);
     const [comment] = await tx
       .select()
       .from(documentComment)
       .where(and(eq(documentComment.id, commentId), eq(documentComment.documentId, documentId)));
     if (!comment) throw new HttpError(404, 'Comment not found');
-    if (body !== undefined && comment.authorId !== userId)
+    if (input.body !== undefined && comment.authorId !== userId)
       throw new HttpError(403, 'Only the author can edit a comment');
-    if (body === '') throw new HttpError(400, 'A comment cannot be empty');
+    if (input.body !== undefined && !input.body.trim())
+      throw new HttpError(400, 'A comment cannot be empty');
     if (input.resolved !== undefined && comment.parentId)
       throw new HttpError(400, 'Resolve the thread, not a reply');
     await tx
       .update(documentComment)
       .set({
-        ...(body !== undefined ? { body } : {}),
+        ...(input.body !== undefined ? { body: input.body.trim() } : {}),
         ...(input.resolved !== undefined ? { resolvedAt: input.resolved ? new Date() : null } : {}),
         updatedAt: new Date(),
       })
       .where(eq(documentComment.id, commentId));
-    return comment;
   });
-  if (body !== undefined) {
-    await fanOutCommentMentions({
-      projectId,
-      documentId,
-      comment: { id: commentId, body, authorId: userId },
-      handles: addedMentionHandles(comment.body, body),
-    });
-  }
   return { ok: true };
 }

@@ -1,1 +1,0 @@
-ALTER TABLE "agent_run" ADD COLUMN "claimed_at" timestamp with time zone;

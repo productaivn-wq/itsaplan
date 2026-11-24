@@ -11,7 +11,6 @@ const DEFAULT_MEDIA_FIELDS =
 // Reads the connected account's own profile.
 export const instagramGetAccount: CustomToolEntry = {
   key: 'instagram_get_account',
-  group: 'Account',
   scopes: ['instagram_basic'],
   label: 'Instagram Get Account',
   description:
@@ -33,7 +32,6 @@ export const instagramGetAccount: CustomToolEntry = {
 // Lists the account's own published media.
 export const instagramListMedia: CustomToolEntry = {
   key: 'instagram_list_media',
-  group: 'Account',
   scopes: ['instagram_basic'],
   label: 'Instagram List Media',
   description:
@@ -62,7 +60,6 @@ export const instagramListMedia: CustomToolEntry = {
 // Lists the account's active stories.
 export const instagramListStories: CustomToolEntry = {
   key: 'instagram_list_stories',
-  group: 'Account',
   scopes: ['instagram_basic'],
   label: 'Instagram List Stories',
   description:
@@ -84,7 +81,6 @@ export const instagramListStories: CustomToolEntry = {
 // Lists media where the account is tagged by other users.
 export const instagramListTaggedMedia: CustomToolEntry = {
   key: 'instagram_list_tagged_media',
-  group: 'Account',
   scopes: ['instagram_basic'],
   label: 'Instagram List Tagged Media',
   description: 'List media in which the connected account has been tagged by other users.',
@@ -109,7 +105,6 @@ export const instagramListTaggedMedia: CustomToolEntry = {
 // Lists the account's active live video media.
 export const instagramListLiveMedia: CustomToolEntry = {
   key: 'instagram_list_live_media',
-  group: 'Account',
   scopes: ['instagram_basic'],
   label: 'Instagram List Live Media',
   description: "List the connected account's currently active live video broadcasts.",
@@ -130,7 +125,6 @@ export const instagramListLiveMedia: CustomToolEntry = {
 // Reads the remaining share quota in the 24-hour publishing window.
 export const instagramContentPublishingLimit: CustomToolEntry = {
   key: 'instagram_content_publishing_limit',
-  group: 'Account',
   scopes: ['instagram_basic', 'instagram_content_publish'],
   label: 'Instagram Content Publishing Limit',
   description:
@@ -149,7 +143,6 @@ export const instagramContentPublishingLimit: CustomToolEntry = {
 // Lists hashtags the account recently searched (counts against the 30/7-day cap).
 export const instagramRecentlySearchedHashtags: CustomToolEntry = {
   key: 'instagram_recently_searched_hashtags',
-  group: 'Account',
   scopes: ['instagram_basic', 'instagram_manage_insights'],
   label: 'Instagram Recently Searched Hashtags',
   description:

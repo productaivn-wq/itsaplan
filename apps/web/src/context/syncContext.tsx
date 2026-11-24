@@ -13,12 +13,13 @@ import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { getRevs } from '@/lib/api/endpoints/sync';
 
 // One poll for the whole app. Every screen that wants to stay live registers the
-// scopes it depends on (see useLiveRefresh); this provider polls the API for their
-// change markers and invalidates the queries of the scopes that moved. The heavy reads happen only on an actual change.
+// scopes it depends on (see useLiveRefresh); this provider asks the API for their
+// change markers in a single request and invalidates the queries of the scopes that
+// moved. The heavy reads happen only on an actual change.
 //
 // Polling pauses while the tab is in the background — TanStack does not refetch on
 // an interval there — and stops when nothing is registered.
-const POLL_MS = 8000;
+const POLL_MS = 5000;
 
 export interface ScopeWatcher {
   scope: string;
@@ -50,7 +51,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     queryFn: () => getRevs(scopes),
     enabled: scopes.length > 0,
     refetchInterval: POLL_MS,
-    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
     // Never served as fresh, but kept for one interval: with gcTime 0 a remount in
     // the same tick drops the in-flight read and fires a second one.
     staleTime: 0,
@@ -68,7 +69,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       if (previous === undefined || previous === rev) continue;
       for (const watcher of watchers.current) {
         if (watcher.scope !== scope) continue;
-        for (const key of watcher.targets) void qc.invalidateQueries({ queryKey: key });
+        for (const key of watcher.targets) {
+          void qc.invalidateQueries({ queryKey: key, refetchType: 'active' });
+        }
       }
     }
   }, [data, qc]);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DevelopmentLink } from '@/lib/api/endpoints/git';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import IssueDevelopmentAddMenu from './IssueDevelopmentAddMenu';
 import IssueDevelopmentCreateDialog from './IssueDevelopmentCreateDialog';
 import IssueDevelopmentLinkCard from './IssueDevelopmentLinkCard';
@@ -24,7 +24,7 @@ export default function IssueDevelopmentPanel({
   canManage: boolean;
 }) {
   const t = useTranslations('issue.development');
-  const { open, toggle } = usePersistedOpen('issue-development-open');
+  const { open, toggle } = useSmartSectionOpen('issue-development-open-v2', links.length > 0);
   const [linkOpen, setLinkOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   if (links.length === 0 && !canManage) return null;
@@ -34,7 +34,7 @@ export default function IssueDevelopmentPanel({
       <div className={`flex h-7 items-center justify-between gap-3 ${open ? 'mb-3' : ''}`}>
         <IssueSectionHeading
           label={t('title')}
-          tally={String(links.length)}
+          tally={links.length > 0 ? String(links.length) : undefined}
           open={open}
           onToggle={toggle}
         />

@@ -118,7 +118,7 @@ export default function DocumentImageMenu({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- private media uses the session-gated proxy. */}
                     <img src={asset.url} alt="" className="size-full object-cover" />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-1 text-start text-[10px] text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                    <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-1 text-start text-xs text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                       {asset.filename}
                     </span>
                   </button>

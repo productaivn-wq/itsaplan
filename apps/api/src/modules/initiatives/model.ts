@@ -85,7 +85,7 @@ export const InitiativeCountsResponse = t.Object({
 
 // InitiativeFeedItemRow from activity.ts: one timeline entry, from the initiative
 // itself (source 'initiative') or a linked issue (source 'issue').
-const FeedItemResponse = t.Object({
+export const FeedItemResponse = t.Object({
   id: t.Number(),
   source: t.String(),
   kind: t.String(),
@@ -97,6 +97,10 @@ const FeedItemResponse = t.Object({
   createdAt: t.String(),
   issueId: t.Nullable(t.Number()),
   issueIdentifier: t.Nullable(t.String()),
+});
+
+export const createInitiativeCommentBody = t.Object({
+  body: t.String({ minLength: 1, description: 'Initiative comment body.' }),
 });
 
 export const FeedPageResponse = t.Object({

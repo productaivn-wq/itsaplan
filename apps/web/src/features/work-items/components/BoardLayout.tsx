@@ -4,11 +4,9 @@ import type { WorkItemsView } from '@/utils/viewTypes';
 import { withoutShownSubtasks } from '@/utils/subtasks';
 import { IssueLinksProvider } from '../context/useIssueLinks';
 import { SubtasksProvider } from '../context/useSubtasks';
-import KanbanBoard from './kanban/KanbanBoard';
 import TableView from './table/TableView';
 import TimelineView from './timeline/TimelineView';
 import CalendarView from './calendar/CalendarView';
-import { WorkItemsEmpty } from './shared/WorkItemsEmpty';
 
 interface BoardLayoutProps extends WorkItemsViewProps {
   view: WorkItemsView;
@@ -42,22 +40,18 @@ export default function BoardLayout({
 
   function renderLayout() {
     switch (view) {
-      case 'table':
-        return <TableView {...layoutProps} widthScope={widthScope} />;
       case 'timeline':
-        if (layoutProps.project.issues.length === 0) {
-          return <WorkItemsEmpty filters={layoutProps.filters} />;
-        }
         return <TimelineView {...layoutProps} />;
       case 'calendar':
         return <CalendarView {...layoutProps} />;
+      case 'table':
       default:
-        return <KanbanBoard {...layoutProps} />;
+        return <TableView {...layoutProps} widthScope={widthScope} />;
     }
   }
 
   return (
-    <IssueLinksProvider issues={allIssues} columns={project.columns} enabled={settings.showLinks}>
+    <IssueLinksProvider issues={allIssues} enabled={settings.showLinks}>
       <SubtasksProvider
         issues={allIssues}
         enabled={subtasksEnabled && settings.showSubtasks}

@@ -3,15 +3,24 @@
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
-import { issuePath, projectPath } from '@/utils/paths';
+import { issuePath, projectPath, aiTeamPath } from '@/utils/paths';
 import type { useOverlays } from '@/hooks/useOverlays';
 
-// Every project page mounts the Shell, so these load on first open: a page that opens
-// none of them does not download the editor and the pickers they carry.
-const NewProjectModal = dynamic(() => import('@/components/layout/NewProjectModal'));
-const InitiativeDialog = dynamic(() => import('@/components/common/overlay/InitiativeDialog'));
-const NewIssueModal = dynamic(() => import('@/features/issue/components/create/NewIssueModal'));
-const IssueDetail = dynamic(() => import('@/features/issue/components/detail/IssueDetail'));
+const NewProjectModal = dynamic(() => import('@/components/layout/NewProjectModal'), {
+  ssr: false,
+});
+const InitiativeDialog = dynamic(
+  () => import('@/components/common/overlay/InitiativeDialog'),
+  { ssr: false },
+);
+const NewIssueModal = dynamic(
+  () => import('@/features/issue/components/create/NewIssueModal'),
+  { ssr: false },
+);
+const IssueDetail = dynamic(
+  () => import('@/features/issue/components/detail/IssueDetail'),
+  { ssr: false },
+);
 
 // The project-level overlays the Shell mounts above its content. Each renders only
 // while its overlay state says it is open.
@@ -19,11 +28,13 @@ export default function ShellOverlays({
   project,
   projectKey,
   newProjectTeamId,
+  onAiWorkspace = false,
   overlays,
 }: {
   project: ProjectDetail | null;
   projectKey: string | null;
   newProjectTeamId: number | undefined;
+  onAiWorkspace?: boolean;
   overlays: ReturnType<typeof useOverlays>;
 }) {
   const router = useRouter();
@@ -36,7 +47,7 @@ export default function ShellOverlays({
           onClose={() => overlays.setShowNewProject(false)}
           onCreated={(key) => {
             overlays.setShowNewProject(false);
-            router.push(projectPath(key));
+            router.push(onAiWorkspace ? aiTeamPath(key, 'chat') : projectPath(key));
           }}
         />
       )}

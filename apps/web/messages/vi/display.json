@@ -1,0 +1,97 @@
+{
+  "title": "Hiển thị",
+  "layouts": {
+    "kanban": "Kanban",
+    "table": "Bảng",
+    "timeline": "Dòng thời gian",
+    "calendar": "Lịch"
+  },
+  "sortFields": {
+    "manual": "Thủ công",
+    "title": "Tiêu đề",
+    "identifier": "Mã công việc",
+    "status": "Trạng thái",
+    "priority": "Độ ưu tiên",
+    "assignee": "Người phụ trách",
+    "type": "Loại",
+    "startDate": "Ngày bắt đầu",
+    "dueDate": "Hạn hoàn thành",
+    "created": "Ngày tạo",
+    "updated": "Ngày cập nhật"
+  },
+  "groupFields": {
+    "none": "Không nhóm",
+    "status": "Trạng thái",
+    "assignee": "Người phụ trách",
+    "delegate": "Tác nhân được ủy quyền",
+    "priority": "Độ ưu tiên",
+    "type": "Loại",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ"
+  },
+  "properties": {
+    "id": "ID",
+    "status": "Trạng thái",
+    "priority": "Độ ưu tiên",
+    "type": "Loại",
+    "assignee": "Người phụ trách",
+    "delegate": "Tác nhân được ủy quyền",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "estimatePoints": "Story points",
+    "estimateTime": "Thời gian ước tính",
+    "startDate": "Ngày bắt đầu",
+    "dueDate": "Hạn hoàn thành",
+    "created": "Ngày tạo",
+    "updated": "Ngày cập nhật",
+    "statusAge": "Thời gian ở trạng thái này"
+  },
+  "stateTypes": {
+    "backlog": "Tồn đọng",
+    "unstarted": "Chưa bắt đầu",
+    "started": "Đang thực hiện",
+    "completed": "Đã hoàn thành",
+    "canceled": "Đã hủy"
+  },
+  "timelineScales": {
+    "week": "Tuần",
+    "month": "Tháng",
+    "quarter": "Quý"
+  },
+  "weekStart": {
+    "0": "Chủ nhật",
+    "1": "Thứ hai"
+  },
+  "dateFields": {
+    "dueDate": "Hạn hoàn thành",
+    "startDate": "Ngày bắt đầu"
+  },
+  "rows": {
+    "columns": "Cột",
+    "grouping": "Nhóm theo",
+    "swimlanes": "Phân làn",
+    "subGrouping": "Nhóm phụ",
+    "ordering": "Thứ tự sắp xếp",
+    "ascending": "Tăng dần",
+    "descending": "Giảm dần",
+    "showEmptyColumns": "Hiện cột trống",
+    "showEmptyGroups": "Hiện nhóm trống",
+    "showLinks": "Hiện liên kết",
+    "separateSubtaskCards": "Hiện công việc con dưới dạng thẻ riêng",
+    "separateSubtaskRows": "Hiện công việc con dưới dạng hàng riêng",
+    "startSubtasksCollapsed": "Mặc định thu gọn công việc con",
+    "showNestedSubtasks": "Hiện công việc con lồng nhau",
+    "nestedSubtasks": "Công việc con lồng nhau",
+    "displayProperties": "Thuộc tính hiển thị",
+    "placeBy": "Xếp theo",
+    "startWeekOn": "Bắt đầu tuần vào",
+    "startCollapsed": "Mặc định thu gọn các nhóm",
+    "scale": "Tỷ lệ",
+    "addCustomField": "Thêm trường tùy chỉnh",
+    "viewIcon": "Biểu tượng chế độ xem",
+    "presetCalm": "Gọn nhẹ",
+    "presetDetailed": "Đầy đủ"
+  },
+  "layoutCommand": "Bố cục {layout}"
+}

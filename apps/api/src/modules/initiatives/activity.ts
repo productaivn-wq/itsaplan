@@ -183,3 +183,38 @@ export async function logInitiativeUpdate(
     });
   await recordActivity(after.id, events, actorUserId);
 }
+
+export async function recordComment(
+  initiativeId: number,
+  body: string,
+  actorUserId?: string | null,
+): Promise<InitiativeFeedItemRow> {
+  const resolvedActorId = actorUserId ?? null;
+  const actorName = await userName(resolvedActorId);
+  const [row] = await db
+    .insert(issueActivity)
+    .values({
+      issueId: null,
+      initiativeId,
+      kind: 'comment' as const,
+      actorUserId: resolvedActorId,
+      actorName,
+      body: body.trim(),
+      action: null,
+      payload: {},
+    })
+    .returning();
+  return {
+    id: row.id,
+    source: 'initiative',
+    kind: 'comment',
+    actorUserId: row.actorUserId,
+    actorName: row.actorName,
+    body: row.body,
+    action: row.action,
+    payload: row.payload,
+    createdAt: iso(row.createdAt),
+    issueId: null,
+    issueIdentifier: null,
+  };
+}

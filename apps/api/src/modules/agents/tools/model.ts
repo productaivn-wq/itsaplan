@@ -31,8 +31,7 @@ export const AgentToolResponse = t.Object({
   id: t.Number(),
   teamId: t.Number(),
   toolKey: t.String(),
-  // Null for a tool of an integration that needs no credential.
-  credentialId: t.Nullable(t.Number()),
+  credentialId: t.Number(),
   integrationKey: t.String(),
   credentialLabel: t.Nullable(t.String()),
   createdAt: t.String(),
@@ -42,21 +41,11 @@ export const AgentToolListResponse = t.Array(AgentToolResponse);
 
 export const AgentToolPageResponse = pageResponse(AgentToolResponse);
 
-export const agentToolListQuery = t.Object({
-  search: t.Optional(
-    t.String({
-      maxLength: 200,
-      description: 'Case-insensitive match on the tool name, its group or its integration.',
-    }),
-  ),
-  ...pageQueryFields,
-});
+export const agentToolListQuery = t.Object(pageQueryFields);
 
 export const createAgentToolBody = t.Object({
   toolKey: t.String({ minLength: 1 }),
-  credentialId: t.Optional(
-    t.Number({ description: "Required unless the tool's integration needs no credential." }),
-  ),
+  credentialId: t.Number(),
 });
 
 export const setAgentToolsBody = t.Object({

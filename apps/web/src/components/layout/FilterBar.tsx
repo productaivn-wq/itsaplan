@@ -63,7 +63,7 @@ export default function FilterBar({
 
       <Popover open={addOpen} onOpenChange={setAddOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-6" title={t('add')}>
+          <Button variant="ghost" size="icon" className="size-8" title={t('add')}>
             <Plus className="size-3.5" />
           </Button>
         </PopoverTrigger>

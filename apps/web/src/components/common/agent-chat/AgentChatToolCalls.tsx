@@ -7,18 +7,33 @@ import AgentChatToolDisclosure from './AgentChatToolDisclosure';
 
 // The tools the agent called in one stretch of its answer. Several are folded behind a
 // single row so they do not push the answer itself out of view.
-export default function AgentChatToolCalls({ tools }: { tools: AiChatToolPart[] }) {
+export default function AgentChatToolCalls({
+  tools,
+  defaultOpen = false,
+}: {
+  tools: AiChatToolPart[];
+  defaultOpen?: boolean;
+}) {
   const t = useTranslations('common.agentChat');
 
   if (tools.length === 1) {
     const only = tools[0]!;
     return (
-      <AgentChatToolCall tool={only} label={t('usedTool', { tool: only.toolName })} withIcon />
+      <AgentChatToolCall
+        tool={only}
+        label={t('usedTool', { tool: only.toolName })}
+        withIcon
+        defaultOpen={defaultOpen}
+      />
     );
   }
 
   return (
-    <AgentChatToolDisclosure label={t('usedTools', { count: tools.length })} withIcon>
+    <AgentChatToolDisclosure
+      label={t('usedTools', { count: tools.length })}
+      withIcon
+      defaultOpen={defaultOpen}
+    >
       <ul className="flex flex-col">
         {tools.map((tool, index) => (
           <li key={tool.toolCallId || index}>

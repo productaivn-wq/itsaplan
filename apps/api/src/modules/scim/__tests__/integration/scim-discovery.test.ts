@@ -1,10 +1,8 @@
 import { describe, expect, it, beforeEach } from 'bun:test';
-import { setWorkspaceScim } from '@repo/auth';
-import { api, ownWorkspaceId, scimApi } from '#tests/helpers/app';
-import { writeSecret } from '@repo/db';
+import { api, scimApi } from '#tests/helpers/app';
 import { resetDb } from '#tests/helpers/db';
 import { addUser } from '#modules/god/__tests__/helpers';
-import { setupOtherWorkspace, setupScim } from '../helpers';
+import { setupScim } from '../helpers';
 
 describe('SCIM discovery and authentication', () => {
   beforeEach(resetDb);
@@ -35,8 +33,8 @@ describe('SCIM discovery and authentication', () => {
     });
 
     it('refuses the right token while provisioning is off', async () => {
-      const { settings, token } = await setupScim();
-      await settings.patch({ enabled: false });
+      const { god, token } = await setupScim();
+      await god.api.god['scim-settings'].put({ enabled: false });
 
       const res = await scimApi(token).scim.v2.ServiceProviderConfig.get();
 
@@ -44,8 +42,8 @@ describe('SCIM discovery and authentication', () => {
     });
 
     it('refuses a token that has been replaced', async () => {
-      const { settings, token } = await setupScim();
-      await settings.token.post();
+      const { god, token } = await setupScim();
+      await god.api.god['scim-settings'].token.post();
 
       const res = await scimApi(token).scim.v2.ServiceProviderConfig.get();
 
@@ -53,74 +51,36 @@ describe('SCIM discovery and authentication', () => {
     });
   });
 
-  describe('settings', () => {
-    it('refuses anyone but the instance owner', async () => {
-      await setupScim();
-      const someone = await addUser({ email: 'someone@example.com' });
-      const scim = someone.api.god.scim;
+  describe('god settings', () => {
+    it('refuses a plain user', async () => {
+      await addUser({ email: 'root@example.com' });
+      const user = await addUser({ email: 'someone@example.com' });
 
-      expect((await scim.get()).status).toBe(403);
-      expect((await scim.token.post()).status).toBe(403);
-    });
-
-    it("refuses a workspace's own while SCIM is the instance's", async () => {
-      const { god } = await setupScim();
-      const scim = god.api.workspaces({ workspaceId: await ownWorkspaceId(god.api) }).scim;
-
-      expect((await scim.get()).status).toBe(403);
-      expect((await scim.token.post()).status).toBe(403);
+      expect((await user.api.god['scim-settings'].get()).status).toBe(403);
+      expect((await user.api.god['scim-settings'].token.post()).status).toBe(403);
     });
 
     it('refuses to enable provisioning before a token exists', async () => {
       const god = await addUser({ email: 'root@example.com' });
 
-      const res = await god.api.god.scim.patch({ enabled: true });
+      const res = await god.api.god['scim-settings'].put({ enabled: true });
 
       expect(res.status).toBe(400);
       expect(res.error!.value).toMatchObject({ error: 'Generate a SCIM token first' });
     });
 
     it('reports the token prefix and the base URL, never the token', async () => {
-      const { settings, token } = await setupScim();
+      const { god, token } = await setupScim();
 
-      const res = await settings.get();
+      const res = await god.api.god['scim-settings'].get();
 
       expect(res.data).toMatchObject({
         enabled: true,
         hasToken: true,
         baseUrl: 'http://localhost:3000/scim/v2',
       });
-      expect(token).toMatch(/^scim_[0-9a-f]{48}$/);
       expect(res.data!.tokenPrefix.length).toBeLessThan(token.length);
       expect(token.startsWith(res.data!.tokenPrefix)).toBe(true);
-    });
-
-    // The instance's token was the first workspace's until SCIM became the instance's,
-    // and the identity providers already configured with it keep working.
-    it("accepts a token that carries the first workspace's id", async () => {
-      await setupScim();
-      const kept = 'scim_1_' + 'ab'.repeat(24);
-      await writeSecret('auth.scim', { enabled: true, token: kept }, {});
-
-      const res = await scimApi(kept).scim.v2.ServiceProviderConfig.get();
-
-      expect(res.status).toBe(200);
-    });
-
-    it("refuses one workspace's token under another workspace's id", async () => {
-      setWorkspaceScim();
-      try {
-        const god = await addUser({ email: 'root@example.com' });
-        const first = await setupOtherWorkspace(god);
-        const other = await setupOtherWorkspace(god);
-        const forged = first.token.replace(/^scim_\d+_/, `scim_${other.workspaceId}_`);
-
-        const res = await scimApi(forged).scim.v2.ServiceProviderConfig.get();
-
-        expect(res.status).toBe(401);
-      } finally {
-        setWorkspaceScim(false);
-      }
     });
   });
 

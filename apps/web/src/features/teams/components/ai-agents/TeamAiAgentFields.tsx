@@ -9,14 +9,6 @@ import type {
 } from '@/lib/api/endpoints/integrations';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { AGENT_KIND_ICON } from '../../utils/agentKindIcon';
 import { type AgentFormValue } from '../../utils/agentForm';
 import { AgentFormSection } from './AgentFormSection';
@@ -27,8 +19,7 @@ import AgentModelSection from './AgentModelSection';
 import AgentActionsSection from './AgentActionsSection';
 import AgentTriggersSection from './AgentTriggersSection';
 import { AgentInstructionsField } from './AgentInstructionsField';
-import AgentConnectionSection from './AgentConnectionSection';
-import { AgentOptionCards } from './AgentOptionCards';
+import AgentRunnerSection from './AgentRunnerSection';
 import { useTranslations } from 'next-intl';
 
 // Which sections open when an existing agent is opened for editing, so the form reads
@@ -37,10 +28,6 @@ import { useTranslations } from 'next-intl';
 // until its key is in the operator's hands. A new agent starts with all of them closed:
 // nothing is filled in yet, and the key section opens itself once a key is issued.
 const DEFAULT_OPEN: Record<string, boolean> = { access: true, projects: true, token: true };
-
-// Radix Select forbids an empty-string item value, so the provider's default (a null
-// reasoning effort) uses this sentinel.
-const PROVIDER_DEFAULT = 'default';
 
 // Content width of the full-width editor. The sheet sizes its footer to match, so the
 // two must stay in sync.
@@ -121,16 +108,31 @@ export default function TeamAiAgentFields({
       {!kindLocked && (
         <div className="space-y-1.5">
           <span className="text-sm font-medium">{t('kind')}</span>
-          <AgentOptionCards
-            options={(['external', 'internal'] as const).map((k) => ({
-              value: k,
-              icon: AGENT_KIND_ICON[k],
-              label: t(`kindLabel.${k}`),
-              hint: t(`kindHint.${k}`),
-            }))}
-            value={value.kind}
-            onChange={(kind) => onChange({ kind })}
-          />
+          <div className="grid grid-cols-2 gap-2">
+            {(['external', 'internal'] as const).map((k) => {
+              const KindIcon = AGENT_KIND_ICON[k];
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onChange({ kind: k })}
+                  className={`flex items-start gap-2.5 rounded-md px-3 py-2 text-start text-sm transition-colors ${
+                    value.kind === k
+                      ? 'bg-secondary ring-1 ring-foreground/15'
+                      : 'bg-muted/50 hover:bg-accent/60'
+                  }`}
+                >
+                  <KindIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0">
+                    <span className="font-medium">{t(`kindLabel.${k}`)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t(`kindHint.${k}`)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -160,14 +162,6 @@ export default function TeamAiAgentFields({
         <p className="text-xs text-muted-foreground">{t('usernameHint')}</p>
       </div>
 
-      <label className="flex cursor-pointer items-center justify-between gap-2">
-        <span>
-          <span className="text-sm font-medium">{t('chat')}</span>
-          <span className="block text-xs text-muted-foreground">{t('chatHint')}</span>
-        </span>
-        <Switch checked={value.chatEnabled} onCheckedChange={(v) => onChange({ chatEnabled: v })} />
-      </label>
-
       <AgentInstructionsField
         value={value.instructions}
         onChange={(instructions) => onChange({ instructions })}
@@ -181,7 +175,6 @@ export default function TeamAiAgentFields({
       {...sectionProps('access')}
       value={value}
       onChange={onChange}
-      agent={agent}
     />
   );
 
@@ -207,28 +200,75 @@ export default function TeamAiAgentFields({
     />
   );
 
-  const connectionSection = (
-    <AgentConnectionSection
-      key="connection"
-      {...sectionProps('connection')}
-      agent={agent}
-      value={value}
-      onChange={onChange}
-    />
+  const runnerSection = (
+    <AgentRunnerSection key="runner" {...sectionProps('runner')} agent={agent} />
   );
 
-  const modelSection = (
-    <AgentModelSection
-      key="model"
-      {...sectionProps('model')}
-      value={value}
-      onChange={onChange}
-      credentials={credentials}
-      catalog={catalog}
-      models={models}
-      modelsLoading={modelsLoading}
-    />
-  );
+  const modelSection =
+    value.kind === 'external' ? (
+      <AgentFormSection
+        key="model"
+        {...sectionProps('model')}
+        icon={Sparkles}
+        title={t('model')}
+        hint={t('modelHint')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label htmlFor="agent-external-model" className="text-sm font-medium">
+              {t('model')}
+            </label>
+            <Input
+              id="agent-external-model"
+              placeholder={t('optional')}
+              value={value.model}
+              onChange={(e) => onChange({ model: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="flex cursor-pointer items-start gap-2">
+              <Checkbox
+                className="mt-0.5"
+                checked={value.memoryEnabled}
+                onCheckedChange={(v) => onChange({ memoryEnabled: v === true })}
+              />
+              <span>
+                <span className="text-sm font-medium">{t('memory')}</span>
+                <span className="block text-xs text-muted-foreground">{t('memoryHint')}</span>
+              </span>
+            </label>
+            {value.memoryEnabled && (
+              <div className="space-y-1.5 ps-6">
+                <label htmlFor="agent-external-memory-n" className="text-sm font-medium">
+                  {t('memoryCount')}
+                </label>
+                <Input
+                  id="agent-external-memory-n"
+                  type="number"
+                  step="1"
+                  min="1"
+                  placeholder={t('memoryCountPlaceholder')}
+                  value={value.memoryLastMessages}
+                  onChange={(e) => onChange({ memoryLastMessages: e.target.value })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </AgentFormSection>
+    ) : (
+      <AgentModelSection
+        key="model"
+        {...sectionProps('model')}
+        value={value}
+        onChange={onChange}
+        credentials={credentials}
+        catalog={catalog}
+        models={models}
+        modelsLoading={modelsLoading}
+      />
+    );
 
   const actionsSection = (
     <AgentActionsSection
@@ -304,29 +344,6 @@ export default function TeamAiAgentFields({
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="agent-reasoning-effort" className="text-sm font-medium">
-            {t('reasoningEffort')}
-          </label>
-          <Select
-            value={value.reasoningEffort ?? PROVIDER_DEFAULT}
-            onValueChange={(v) =>
-              onChange({
-                reasoningEffort: v === 'low' || v === 'medium' || v === 'high' ? v : null,
-              })
-            }
-          >
-            <SelectTrigger id="agent-reasoning-effort" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={PROVIDER_DEFAULT}>{t('reasoningEffortDefault')}</SelectItem>
-              <SelectItem value="low">{t('reasoningEffortLow')}</SelectItem>
-              <SelectItem value="medium">{t('reasoningEffortMedium')}</SelectItem>
-              <SelectItem value="high">{t('reasoningEffortHigh')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
           <label htmlFor="agent-max-steps" className="text-sm font-medium">
             {t('maxSteps')}
           </label>
@@ -338,20 +355,6 @@ export default function TeamAiAgentFields({
             placeholder={t('optional')}
             value={value.maxSteps}
             onChange={(e) => onChange({ maxSteps: e.target.value })}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="agent-run-timeout" className="text-sm font-medium">
-            {t('runTimeout')}
-          </label>
-          <Input
-            id="agent-run-timeout"
-            type="number"
-            step="1"
-            min="1"
-            placeholder={t('runTimeoutDefault')}
-            value={value.runTimeoutSec}
-            onChange={(e) => onChange({ runTimeoutSec: e.target.value })}
           />
         </div>
       </div>
@@ -395,8 +398,12 @@ export default function TeamAiAgentFields({
           projectsSection,
           tokenSection,
           accessSection,
+          modelSection,
           triggersSection,
-          connectionSection,
+          actionsSection,
+          skillsSection,
+          toolsSection,
+          runnerSection,
         ]
       : [
           basicsSection,

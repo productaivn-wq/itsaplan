@@ -14,9 +14,6 @@ import { request as httpsRequest } from 'node:https';
 
 export class UrlNotAllowedError extends Error {}
 
-// A response body larger than the caller's maxBytes.
-export class ResponseTooLargeError extends Error {}
-
 // A hostname that is inherently local (not an IP literal).
 function isLocalHostname(host: string): boolean {
   return host === 'localhost' || host.endsWith('.local');
@@ -264,7 +261,7 @@ export async function pinnedFetch(raw: string, init: PinnedRequestInit = {}): Pr
               req.destroy();
               return;
             }
-            const error = new ResponseTooLargeError('response exceeds the byte limit');
+            const error = new Error('response exceeds the byte limit');
             res.destroy(error);
             req.destroy(error);
             return;

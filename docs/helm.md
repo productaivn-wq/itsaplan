@@ -33,26 +33,6 @@ Install the chart:
 helm install itsaplan charts/itsaplan -f values.yaml
 ```
 
-### Install from the OCI registry
-
-Every release publishes the chart to GHCR, so a clone is optional. The chart version is the release
-version, and `appVersion` inside it is the image tag it deploys:
-
-```bash
-helm install itsaplan oci://ghcr.io/croffasia/charts/itsaplan --version 1.9.0 -f values.yaml
-```
-
-`helm show values oci://ghcr.io/croffasia/charts/itsaplan --version 1.9.0` prints the defaults to start a
-values file from. Only released versions are published, so pin `--version` where the deployment has to
-stay put: in the values file of a GitOps app spec, or in the install command.
-
-For the Pro edition, pass `charts/itsaplan/values-pro.yaml` before it. Without a valid license
-the Pro images run as the core does; the license key is entered in god mode, under **License**.
-
-```bash
-helm install itsaplan charts/itsaplan -f charts/itsaplan/values-pro.yaml -f values.yaml
-```
-
 Each API pod applies the database migrations in its `migrate` init container before the server starts. With several replicas, one applies them and the others wait on a Postgres advisory lock. Worker and bot pods wait in their own init container until the migrations are applied. The first account registered becomes the instance admin.
 
 ## What gets deployed
@@ -71,9 +51,8 @@ Ingress, TLS certificates, and a ServiceAccount are available but disabled by de
 
 ## Ingress
 
-The chart routes the API in one of the two modes below. `API_URL` can also be a path on the web's host (see
-[Where the api lives](self-hosting.md#where-the-api-lives)), but then the proxy has to remove that path before the
-request reaches the api. A standard Ingress has no portable way to do that, so the chart does not template this mode.
+The API cannot serve behind a path prefix (better-auth mounts at `/api/auth/*` and treats a path inside `API_URL` as a
+replacement for its base path). The chart offers two modes instead.
 
 ### Separate host
 
@@ -195,3 +174,8 @@ The full list of values with defaults is in [`charts/itsaplan/README.md`](../cha
 
 For Docker Compose, see [self-hosting.md](self-hosting.md). For a managed deploy, see
 [coolify.md](coolify.md) or [railway.md](railway.md).
+
+## Health Probes
+
+- API deployment probes: `/healthz`
+- Web & MinIO deployment probes: `/health`

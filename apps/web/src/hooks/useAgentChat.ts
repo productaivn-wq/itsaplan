@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { streamAiAgentChat, streamAiAgentRun } from '@/lib/api/endpoints/agentChat';
 import { ApiError } from '@/lib/api/core/client';
-import type { AiChatMessage, AiChatPart, AiChatToolPart } from '@/lib/api/endpoints/agentChat';
+import type {
+  AiChatMessage,
+  AiChatPart,
+  AiChatToolPart,
+  ChatRunOptions,
+} from '@/lib/api/endpoints/agentChat';
 import { uuid } from '@/utils/uuid';
 import { useTranslations } from 'next-intl';
 
@@ -17,6 +22,12 @@ function appendText(parts: AiChatPart[], chunk: string): AiChatPart[] {
   const last = parts[parts.length - 1];
   if (last?.type !== 'text') return [...parts, { type: 'text', text: chunk }];
   return [...parts.slice(0, -1), { type: 'text', text: last.text + chunk }];
+}
+
+function appendThinking(parts: AiChatPart[], chunk: string): AiChatPart[] {
+  const last = parts[parts.length - 1];
+  if (last?.type !== 'thinking') return [...parts, { type: 'thinking', text: chunk }];
+  return [...parts.slice(0, -1), { type: 'thinking', text: last.text + chunk }];
 }
 
 // What a call was given or answered arrives after the call itself.
@@ -35,7 +46,12 @@ function updateToolPart(
 export type ChatStatus = 'ready' | 'queued' | 'streaming';
 
 // A message typed while the agent was answering, waiting for its turn.
-export type PendingMessage = { id: string; text: string };
+export type PendingMessage = {
+  id: string;
+  text: string;
+  attachmentIds?: string[];
+  options?: ChatRunOptions;
+};
 
 // Drives one conversation with an agent. Sends a prompt, streams the response over
 // SSE, and exposes the running transcript, the stream status, and the tool the agent
@@ -83,7 +99,7 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
   const stopRef = useRef<AbortController | null>(null);
 
   const runTurn = useCallback(
-    async (text: string) => {
+    async (text: string, attachmentIds?: string[], options?: ChatRunOptions) => {
       if (runningRef.current) return;
       runningRef.current = true;
       setRunning(true);
@@ -113,7 +129,7 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
         for await (const event of stream(
           projectKey,
           agentId,
-          { prompt: text, threadId: threadRef.current },
+          { prompt: text, threadId: threadRef.current, attachmentIds, options },
           stopper.signal,
         )) {
           switch (event.type) {
@@ -125,6 +141,10 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
               // the only end some CLIs report at all.
               setActiveTool(null);
               growAssistant((parts) => appendText(parts, event.value));
+              break;
+            case 'thinking':
+              setStatus('streaming');
+              growAssistant((parts) => appendThinking(parts, event.value));
               break;
             case 'tool-start':
               setStatus('streaming');
@@ -157,6 +177,62 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
                   })),
                 );
               }
+              break;
+            case 'approval-required':
+              setStatus('streaming');
+              setActiveTool(event.toolName);
+              growAssistant((parts) => [
+                ...parts,
+                {
+                  type: 'approval',
+                  approvalId: event.approvalId,
+                  toolCallId: event.toolCallId,
+                  toolName: event.toolName,
+                  args: event.args,
+                  requireSod: event.requireSod,
+                  status: 'pending',
+                },
+              ]);
+              break;
+            case 'artifact':
+              setStatus('streaming');
+              growAssistant((parts) => [
+                ...parts,
+                {
+                  type: 'artifact',
+                  artifactId: event.artifactId,
+                  kind: event.kind,
+                  title: event.title,
+                  content: event.content,
+                  language: event.language,
+                },
+              ]);
+              break;
+            case 'subagent-spawn':
+              setStatus('streaming');
+              growAssistant((parts) => [
+                ...parts,
+                {
+                  type: 'subagent',
+                  subagentId: event.subagentId,
+                  role: event.role,
+                  task: event.task,
+                  status: 'running',
+                },
+              ]);
+              break;
+            case 'subagent-done':
+              growAssistant((parts) =>
+                parts.map((part) =>
+                  part.type === 'subagent' && part.subagentId === event.subagentId
+                    ? { ...part, status: event.status, summary: event.summary }
+                    : part,
+                ),
+              );
+              break;
+            case 'thread':
+              threadRef.current = event.threadId;
+              setThreadId(event.threadId);
               break;
             case 'done':
               threadRef.current = event.threadId;
@@ -204,15 +280,15 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
   );
 
   const send = useCallback(
-    (prompt: string) => {
+    (prompt: string, attachmentIds?: string[], options?: ChatRunOptions) => {
       const text = prompt.trim();
       if (!text) return;
       setQueuePaused(false);
       if (runningRef.current || pending.length > 0) {
-        setPending((queue) => [...queue, { id: uuid(), text }]);
+        setPending((queue) => [...queue, { id: uuid(), text, attachmentIds, options }]);
         return;
       }
-      void runTurn(text);
+      void runTurn(text, attachmentIds, options);
     },
     [pending, runTurn],
   );
@@ -232,7 +308,7 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
     if (queuePaused || running || runningRef.current || pending.length === 0) return;
     const [next] = pending;
     setPending((queue) => queue.filter((message) => message.id !== next.id));
-    void runTurn(next.text);
+    void runTurn(next.text, next.attachmentIds, next.options);
   }, [queuePaused, running, pending, runTurn]);
 
   // Restores a past conversation: shows its transcript and continues its thread.
@@ -254,6 +330,34 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
     });
   }, []);
 
+  const markApprovalDecision = useCallback(
+    (approvalId: string, decision: 'approved' | 'rejected') => {
+      setMessages((m) =>
+        m.map((msg) => ({
+          ...msg,
+          parts: msg.parts.map((part) =>
+            part.type === 'approval' && part.approvalId === approvalId
+              ? { ...part, status: decision }
+              : part,
+          ),
+        })),
+      );
+    },
+    [],
+  );
+
+  // Mid-turn steering: promote the selected queued message to first in queue, unpause
+  // queue draining, and abort the in-flight response so it dispatches immediately next.
+  const steerPending = useCallback((id: string) => {
+    setQueuePaused(false);
+    setPending((queue) => {
+      const target = queue.find((item) => item.id === id);
+      if (!target) return queue;
+      return [target, ...queue.filter((item) => item.id !== id)];
+    });
+    stopRef.current?.abort();
+  }, []);
+
   const newChat = useCallback(() => {
     threadRef.current = null;
     setThreadId(null);
@@ -273,8 +377,10 @@ export function useAgentChat(projectKey: string, agentId: number, external: bool
     send,
     stop,
     removePending,
+    steerPending,
     loadThread,
     prependHistory,
+    markApprovalDecision,
     newChat,
   };
 }

@@ -1,6 +1,8 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { DndContext } from '@dnd-kit/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useIsPhone } from '@/hooks/useIsPhone';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   buildGroups,
   buildMaps,
@@ -8,7 +10,6 @@ import {
   sortIssues,
   type WorkItemsViewProps,
 } from '@/utils/project';
-import { usePermissions } from '@/hooks/usePermissions';
 import { usePersistedSet } from '@/hooks/usePersistedSet';
 import { useTableColumnWidths } from '../../hooks/useTableColumnWidths';
 import { useIssueReorder } from '../../hooks/useIssueReorder';
@@ -21,7 +22,6 @@ import {
   type FlatItem,
 } from '../../utils/table';
 import { IssueDragOverlay } from '../shared/IssueDragOverlay';
-import { WorkItemsEmpty } from '../shared/WorkItemsEmpty';
 import { TableColumnHeader } from './TableColumnHeader';
 import { TableSectionHeader } from './TableSectionHeader';
 import { TableSubHeader } from './TableSubHeader';
@@ -44,8 +44,9 @@ export default function TableView({
   widthScope,
 }: TableViewProps) {
   const groupLabels = useGroupLabels();
+  const isPhone = useIsPhone();
   const { can } = usePermissions();
-  const cellsReadOnly = !!readOnly || !can('work_items', 'edit');
+  const dragDisabled = isPhone || !can('work_items', 'edit');
   const reorder = useIssueReorder({ project, sort: settings.sort, readOnly });
   const collapsed = usePersistedSet(
     collapsedKey(project.project.id, settings.group, settings.subgroup),
@@ -56,10 +57,19 @@ export default function TableView({
 
   const grouped = settings.group !== 'none';
   const subgrouped = grouped && settings.subgroup !== 'none';
-  const sorted = sortIssues(project.issues, settings.sort, project);
-  const groups = buildGroups(project, settings.group, groupLabels, filters);
-  const subGroups = subgrouped ? buildGroups(project, settings.subgroup, groupLabels, filters) : [];
-  const maps = buildMaps(project);
+  const sorted = useMemo(
+    () => sortIssues(project.issues, settings.sort, project),
+    [project, settings.sort],
+  );
+  const groups = useMemo(
+    () => buildGroups(project, settings.group, groupLabels, filters),
+    [project, settings.group, groupLabels, filters],
+  );
+  const subGroups = useMemo(
+    () => (subgrouped ? buildGroups(project, settings.subgroup, groupLabels, filters) : []),
+    [subgrouped, project, settings.subgroup, groupLabels, filters],
+  );
+  const maps = useMemo(() => buildMaps(project), [project]);
 
   const { columns, gridTemplate, minWidth, alignTop } = resolveColumns(
     settings.properties,
@@ -67,13 +77,17 @@ export default function TableView({
     widths,
   );
 
-  const items = buildTableItems({
-    groups,
-    subGroups,
-    sorted,
-    settings,
-    collapsed: collapsed.values,
-  });
+  const items = useMemo(
+    () =>
+      buildTableItems({
+        groups,
+        subGroups,
+        sorted,
+        settings,
+        collapsed: collapsed.values,
+      }),
+    [groups, subGroups, sorted, settings, collapsed.values],
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
@@ -81,9 +95,6 @@ export default function TableView({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 40,
     overscan: 12,
-    // A scroll step renders in a normal React update, not in flushSync inside the
-    // scroll event, which blocks every scroll event on a slow CPU.
-    useFlushSync: false,
     getItemKey: (index) => {
       const it = items[index];
       if (it.kind === 'header') return `h${it.group.key}`;
@@ -134,19 +145,16 @@ export default function TableView({
             alignTop={alignTop}
             indented={subgrouped}
             gridTemplate={gridTemplate}
+            dragDisabled={dragDisabled}
             dropDisabled={!reorder.manualOrder && grouped}
-            readOnly={cellsReadOnly}
             onDrop={(draggedId) =>
               reorder.moveIssue(draggedId, item.assign, item.bucket, item.index)
             }
-            onClick={() => onOpenIssue(item.issue.id)}
             onOpenIssue={onOpenIssue}
           />
         );
     }
   }
-
-  if (items.length === 0) return <WorkItemsEmpty filters={filters} />;
 
   return (
     <DndContext
@@ -156,39 +164,41 @@ export default function TableView({
       onDragCancel={reorder.onDragCancel}
       onDragEnd={reorder.onDragEnd}
     >
-      <div ref={scrollRef} className="h-full overflow-y-auto">
-        <TableColumnHeader
-          columns={columns}
-          gridTemplate={gridTemplate}
-          minWidth={minWidth}
-          onResize={setWidth}
-          onResizeEnd={persistWidths}
-        />
+      <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/85 bg-card shadow-[var(--studio-card-shadow)]">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+          <TableColumnHeader
+            columns={columns}
+            gridTemplate={gridTemplate}
+            minWidth={minWidth}
+            onResize={setWidth}
+            onResizeEnd={persistWidths}
+          />
 
-        <div
-          style={{
-            height: virtualizer.getTotalSize(),
-            position: 'relative',
-            width: '100%',
-            minWidth,
-          }}
-        >
-          {virtualizer.getVirtualItems().map((vi) => (
-            <div
-              key={vi.key}
-              data-index={vi.index}
-              ref={virtualizer.measureElement}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${vi.start}px)`,
-              }}
-            >
-              {renderItem(items[vi.index])}
-            </div>
-          ))}
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: 'relative',
+              width: '100%',
+              minWidth,
+            }}
+          >
+            {virtualizer.getVirtualItems().map((vi) => (
+              <div
+                key={vi.key}
+                data-index={vi.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${vi.start}px)`,
+                }}
+              >
+                {renderItem(items[vi.index])}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

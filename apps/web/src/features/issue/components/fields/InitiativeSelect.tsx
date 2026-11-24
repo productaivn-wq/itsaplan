@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Check, CircleDashed, Plus, Target } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -23,13 +23,10 @@ export default function InitiativeSelect({
   projectKey,
   value,
   onChange,
-  trigger,
 }: {
   projectKey: string;
   value: number | null;
   onChange: (id: number | null) => void;
-  // Replaces the pill where a caller needs its own (a Timeline cell).
-  trigger?: ReactNode;
 }) {
   const t = useTranslations('initiatives.select');
   const { can } = usePermissions();
@@ -38,10 +35,8 @@ export default function InitiativeSelect({
   const [query, setQuery] = useState('');
 
   // The linked initiative is asked for by id alongside the search, so it labels the
-  // trigger and stays listed even once it is closed. A caller's own trigger shows
-  // the value itself, so then the list is read only while open: a Timeline mounts
-  // one select per row.
-  const { data } = useInitiativeOptionsQuery(trigger && !open ? null : projectKey, {
+  // trigger and stays listed even once it is closed.
+  const { data } = useInitiativeOptionsQuery(projectKey, {
     search: query.trim() || undefined,
     include: value ?? undefined,
   });
@@ -63,12 +58,10 @@ export default function InitiativeSelect({
         }}
       >
         <PopoverTrigger asChild>
-          {trigger ?? (
-            <Pill active={value != null}>
-              {value != null ? <Target /> : <CircleDashed />}
-              <span className="truncate">{current?.title ?? t('label')}</span>
-            </Pill>
-          )}
+          <Pill active={value != null}>
+            {value != null ? <Target /> : <CircleDashed />}
+            <span className="truncate">{current?.title ?? t('label')}</span>
+          </Pill>
         </PopoverTrigger>
         <PopoverContent className="w-56 p-0" align="start">
           <Command shouldFilter={false}>

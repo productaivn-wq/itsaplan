@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePriorityLabel } from '@/hooks/usePriorityLabel';
 import { Pill } from './Pill';
@@ -10,13 +9,10 @@ export default function PrioritySelect({
   value,
   onChange,
   readOnly,
-  trigger,
 }: {
   value: string;
   onChange: (v: string) => void;
   readOnly?: boolean;
-  // Replaces the pill where a caller needs its own (a Timeline cell).
-  trigger?: ReactNode;
 }) {
   const t = useTranslations('common.priority');
   const priorityLabel = usePriorityLabel();
@@ -25,12 +21,10 @@ export default function PrioritySelect({
     <PopoverPick
       readOnly={readOnly}
       trigger={
-        trigger ?? (
-          <Pill active={!!value}>
-            {prio.icon}
-            <span className="truncate">{value ? priorityLabel(value) : t('label')}</span>
-          </Pill>
-        )
+        <Pill active={!!value}>
+          {prio.icon}
+          <span className="truncate">{value ? priorityLabel(value) : t('label')}</span>
+        </Pill>
       }
       inputPlaceholder={t('setTo')}
       items={PRIORITY_FIELDS.map((p) => ({

@@ -1,0 +1,13 @@
+{
+  "noProjectAccess": "Bạn không có quyền truy cập vào dự án này.",
+  "projectUnavailable": "Dự án này hiện không khả dụng.",
+  "noProjects": "Chưa có dự án nào, hãy tạo một dự án để bắt đầu.",
+  "noTeamsTitle": "Chưa có nhóm nào",
+  "noTeamsHint": "Tạo nhóm của bạn để quản lý các dự án, thành viên và tác nhân AI tại một nơi.",
+  "noProjectAccessHint": "Hãy nhờ chủ sở hữu hoặc quản lý nhóm thêm bạn vào dự án, hoặc tự tạo nhóm của riêng bạn.",
+  "createTeam": "Tạo nhóm",
+  "noProjectsTitle": "Chưa có dự án nào",
+  "noProjectsHint": "Tạo dự án đầu tiên để bắt đầu lập kế hoạch công việc trên bảng.",
+  "createProject": "Tạo dự án",
+  "networkUnavailable": "Không thể kết nối đến máy chủ API. Vui lòng kiểm tra dịch vụ máy chủ đang chạy."
+}

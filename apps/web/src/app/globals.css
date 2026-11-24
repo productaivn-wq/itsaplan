@@ -1,16 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
-/* The upstream Inter build, not the Fontsource one: Google Fonts strips the
-   character variants, and cv05/cv08/zero are what make l, I, 1 and 0 tell
-   apart at the 12–14px this UI is mostly set in. It also carries the opsz
-   axis, so small text gets the wider-spaced optical master. */
-@import 'inter-ui/inter-variable.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'InterVariable', sans-serif;
+  --font-heading: var(--ag-font-display);
+  --font-display: var(--ag-font-display);
+  --font-sans: var(--ag-font-sans);
+  --font-mono: var(--ag-font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -28,11 +26,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-destructive-text: var(--destructive-text);
-  --color-overdue: var(--overdue);
   --color-warning: var(--warning);
-  --color-pro: var(--pro);
-  --color-pro-foreground: var(--pro-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -58,9 +52,6 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* Tailwind's default line-heights are tuned for prose at 16px; the app runs on
-     text-xs/text-sm, where they leave multi-line text cramped. Body sizes get 1.5+,
-     headings tighten as they grow. */
   --text-xs--line-height: 1.5;
   --text-sm--line-height: 1.5;
   --text-base--line-height: 1.6;
@@ -74,138 +65,292 @@
   --text-4xl--letter-spacing: -0.025em;
 }
 
-/* Grayscale ramps with no hue, and the page never sits on pure white or pure black.
-   Text pairs are measured with APCA, not eyeballed: see DESIGN.md for the thresholds. */
-:root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.18 0 0);
-  --card: oklch(0.998 0 0);
-  --card-foreground: oklch(0.18 0 0);
-  --popover: oklch(0.998 0 0);
-  --popover-foreground: oklch(0.18 0 0);
-  --primary: oklch(0.22 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.22 0 0);
-  --muted: oklch(0.965 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.955 0 0);
-  --accent-foreground: oklch(0.22 0 0);
-  --destructive: oklch(0.505 0.21 27);
-  --destructive-text: var(--destructive);
-  --warning: oklch(0.52 0.11 72);
-  /* One pair for both themes: .dark does not override it. */
-  --pro: oklch(0.87 0.16 92);
-  --pro-foreground: oklch(0.25 0.05 80);
-  --border: oklch(0.905 0 0);
-  --input: oklch(0.88 0 0);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+/* ============================================================================
+ * Warm Open Office Studio OS + Sovereign Agentic OS Design System (v3.3.22)
+ * Light: Sunlit Birch & Linen Studio | Dark: Warm Walnut Twilight Studio
+ * ============================================================================ */
+:root, [data-theme="light"] {
+  --ag-void: #F5F3EE;
+  --ag-obsidian: #FDFCF9;
+  --ag-slate: #EAE6DF;
+  --ag-raised: #DFDBD2;
+  --ag-bg-canvas: #F5F3EE;
+  --ag-bg-surface-1: #FDFCF9;
+  --ag-bg-surface-2: #EAE6DF;
+  --ag-bg-surface-3: #DFDBD2;
+  --ag-titanium: #F4F4F0;
+  --ag-platinum: #B8C0CC;
+  --ag-anodized: #5E6878;
+  --ag-amber: #8C5E00;
+  --ag-amber-soft: rgba(140, 94, 0, 0.14);
+  --ag-emerald: #087443;
+  --ag-emerald-soft: rgba(8, 116, 67, 0.14);
+  --ag-cyan: #026AA2;
+  --ag-cyan-soft: rgba(2, 106, 162, 0.14);
+  --ag-indigo: #5925DC;
+  --ag-indigo-soft: rgba(89, 37, 220, 0.14);
+  --ag-rose: #B42318;
+  --ag-rose-soft: rgba(180, 35, 24, 0.14);
+  --ag-node-hum: #8C5E00;
+  --ag-node-det: #087443;
+  --ag-node-agt: #026AA2;
+  --ag-horizon-h1: #E5A93C;
+  --ag-horizon-h2: #E06C88;
+  --ag-horizon-h3: #9B8AFB;
+  --ag-horizon-h4: #738AF8;
+  --ag-horizon-h5: #56C2F6;
+  --ag-horizon-h6: #38C6B4;
+  --ag-horizon-h7: #2AC38A;
+  --ag-text-primary: #111318;
+  --ag-text-secondary: #343A46;
+  --ag-text-muted: #5A6270;
+  --ag-border-subtle: #CFC9BE;
+  --ag-border-strong: #111318;
+  --ag-shadow-panel: none;
+  --ag-font-display: 'Chakra Petch', 'IBM Plex Sans', sans-serif;
+  --ag-font-sans: 'IBM Plex Sans', sans-serif;
+  --ag-font-mono: 'IBM Plex Mono', monospace;
+  --ag-space-1: 4px;
+  --ag-space-2: 8px;
+  --ag-space-3: 12px;
+  --ag-space-4: 16px;
+  --ag-space-6: 24px;
+  --ag-space-8: 32px;
+  --ag-space-11: 44px;
+  --ag-space-12: 48px;
+
+  /* Sunlit Birch & Linen Studio (OKLCH SSOT matching Open Office) */
+  --studio-canvas: oklch(95.6% 0.011 78);
+  --studio-surface: oklch(99.1% 0.005 82);
+  --studio-elevated: oklch(93.6% 0.013 76);
+  --studio-pill-track: oklch(91.8% 0.014 75);
+  --studio-hover: oklch(89.5% 0.015 74);
+  --studio-ink: oklch(20.0% 0.018 62);
+  --studio-ink-muted: oklch(44.5% 0.015 68);
+  --studio-pill-active: oklch(20.5% 0.018 62);
+  --studio-pill-active-fg: oklch(98.8% 0.005 82);
+  --studio-border: oklch(84.5% 0.015 74);
+  --studio-emerald: oklch(50.5% 0.130 156);
+  --studio-emerald-soft: oklch(50.5% 0.130 156 / 13%);
+  --studio-amber: oklch(57.0% 0.140 70);
+  --studio-amber-soft: oklch(57.0% 0.140 70 / 13%);
+  --studio-periwinkle: oklch(48.5% 0.125 255);
+  --studio-periwinkle-soft: oklch(48.5% 0.125 255 / 13%);
+  --studio-terracotta: oklch(51.0% 0.180 24);
+  --studio-terracotta-soft: oklch(51.0% 0.180 24 / 13%);
+  --studio-card-shadow: 0 1px 2px rgba(23, 25, 23, 0.04), 0 6px 16px -8px rgba(23, 25, 23, 0.09);
+  --studio-stage-shadow: 0 18px 44px rgba(23, 25, 23, 0.16);
+
+  /* Tailwind / Shadcn Semantic Bridge -> Sunlit Birch & Linen Studio */
+  --background: var(--studio-canvas);
+  --foreground: var(--studio-ink);
+  --card: var(--studio-surface);
+  --card-foreground: var(--studio-ink);
+  --popover: var(--studio-surface);
+  --popover-foreground: var(--studio-ink);
+  --primary: var(--studio-pill-active);
+  --primary-foreground: var(--studio-pill-active-fg);
+  --secondary: var(--studio-elevated);
+  --secondary-foreground: var(--studio-ink);
+  --muted: var(--studio-elevated);
+  --muted-foreground: var(--studio-ink-muted);
+  --accent: var(--studio-hover);
+  --accent-foreground: var(--studio-ink);
+  --destructive: var(--studio-terracotta);
+  --warning: var(--studio-amber);
+  --border: var(--studio-border);
+  --input: var(--studio-border);
+  --ring: var(--studio-periwinkle);
+  --chart-1: var(--studio-amber);
+  --chart-2: var(--studio-emerald);
+  --chart-3: var(--studio-periwinkle);
+  --chart-4: oklch(56.0% 0.105 215);
+  --chart-5: var(--studio-terracotta);
   --radius: 0.625rem;
-  --sidebar: oklch(0.972 0 0);
-  --sidebar-foreground: oklch(0.18 0 0);
-  --sidebar-primary: oklch(0.22 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.22 0 0);
-  --sidebar-border: oklch(0.905 0 0);
-  --sidebar-ring: oklch(0.62 0 0);
-  --priority-low: #6b7280;
-  --priority-medium: #eab308;
-  --priority-high: #f97316;
-  --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.945 0 0);
-  --kanban-column-raised: oklch(0.958 0 0);
-  /* A state tint keeps the lightness of the surface it replaces, so the cards keep
-     their contrast against it; only hue and chroma change. */
-  --kanban-column-wip-destructive: oklch(0.94 0.022 18);
-  --kanban-column-wip-warning: oklch(0.945 0.03 92);
-  --kanban-card: oklch(0.972 0 0);
-  --kanban-card-hover: oklch(0.995 0 0);
-  --kanban-card-blocked: oklch(0.968 0.013 15);
-  --kanban-card-blocked-hover: oklch(0.984 0.008 15);
-  --row-blocked: oklch(0.978 0.01 15);
-  --row-blocked-hover: oklch(0.963 0.014 15);
-  --overdue: color-mix(in oklab, var(--destructive) 9%, var(--kanban-card));
-  --kanban-card-selected: oklch(0.925 0.04 265);
-  --overlay-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.18), 0 4px 10px -4px rgb(0 0 0 / 0.1);
-  --pinned-column-shadow: 0 0 18px 2px rgb(0 0 0 / 0.16);
-  /* A panel on a side edge casts to the side, so the glow has no offset. */
-  --side-panel-shadow: 0 0 28px 6px rgb(0 0 0 / 0.16);
-  --modal-shadow: 0 32px 64px -16px rgb(0 0 0 / 0.28), 0 12px 24px -12px rgb(0 0 0 / 0.16);
-  /* The chat tab row casts down on the transcript under it; the composer is a
-     rounded surface the transcript scrolls up to, so it casts all round. */
-  --chat-tabs-shadow: 0 10px 16px -6px rgb(0 0 0 / 0.28);
-  --chat-composer-shadow: 0 -2px 20px 2px rgb(0 0 0 / 0.22);
+  --sidebar: var(--studio-surface);
+  --sidebar-foreground: var(--studio-ink);
+  --sidebar-primary: var(--studio-pill-active);
+  --sidebar-primary-foreground: var(--studio-pill-active-fg);
+  --sidebar-accent: var(--studio-elevated);
+  --sidebar-accent-foreground: var(--studio-ink);
+  --sidebar-border: var(--studio-border);
+  --sidebar-ring: var(--studio-periwinkle);
+  --priority-low: #6B655D;
+  --priority-medium: #8C5E00;
+  --priority-high: #C25E00;
+  --priority-urgent: #B42318;
+  --kanban-column: var(--studio-elevated);
+  --kanban-column-raised: var(--studio-hover);
+  --kanban-column-wip-destructive: var(--studio-terracotta-soft);
+  --kanban-column-wip-warning: var(--studio-amber-soft);
+  --kanban-card: var(--studio-surface);
+  --kanban-card-hover: #FFFFFF;
+  --kanban-card-blocked: oklch(51.0% 0.180 24 / 8%);
+  --kanban-card-blocked-hover: oklch(51.0% 0.180 24 / 14%);
+  --row-blocked: oklch(51.0% 0.180 24 / 6%);
+  --row-blocked-hover: oklch(51.0% 0.180 24 / 12%);
+  --kanban-card-selected: var(--studio-periwinkle-soft);
+  --overlay-shadow: 0 12px 28px -8px rgb(23 20 15 / 0.18), 0 4px 10px -4px rgb(23 20 15 / 0.1);
+  --pinned-column-shadow: 0 0 18px 2px rgb(23 20 15 / 0.14);
+  --side-panel-shadow: 0 0 28px 6px rgb(23 20 15 / 0.14);
+  --modal-shadow: 0 32px 64px -16px rgb(23 20 15 / 0.25), 0 8px 16px -8px rgb(23 20 15 / 0.14);
+  --chat-tabs-shadow: 0 10px 16px -6px rgb(23 20 15 / 0.24);
+  --chat-composer-shadow: 0 -2px 20px 2px rgb(23 20 15 / 0.18);
 }
 
-.dark {
-  --background: oklch(0.185 0 0);
-  --foreground: oklch(0.965 0 0);
-  --card: oklch(0.225 0 0);
-  --card-foreground: oklch(0.965 0 0);
-  --popover: oklch(0.24 0 0);
-  --popover-foreground: oklch(0.965 0 0);
-  --primary: oklch(0.93 0 0);
-  --primary-foreground: oklch(0.18 0 0);
-  --secondary: oklch(0.29 0 0);
-  --secondary-foreground: oklch(0.965 0 0);
-  --muted: oklch(0.29 0 0);
-  --muted-foreground: oklch(0.85 0 0);
-  --accent: oklch(0.3 0 0);
-  --accent-foreground: oklch(0.965 0 0);
-  --destructive: oklch(0.77 0.18 22);
-  --destructive-text: oklch(0.82 0.13 20);
-  --warning: oklch(0.82 0.14 80);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.145 0 0);
-  --sidebar-foreground: oklch(0.965 0 0);
-  --sidebar-primary: oklch(0.93 0 0);
-  --sidebar-primary-foreground: oklch(0.18 0 0);
-  --sidebar-accent: oklch(0.24 0 0);
-  --sidebar-accent-foreground: oklch(0.965 0 0);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.62 0 0);
-  --priority-low: #9ca3af;
-  --priority-medium: #eab308;
-  --priority-high: #f97316;
-  --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.16 0 0);
-  --kanban-column-raised: oklch(0.19 0 0);
-  --kanban-column-wip-destructive: oklch(0.16 0.028 15);
-  --kanban-column-wip-warning: oklch(0.16 0.016 88);
-  --kanban-card: oklch(0.215 0 0);
-  --kanban-card-hover: oklch(0.25 0 0);
-  --kanban-card-blocked: oklch(0.215 0.03 10);
-  --kanban-card-blocked-hover: oklch(0.25 0.034 10);
-  --row-blocked: oklch(0.2 0.024 10);
-  --row-blocked-hover: oklch(0.235 0.03 10);
-  --overdue: color-mix(in oklab, var(--destructive) 12%, var(--kanban-card));
-  --kanban-card-selected: oklch(0.31 0.07 266);
+.dark, [data-theme="dark"] {
+  --ag-void: #07080A;
+  --ag-obsidian: #0C0E12;
+  --ag-slate: #12151C;
+  --ag-raised: #191D26;
+  --ag-bg-canvas: #07080A;
+  --ag-bg-surface-1: #0C0E12;
+  --ag-bg-surface-2: #12151C;
+  --ag-bg-surface-3: #191D26;
+  --ag-titanium: #F4F4F0;
+  --ag-platinum: #B8C0CC;
+  --ag-anodized: #5E6878;
+  --ag-amber: #E5A93C;
+  --ag-amber-soft: rgba(229, 169, 60, 0.14);
+  --ag-emerald: #2AC38A;
+  --ag-emerald-soft: rgba(42, 195, 138, 0.14);
+  --ag-cyan: #56C2F6;
+  --ag-cyan-soft: rgba(86, 194, 246, 0.14);
+  --ag-indigo: #9B8AFB;
+  --ag-indigo-soft: rgba(155, 138, 251, 0.14);
+  --ag-rose: #E55368;
+  --ag-rose-soft: rgba(229, 83, 104, 0.14);
+  --ag-node-hum: #E5A93C;
+  --ag-node-det: #2AC38A;
+  --ag-node-agt: #56C2F6;
+  --ag-horizon-h1: #E5A93C;
+  --ag-horizon-h2: #E06C88;
+  --ag-horizon-h3: #9B8AFB;
+  --ag-horizon-h4: #738AF8;
+  --ag-horizon-h5: #56C2F6;
+  --ag-horizon-h6: #38C6B4;
+  --ag-horizon-h7: #2AC38A;
+  --ag-text-primary: #F4F4F0;
+  --ag-text-secondary: #B8C0CC;
+  --ag-text-muted: #7D8796;
+  --ag-border-subtle: #222734;
+  --ag-border-strong: #F4F4F0;
+  --ag-shadow-panel: none;
+
+  /* Warm Walnut Twilight Studio (OKLCH SSOT matching Open Office) */
+  --studio-canvas: oklch(16.0% 0.012 62);
+  --studio-surface: oklch(20.2% 0.013 62);
+  --studio-elevated: oklch(24.5% 0.014 62);
+  --studio-pill-track: oklch(23.5% 0.014 62);
+  --studio-hover: oklch(28.5% 0.015 62);
+  --studio-ink: oklch(95.2% 0.008 82);
+  --studio-ink-muted: oklch(72.5% 0.012 75);
+  --studio-pill-active: oklch(93.8% 0.012 80);
+  --studio-pill-active-fg: oklch(16.5% 0.015 60);
+  --studio-border: oklch(31.5% 0.015 62);
+  --studio-emerald: oklch(72.5% 0.145 158);
+  --studio-emerald-soft: oklch(72.5% 0.145 158 / 15%);
+  --studio-amber: oklch(77.5% 0.140 76);
+  --studio-amber-soft: oklch(77.5% 0.140 76 / 15%);
+  --studio-periwinkle: oklch(71.5% 0.115 255);
+  --studio-periwinkle-soft: oklch(71.5% 0.115 255 / 16%);
+  --studio-terracotta: oklch(64.5% 0.185 25);
+  --studio-terracotta-soft: oklch(64.5% 0.185 25 / 15%);
+  --studio-card-shadow: 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 18px -10px rgb(0 0 0 / 0.48);
+  --studio-stage-shadow: 0 24px 56px rgba(0, 0, 0, 0.45);
+
+  --bg: var(--studio-canvas);
+  --surface: var(--studio-surface);
+  --surface-2: var(--studio-elevated);
+  --surface-3: var(--studio-hover);
+  --surface-raised: var(--studio-elevated);
+  --text: var(--studio-ink);
+  --text-muted: var(--studio-ink-muted);
+  --sky: var(--studio-periwinkle);
+  --emerald: var(--studio-emerald);
+  --amber: var(--studio-amber);
+  --indigo: var(--studio-periwinkle);
+  --rose: var(--studio-terracotta);
+
+  /* Tailwind / Shadcn Semantic Bridge -> Warm Walnut Twilight Studio */
+  --background: var(--studio-canvas);
+  --foreground: var(--studio-ink);
+  --card: var(--studio-surface);
+  --card-foreground: var(--studio-ink);
+  --popover: var(--studio-elevated);
+  --popover-foreground: var(--studio-ink);
+  --primary: var(--studio-pill-active);
+  --primary-foreground: var(--studio-pill-active-fg);
+  --secondary: var(--studio-elevated);
+  --secondary-foreground: var(--studio-ink);
+  --muted: var(--studio-elevated);
+  --muted-foreground: var(--studio-ink-muted);
+  --accent: var(--studio-hover);
+  --accent-foreground: var(--studio-ink);
+  --destructive: var(--studio-terracotta);
+  --warning: var(--studio-amber);
+  --border: var(--studio-border);
+  --input: var(--studio-border);
+  --ring: var(--studio-periwinkle);
+  --chart-1: var(--studio-amber);
+  --chart-2: var(--studio-emerald);
+  --chart-3: var(--studio-periwinkle);
+  --chart-4: oklch(72.0% 0.105 215);
+  --chart-5: var(--studio-terracotta);
+  --sidebar: var(--studio-surface);
+  --sidebar-foreground: var(--studio-ink);
+  --sidebar-primary: var(--studio-pill-active);
+  --sidebar-primary-foreground: var(--studio-pill-active-fg);
+  --sidebar-accent: var(--studio-hover);
+  --sidebar-accent-foreground: var(--studio-ink);
+  --sidebar-border: var(--studio-border);
+  --sidebar-ring: var(--studio-periwinkle);
+  --priority-low: #9C948A;
+  --priority-medium: #E5A93C;
+  --priority-high: #F97316;
+  --priority-urgent: #E55368;
+  --kanban-column: var(--studio-surface);
+  --kanban-column-raised: var(--studio-elevated);
+  --kanban-column-wip-destructive: var(--studio-terracotta-soft);
+  --kanban-column-wip-warning: var(--studio-amber-soft);
+  --kanban-card: var(--studio-elevated);
+  --kanban-card-hover: var(--studio-hover);
+  --kanban-card-blocked: var(--studio-terracotta-soft);
+  --kanban-card-blocked-hover: oklch(64.5% 0.185 25 / 22%);
+  --row-blocked: oklch(64.5% 0.185 25 / 10%);
+  --row-blocked-hover: oklch(64.5% 0.185 25 / 18%);
+  --kanban-card-selected: var(--studio-periwinkle-soft);
   --overlay-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.7), 0 6px 16px -6px rgb(0 0 0 / 0.55);
   --pinned-column-shadow: 0 0 20px 4px rgb(0 0 0 / 0.6);
   --side-panel-shadow: 0 0 28px 8px rgb(0 0 0 / 0.65);
-  --modal-shadow: 0 40px 80px -20px rgb(0 0 0 / 0.85), 0 16px 32px -16px rgb(0 0 0 / 0.7);
+  --modal-shadow: 0 40px 80px -20px rgb(0 0 0 / 0.85), 0 12px 16px -12px rgb(0 0 0 / 0.7);
   --chat-tabs-shadow: 0 12px 18px -6px rgb(0 0 0 / 0.75);
   --chat-composer-shadow: 0 -2px 22px 4px rgb(0 0 0 / 0.7);
 }
 
-/* Every floating surface lifts off the page with the same shadow, and a border
-   fainter than the page's so it does not read as a bright outline. It is set here
-   rather than per component: the shadcn components are kept as generated, and
-   `shadow-md` on a popover reads as nothing against a background of nearly the
-   same lightness. These rules sit outside @layer, so they win over the utility. */
+.ag-brand-lockup { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+.ag-brand-mark { display: inline-block; flex-shrink: 0; }
+.font-heading, .font-display { font-variant-numeric: lining-nums tabular-nums; }
+.studio-surface {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background-color: var(--card);
+  box-shadow: var(--studio-card-shadow);
+}
+.studio-kpi-band {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background-color: var(--card);
+  box-shadow: var(--studio-card-shadow);
+  overflow: hidden;
+}
+.studio-pill-track {
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background-color: var(--studio-pill-track);
+  padding: 4px;
+}
+
 [data-slot='dropdown-menu-content'],
 [data-slot='dropdown-menu-sub-content'],
 [data-slot='context-menu-content'],
@@ -266,8 +411,8 @@
 .kanban-card:hover {
   background-color: var(--kanban-card-hover);
 }
-/* Held up by another issue: a rose tint at the card's own lightness. The 25° red of
-   --destructive would turn brown on the dark card. */
+/* Held up by another issue: a red-tinted card surface, faint enough to read as a
+   shade of the card rather than an error. */
 .kanban-card-blocked {
   background-color: var(--kanban-card-blocked);
 }
@@ -394,21 +539,6 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-/* A link on a public share page that needs a session (features/documents/utils/sharedLinks). */
-.md-content a.share-link-locked {
-  color: var(--muted-foreground);
-}
-.md-content a.share-link-locked::after {
-  content: '';
-  display: inline-block;
-  width: 0.8em;
-  height: 0.8em;
-  margin-inline-start: 0.2em;
-  vertical-align: -0.05em;
-  background-color: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='11' x='3' y='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E")
-    center / contain no-repeat;
-}
 /* Mention chips: an @username in the text is rendered as its own node (see
    lib/tiptap-mention.ts) and styled as a pill. */
 .md-content .mention {
@@ -423,8 +553,7 @@
   color: var(--foreground);
   background: color-mix(in oklab, var(--warning) 45%, transparent);
 }
-a.issue-ref,
-span.issue-ref {
+a.issue-ref {
   display: inline-flex;
   align-items: baseline;
   gap: 0.35em;
@@ -443,9 +572,6 @@ span.issue-ref {
 .md-content a.issue-ref {
   text-decoration: none;
 }
-span.issue-ref {
-  cursor: default;
-}
 .issue-ref-dot {
   display: inline-block;
   width: 0.55em;
@@ -462,7 +588,7 @@ span.issue-ref {
   color: var(--foreground);
 }
 .md-content .issue-ref-source {
-  font-size: 0;
+  line-height: 0;
   line-height: 0;
 }
 .md-content code {
@@ -615,11 +741,6 @@ span.issue-ref {
 .md-content ul[data-type='taskList'] input[type='checkbox'] {
   cursor: pointer;
 }
-.md-content[contenteditable='false'] ul[data-type='taskList'] li > label,
-.md-content[contenteditable='false'] ul[data-type='taskList'] input[type='checkbox'] {
-  cursor: default;
-  pointer-events: none;
-}
 .md-content table {
   border-collapse: collapse;
 }
@@ -714,7 +835,7 @@ span.issue-ref {
 .sticker-note .md-content a[href]:not([href='']) {
   color: var(--color-blue-800);
   cursor: pointer;
-  text-decoration-thickness: 1.5px;
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 .sticker-note .md-content a[href]:not([href='']):hover {
@@ -809,9 +930,7 @@ span.issue-ref {
 /* Shimmer text utility (shadcn `shimmer`): a highlight sweeps across the text,
    used on the agent-chat status marker while the agent is working. */
 @utility shimmer {
-  color: transparent;
-  background-clip: text;
-  -webkit-background-clip: text;
+  color: var(--foreground);
   background-image: linear-gradient(
     90deg,
     var(--color-muted-foreground) 0%,
@@ -842,7 +961,7 @@ span.issue-ref {
 .document-issue-link {
   border-radius: 4px;
   background: color-mix(in srgb, var(--primary) 8%, transparent);
-  padding: 1px 5px;
+  padding: 4px 8px;
   text-decoration: none;
   font-size: 0.9em;
   font-weight: 500;

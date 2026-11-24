@@ -37,7 +37,6 @@ export interface NotificationSettingsDto {
     timeout: number | null;
   };
   resend: { enabled: boolean; hasApiKey: boolean };
-  from: string;
   telegram: { enabled: boolean; hasBotToken: boolean };
 }
 
@@ -57,7 +56,6 @@ export interface NotificationSettingsPatch {
     timeout: number | null;
   };
   resend?: { enabled: boolean; apiKey?: string };
-  from?: string;
   telegram?: { enabled: boolean; botToken?: string };
 }
 
@@ -74,7 +72,6 @@ function toDto(config: NotificationConfig): NotificationSettingsDto {
       timeout: config.smtp.timeout,
     },
     resend: { enabled: config.resend.enabled, hasApiKey: config.resend.apiKey.length > 0 },
-    from: config.from,
     telegram: {
       enabled: config.telegram.enabled,
       hasBotToken: config.telegram.botToken.length > 0,
@@ -98,7 +95,6 @@ function applyPatch(
     system: { ...current.system },
     smtp: { ...current.smtp },
     resend: { ...current.resend },
-    from: current.from,
     telegram: { ...current.telegram },
   };
 
@@ -120,7 +116,6 @@ function applyPatch(
       apiKey: mergeSecret(current.resend.apiKey, patch.resend.apiKey),
     };
   }
-  if (patch.from !== undefined) next.from = patch.from.trim();
   if (patch.telegram) {
     next.telegram = {
       enabled: patch.telegram.enabled,

@@ -1,13 +1,17 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { ArrowUpRight, Bot, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { TeamProject, TeamRole } from '@/lib/api/endpoints/teams';
 import { formatDate, formatDateTime } from '@/utils/dates';
+import { splitProjectRef, teamSectionPath } from '@/utils/paths';
 import { useExitOnEscape } from '@/hooks/useExitOnEscape';
-import { useTeamProjectQuery } from '@/services/teams.service';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { useAiAgentsQuery } from '@/services/aiAgents.service';
+import { useTeamProjectQuery, useTeamQuery } from '@/services/teams.service';
 import { useSession } from '@/lib/auth-client';
 import ListSkeleton from '@/components/common/skeleton/ListSkeleton';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import TeamProjectActions from './TeamProjectActions';
 import TeamProjectMembers from './TeamProjectMembers';
@@ -33,6 +37,13 @@ export default function TeamProjectPanel({
   const t = useTranslations('teams.panel');
   const tCommon = useTranslations('common');
   const { data: detail } = useTeamProjectQuery(teamId, project.id);
+  const { data: teamDetail } = useTeamQuery(teamId);
+  const canReadAgents = teamDetail?.permissions.ai_agents.read ?? false;
+  const { data: agents = [] } = useAiAgentsQuery(canReadAgents ? teamId : null);
+  const projectAgents = agents.filter((agent) =>
+    agent.projects.some((p) => p.id === project.id),
+  );
+  const teamRef = splitProjectRef(project.ref).teamRef;
   const { data: session } = useSession();
 
   useExitOnEscape(onClose);
@@ -104,6 +115,43 @@ export default function TeamProjectPanel({
                 </div>
                 <TeamProjectStats stats={detail.stats} />
               </section>
+
+              {canReadAgents && (
+                <section className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-medium">{t('assignedAiAgents')}</h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        onClose();
+                        navigateFeatureInstant(teamSectionPath(teamRef, 'capabilities'));
+                      }}
+                    >
+                      <span>{t('manageInControlPlane')}</span>
+                      <ArrowUpRight className="size-3.5" />
+                    </Button>
+                  </div>
+                  {projectAgents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('noAssignedAiAgents')}</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {projectAgents.map((agent) => (
+                        <Badge
+                          key={agent.id}
+                          variant="secondary"
+                          className="inline-flex items-center gap-1 rounded-full font-mono text-xs"
+                        >
+                          <Bot className="size-3 shrink-0" />
+                          <span>@{agent.username}</span>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
 
               <TeamProjectMembers
                 teamId={teamId}

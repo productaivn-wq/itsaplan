@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import {
   type BurnupParams,
   type PulseUnit,
+  getStats,
+  getStatCount,
   getBreakdown,
   getBurnup,
   getPulse,
@@ -18,7 +20,24 @@ import {
   listActivity,
 } from '@/lib/api/endpoints/analytics';
 import type { BreakdownBy } from '@/utils/dashboardWidgets';
+import type { FilterSet } from '@/utils/filters';
 import { qk } from '@/services/queryKeys';
+
+export function useStatsQuery(projectKey: string, enabled = true) {
+  return useQuery({
+    queryKey: qk.analytics(projectKey, 'stats'),
+    queryFn: () => getStats(projectKey),
+    enabled: Boolean(projectKey) && enabled,
+  });
+}
+
+export function useStatCountQuery(projectKey: string, filters: FilterSet, enabled = true) {
+  return useQuery({
+    queryKey: qk.analytics(projectKey, 'stat-count', { filters }),
+    queryFn: () => getStatCount(projectKey, filters),
+    enabled: Boolean(projectKey) && enabled,
+  });
+}
 
 export function useBreakdownQuery(projectKey: string, by: BreakdownBy) {
   return useQuery({
@@ -62,6 +81,7 @@ export function useAgentRunsQuery(
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-runs', params),
     queryFn: () => getAgentRuns(projectKey, params),
+    refetchInterval: 5000,
   });
 }
 
@@ -69,6 +89,7 @@ export function useAgentRunStatsQuery(projectKey: string, days: number) {
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-run-stats', { days }),
     queryFn: () => getAgentRunStats(projectKey, days),
+    refetchInterval: 5000,
   });
 }
 
@@ -83,6 +104,7 @@ export function useAgentWorkloadQuery(projectKey: string) {
   return useQuery({
     queryKey: qk.analytics(projectKey, 'agent-workload'),
     queryFn: () => getAgentWorkload(projectKey),
+    refetchInterval: 5000,
   });
 }
 
@@ -93,5 +115,6 @@ export function useActivityFeedQuery(
   return useQuery({
     queryKey: qk.analytics(projectKey, 'activity', params),
     queryFn: () => listActivity(projectKey, params),
+    refetchInterval: 5000,
   });
 }

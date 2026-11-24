@@ -1,7 +1,6 @@
 import { t } from 'elysia';
 import { pageQueryFields, pageResponse } from '#shared/pagination';
 import { PermissionMatrixSchema } from '#shared/permissions';
-import { AccessViaSchema } from '#shared/workspace-roles';
 import { StatsDto } from '#modules/analytics/model';
 import { TEAM_SLUG_PATTERN } from './ref';
 
@@ -28,11 +27,7 @@ const teamSlug = t.String({
     'starting with a letter, 2 to 40 characters.',
 });
 
-export const createTeamBody = t.Object({
-  name: teamName,
-  slug: teamSlug,
-  workspaceId: t.Integer({ minimum: 1, description: 'The workspace that holds the team.' }),
-});
+export const createTeamBody = t.Object({ name: teamName, slug: teamSlug });
 
 // A team made before slugs were required has none, and takes no change until one is set.
 export const updateTeamBody = t.Partial(t.Object({ name: teamName, slug: teamSlug }));
@@ -40,7 +35,6 @@ export const updateTeamBody = t.Partial(t.Object({ name: teamName, slug: teamSlu
 // A team DTO (TeamRow from the service).
 export const TeamResponse = t.Object({
   id: t.Number(),
-  workspaceId: t.Number(),
   name: t.String(),
   slug: t.Nullable(t.String()),
   ref: t.String({ description: 'How web URLs name the team: its slug, or its id without one.' }),
@@ -53,11 +47,6 @@ export const TeamResponse = t.Object({
     [t.Literal('owner'), t.Literal('manager'), t.Literal('member'), t.Literal('agent')],
     { description: 'Your standing in this team.' },
   ),
-  via: t.Union([t.Literal('member'), t.Literal('workspace')], {
-    description:
-      "'workspace' when you are not in the team and reach it through your role in its " +
-      'workspace.',
-  }),
   source: t.Union([t.Literal('invite'), t.Literal('scim')], {
     description:
       "How your membership came about. A provisioned one is the identity provider's: you " +
@@ -65,6 +54,9 @@ export const TeamResponse = t.Object({
   }),
   joinedAt: t.String(),
   projectCount: t.Number(),
+  mcpEnabledProjectCount: t.Number({
+    description: 'How many projects in this team have MCP reach enabled.',
+  }),
   memberCount: t.Number(),
   ownerCount: t.Number({ description: 'How many members are owners; the last one cannot leave.' }),
   roleCount: t.Number({ description: "How many roles the team's projects assign from." }),
@@ -138,7 +130,6 @@ export const TeamProjectPageResponse = pageResponse(
       { description: 'The project members who own it.' },
     ),
     isMember: t.Boolean(),
-    archivedAt: t.Nullable(t.String()),
     createdAt: t.String(),
   }),
 );
@@ -162,7 +153,6 @@ export const TeamProjectDetailResponse = t.Object({
   viewer: t.Nullable(
     t.Object({
       role: t.Union([t.Literal('owner'), t.Literal('member')]),
-      via: AccessViaSchema,
       source: t.Union([t.Literal('invite'), t.Literal('scim')], {
         description: "A provisioned membership is the identity provider's: it cannot be left.",
       }),
@@ -212,3 +202,60 @@ export const TeamProjectDefaultsResponse = t.Object({
 export const updateTeamProjectDefaultsBody = t.Object({
   defaultAgentIds: t.Array(t.Integer({ minimum: 1 }), { uniqueItems: true }),
 });
+
+export const setupTeamBody = t.Object({
+  teamId: t.Optional(t.Integer({ minimum: 1 })),
+  name: t.String({ minLength: 1, maxLength: 60 }),
+  slug: t.Optional(t.String()),
+  mcpEnabled: t.Optional(t.Boolean()),
+  defaultAgentIds: t.Optional(t.Array(t.Integer({ minimum: 1 }))),
+  projects: t.Optional(
+    t.Array(
+      t.Object({
+        key: t.String({ minLength: 1, maxLength: 10 }),
+        name: t.String({ minLength: 1, maxLength: 60 }),
+        description: t.Optional(t.String()),
+      }),
+    ),
+  ),
+  members: t.Optional(
+    t.Array(
+      t.Object({
+        email: t.Optional(t.String()),
+        userId: t.Optional(t.String()),
+        role: t.Optional(t.Union([t.Literal('owner'), t.Literal('manager'), t.Literal('member')])),
+      }),
+    ),
+  ),
+});
+
+export const SetupTeamResponse = t.Object({
+  action: t.Union([t.Literal('created'), t.Literal('updated')]),
+  team: TeamResponse,
+  projectsEnsured: t.Array(
+    t.Object({
+      id: t.Number(),
+      key: t.String(),
+      name: t.String(),
+      ref: t.String(),
+    }),
+  ),
+  membersAdded: t.Array(
+    t.Object({
+      userId: t.String(),
+      email: t.String(),
+      role: t.String(),
+    }),
+  ),
+  invitesCreated: t.Array(
+    t.Object({
+      id: t.Number(),
+      email: t.String(),
+      role: t.String(),
+      status: t.String(),
+    }),
+  ),
+});
+
+export type SetupTeamInput = typeof setupTeamBody.static;
+export type SetupTeamResult = typeof SetupTeamResponse.static;

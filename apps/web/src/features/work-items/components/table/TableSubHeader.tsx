@@ -29,7 +29,7 @@ export function TableSubHeader({
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 text-xs font-medium text-muted-foreground"
+        className="flex min-h-8 items-center gap-2 text-xs font-medium text-muted-foreground"
       >
         {collapsed ? <ChevronRight className="size-3" /> : <ChevronDown className="size-3" />}
         <GroupDot group={sub} />

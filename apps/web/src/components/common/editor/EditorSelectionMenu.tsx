@@ -1,9 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { type Editor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import {
   Bold,
-  CheckSquare2,
   Code,
   Heading1,
   Heading2,
@@ -19,19 +18,12 @@ import {
 import { useTranslations } from 'next-intl';
 import EditorToolbarButton from './EditorToolbarButton';
 
-function setLink(editor: Editor, prompt: string) {
-  const url = window.prompt(prompt, editor.getAttributes('link').href ?? '');
-  if (url === null) return;
-  if (url === '') editor.chain().focus().unsetLink().run();
-  else editor.chain().focus().setLink({ href: url }).run();
-}
-
 // `name` plus `attrs` is the mark or node the button toggles, which is also what lights it up.
 const ITEMS: {
   name: string;
   attrs?: { level: 1 | 2 };
   icon: LucideIcon;
-  run: (editor: Editor, linkPrompt: string) => void;
+  run: (editor: Editor) => void;
 }[] = [
   {
     name: 'heading',
@@ -58,7 +50,11 @@ const ITEMS: {
     icon: SquareCode,
     run: (editor) => editor.chain().focus().toggleCodeBlock().run(),
   },
-  { name: 'link', icon: LinkIcon, run: setLink },
+  {
+    name: 'link',
+    icon: LinkIcon,
+    run: (editor) => editor.chain().focus().run(),
+  },
   {
     name: 'blockquote',
     icon: Quote,
@@ -79,7 +75,6 @@ const ITEMS: {
 export default function EditorSelectionMenu({
   editor,
   placement = 'top',
-  taskList = false,
   children,
 }: {
   editor: Editor;
@@ -87,33 +82,58 @@ export default function EditorSelectionMenu({
   // Above the selection by default. A field with a label right over it passes
   // "bottom" so the menu does not cover the label.
   placement?: 'top' | 'bottom';
-  // Only where the task-list extensions are registered.
-  taskList?: boolean;
 }) {
   const t = useTranslations('common.editor');
+  const [editingLink, setEditingLink] = useState<string | null>(null);
+
   return (
     <BubbleMenu
       editor={editor}
       options={{ placement }}
       className="flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-0.5 rounded-md border bg-popover p-1 shadow-md"
     >
-      {ITEMS.map((item) => (
-        <EditorToolbarButton
-          key={`${item.name}${item.attrs?.level ?? ''}`}
-          active={editor.isActive(item.name, item.attrs)}
-          onClick={() => item.run(editor, t('linkUrl'))}
-        >
-          <item.icon />
-        </EditorToolbarButton>
-      ))}
-      {taskList && (
-        <EditorToolbarButton
-          active={editor.isActive('taskList')}
-          title={t('todoList')}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-        >
-          <CheckSquare2 />
-        </EditorToolbarButton>
+      {editingLink !== null ? (
+        <div className="flex items-center gap-1 px-1">
+          <input
+            type="url"
+            autoFocus
+            value={editingLink}
+            placeholder={t('linkUrl')}
+            onChange={(e) => setEditingLink(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (editingLink.trim() === '') {
+                  editor.chain().focus().unsetLink().run();
+                } else {
+                  editor.chain().focus().setLink({ href: editingLink.trim() }).run();
+                }
+                setEditingLink(null);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setEditingLink(null);
+                editor.chain().focus().run();
+              }
+            }}
+            className="h-7 w-48 rounded border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      ) : (
+        ITEMS.map((item) => (
+          <EditorToolbarButton
+            key={`${item.name}${item.attrs?.level ?? ''}`}
+            active={editor.isActive(item.name, item.attrs)}
+            onClick={() => {
+              if (item.name === 'link') {
+                setEditingLink(editor.getAttributes('link').href ?? '');
+              } else {
+                item.run(editor);
+              }
+            }}
+          >
+            <item.icon />
+          </EditorToolbarButton>
+        ))
       )}
       {children}
     </BubbleMenu>

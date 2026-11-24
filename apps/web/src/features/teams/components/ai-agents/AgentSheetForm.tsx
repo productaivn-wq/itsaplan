@@ -30,7 +30,7 @@ import {
   useSetAgentTools,
 } from '@/services/customTools.service';
 import { Button } from '@/components/ui/button';
-import { useAgentCan, useAgentSection } from '../../context/agentSection';
+import { useAgentSection } from '../../context/agentSection';
 import { AgentCapabilityList } from './AgentCapabilityList';
 import { AgentEmptyNotice } from './AgentEmptyNotice';
 import TeamAiAgentFields, { AGENT_EXPANDED_WIDTH } from './TeamAiAgentFields';
@@ -67,9 +67,6 @@ export function AgentSheetForm({
   const tCommon = useTranslations('common');
   const [value, setValue] = useState<AgentFormValue>(() => initialAgentValue(agent ?? undefined));
   const isCreate = agent == null;
-  // The sheet also opens for the test chat, to a viewer who may not change the agent.
-  const can = useAgentCan();
-  const canSave = isCreate || (can('edit') && agent.canManage);
   // The plaintext key issued in this sheet, by the create or by a regenerate. It is
   // shown once in the API key section and cannot be read back from the server.
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
@@ -102,19 +99,15 @@ export function AgentSheetForm({
     teamId,
     value.kind === 'internal' ? selectedProvider : null,
   );
-  const skillsLibraryQuery = useSkillOptionsQuery(
-    value.kind === 'internal' && canManageSkills ? teamId : null,
-  );
+  const skillsLibraryQuery = useSkillOptionsQuery(canManageSkills ? teamId : null);
   const agentSkillsQuery = useAgentSkillsQuery(
     teamId,
-    agent && agent.kind === 'internal' && canManageSkills ? agent.id : null,
+    agent && canManageSkills ? agent.id : null,
   );
-  const toolsLibraryQuery = useConfiguredToolOptionsQuery(
-    value.kind === 'internal' && canManageTools ? teamId : null,
-  );
+  const toolsLibraryQuery = useConfiguredToolOptionsQuery(canManageTools ? teamId : null);
   const agentToolsQuery = useAgentToolLinksQuery(
     teamId,
-    agent && agent.kind === 'internal' && canManageTools ? agent.id : null,
+    agent && canManageTools ? agent.id : null,
   );
 
   const createAgent = useCreateAiAgent(teamId);
@@ -184,17 +177,17 @@ export function AgentSheetForm({
     if ('username' in patch) setUsernameEdited((patch.username ?? '').trim() !== '');
   }
 
-  function toggleSkill(ids: number[], on: boolean) {
+  function toggleSkill(id: number, on: boolean) {
     setSkillIds((prev) => {
       const base = prev ?? [];
-      return on ? [...new Set([...base, ...ids])] : base.filter((x) => !ids.includes(x));
+      return on ? [...new Set([...base, id])] : base.filter((x) => x !== id);
     });
   }
 
-  function toggleTool(ids: number[], on: boolean) {
+  function toggleTool(id: number, on: boolean) {
     setToolIds((prev) => {
       const base = prev ?? [];
-      return on ? [...new Set([...base, ...ids])] : base.filter((x) => !ids.includes(x));
+      return on ? [...new Set([...base, id])] : base.filter((x) => x !== id);
     });
   }
 
@@ -204,10 +197,10 @@ export function AgentSheetForm({
       const res = await createAgent.mutateAsync(toCreateInput(value));
       // Link the picked skills/tools against the freshly created agent id (the join
       // tables need an id, which only exists after the create returns).
-      if (res.agent.kind === 'internal' && canManageSkills && skillIds && skillIds.length > 0) {
+      if (canManageSkills && skillIds && skillIds.length > 0) {
         await setAgentSkills.mutateAsync({ agentId: res.agent.id, skillIds });
       }
-      if (res.agent.kind === 'internal' && canManageTools && toolIds && toolIds.length > 0) {
+      if (canManageTools && toolIds && toolIds.length > 0) {
         await setAgentTools.mutateAsync({ agentId: res.agent.id, agentToolIds: toolIds });
       }
       await saveJoinsNewProjects(res.agent.id);
@@ -215,10 +208,10 @@ export function AgentSheetForm({
       onCreated(res.agent);
     } else {
       await updateAgent.mutateAsync({ id: agent.id, patch: toUpdatePatch(value) });
-      if (agent.kind === 'internal' && canManageSkills && skillIds !== null) {
+      if (canManageSkills && skillIds !== null) {
         await setAgentSkills.mutateAsync({ agentId: agent.id, skillIds });
       }
-      if (agent.kind === 'internal' && canManageTools && toolIds !== null) {
+      if (canManageTools && toolIds !== null) {
         await setAgentTools.mutateAsync({ agentId: agent.id, agentToolIds: toolIds });
       }
       await saveJoinsNewProjects(agent.id);
@@ -226,7 +219,7 @@ export function AgentSheetForm({
   }
 
   const skillsLibrary = skillsLibraryQuery.data ?? [];
-  const showSkills = value.kind === 'internal' && canManageSkills;
+  const showSkills = canManageSkills;
 
   // The Skills section body (the fields layout wraps it in a section). The configured
   // skill library the agent may load.
@@ -255,7 +248,7 @@ export function AgentSheetForm({
   ) : null;
 
   const toolsLibrary = toolsLibraryQuery.data ?? [];
-  const showTools = value.kind === 'internal' && canManageTools;
+  const showTools = canManageTools;
 
   // The Tools section body: the configured custom tools the agent may call.
   const toolsContent = showTools ? (
@@ -328,7 +321,7 @@ export function AgentSheetForm({
       className="flex h-full min-h-0 flex-col"
       onSubmit={(e) => {
         e.preventDefault();
-        if (canSave) void submit();
+        void submit();
       }}
     >
       {expanded ? (
@@ -338,19 +331,17 @@ export function AgentSheetForm({
           <div className={`mx-auto w-full space-y-6 ${contentWidth}`}>{fields}</div>
         </div>
       )}
-      {canSave && (
-        <div className="border-t border-border/60 px-4 py-3 sm:px-6">
-          <div className={`mx-auto flex w-full ${contentWidth} ${expanded ? 'justify-end' : ''}`}>
-            <Button
-              type="submit"
-              className={expanded ? 'min-w-40' : 'w-full'}
-              disabled={!isAgentFormValid(value) || saving}
-            >
-              {saving ? tCommon('saving') : isCreate ? t('create') : t('save')}
-            </Button>
-          </div>
+      <div className="border-t border-border/60 px-4 py-3 sm:px-6">
+        <div className={`mx-auto flex w-full ${contentWidth} ${expanded ? 'justify-end' : ''}`}>
+          <Button
+            type="submit"
+            className={expanded ? 'min-w-40' : 'w-full'}
+            disabled={!isAgentFormValid(value) || saving}
+          >
+            {saving ? tCommon('saving') : isCreate ? t('create') : t('save')}
+          </Button>
         </div>
-      )}
+      </div>
     </form>
   );
 }

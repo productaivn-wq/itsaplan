@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronUp, ExternalLink, ShieldCheck } from 'lucide-react';
 import type {
   ConfigField,
   IntegrationCredential,
@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useCreateCredential, useUpdateCredential } from '@/services/integrations.service';
+import {
+  useCreateCredential,
+  useOAuthProviderConfigQuery,
+  useSaveOAuthProviderConfig,
+  useStartOAuthConnection,
+  useUpdateCredential,
+} from '@/services/integrations.service';
 import { IntegrationIcon } from '@/components/common/IntegrationIcon';
 import { useTranslations } from 'next-intl';
 
@@ -43,8 +49,7 @@ function seedValues(
 
 // Step two of adding a credential (and the whole flow on edit): the credential form for
 // a chosen integration, built from its credentialSchema. Secret fields left blank on
-// edit keep their stored value. `onBack` returns to the picker (create only). `onDone`
-// gets the new credential on create.
+// edit keep their stored value. `onBack` returns to the picker (create only).
 export function CredentialForm({
   teamId,
   meta,
@@ -56,7 +61,7 @@ export function CredentialForm({
   meta: IntegrationMeta;
   existing: IntegrationCredential | null;
   onBack?: () => void;
-  onDone: (created?: IntegrationCredential) => void;
+  onDone: () => void;
 }) {
   const t = useTranslations('teams.integrations');
   const tCommon = useTranslations('common');
@@ -69,6 +74,54 @@ export function CredentialForm({
 
   const create = useCreateCredential(teamId);
   const update = useUpdateCredential(teamId);
+  const hasOAuth = Boolean(meta.oauth2);
+  const oauthConfigQuery = useOAuthProviderConfigQuery(teamId, hasOAuth ? meta.key : null);
+  const saveOAuthConfig = useSaveOAuthProviderConfig(teamId, meta.key);
+  const startOAuth = useStartOAuthConnection(teamId, meta.key);
+  const [showOAuthSetup, setShowOAuthSetup] = useState(false);
+  const [oauthMode, setOAuthMode] = useState<'direct' | 'relay'>('direct');
+  const [oauthClientId, setOAuthClientId] = useState('');
+  const [oauthClientSecret, setOAuthClientSecret] = useState('');
+  const [oauthRelayUrl, setOAuthRelayUrl] = useState('');
+  const [oauthRelaySecret, setOAuthRelaySecret] = useState('');
+  const [oauthError, setOAuthError] = useState<string | null>(null);
+  const [oauthSaved, setOAuthSaved] = useState(false);
+
+  const oauthCfg = oauthConfigQuery.data;
+
+  async function handleStartOAuth() {
+    setOAuthError(null);
+    try {
+      const res = await startOAuth.mutateAsync({
+        label: label.trim() || null,
+        credentialId: existing?.id ?? null,
+        returnTo: typeof window !== 'undefined' ? window.location.pathname : '/',
+      });
+      window.location.href = res.authorizeUrl;
+    } catch (err) {
+      setOAuthError(err instanceof Error ? err.message : 'Unable to start OAuth connection');
+    }
+  }
+
+  async function handleSaveOAuthConfig() {
+    setOAuthError(null);
+    setOAuthSaved(false);
+    try {
+      await saveOAuthConfig.mutateAsync({
+        mode: oauthMode,
+        clientId: oauthMode === 'direct' ? oauthClientId.trim() || null : null,
+        clientSecret: oauthMode === 'direct' ? oauthClientSecret.trim() || null : null,
+        relayUrl: oauthMode === 'relay' ? oauthRelayUrl.trim() || null : null,
+        relaySecret: oauthMode === 'relay' ? oauthRelaySecret.trim() || null : null,
+      });
+      setOAuthClientSecret('');
+      setOAuthRelaySecret('');
+      setOAuthSaved(true);
+      setShowOAuthSetup(false);
+    } catch (err) {
+      setOAuthError(err instanceof Error ? err.message : 'Failed to save OAuth config');
+    }
+  }
 
   function setField(key: string, v: FieldValue) {
     setValues((prev) => ({ ...prev, [key]: v }));
@@ -106,16 +159,14 @@ export function CredentialForm({
           id: existing.id,
           patch: { label: label.trim() || null, credential: buildCredential() },
         });
-        onDone();
       } else {
-        onDone(
-          await create.mutateAsync({
-            integrationKey: meta.key,
-            label: label.trim() || null,
-            credential: buildCredential(),
-          }),
-        );
+        await create.mutateAsync({
+          integrationKey: meta.key,
+          label: label.trim() || null,
+          credential: buildCredential(),
+        });
       }
+      onDone();
     } catch {
       setBusy(false);
     }
@@ -139,6 +190,165 @@ export function CredentialForm({
         <span className="text-sm font-medium text-foreground">{meta.label}</span>
       </div>
 
+      {hasOAuth && (
+        <div className="space-y-3 rounded-lg bg-muted/40 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ShieldCheck className="size-3.5 text-emerald-500" />
+              <span>
+                {oauthCfg?.configured
+                  ? oauthCfg.mode === 'relay'
+                    ? t('oauth.modeRelay')
+                    : t('oauth.modeDirect')
+                  : t('oauth.notConfigured')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!showOAuthSetup && oauthCfg) {
+                  setOAuthMode(oauthCfg.mode === 'relay' ? 'relay' : 'direct');
+                  setOAuthRelayUrl(oauthCfg.relayUrl ?? '');
+                }
+                setShowOAuthSetup((v) => !v);
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              {t('oauth.configureApp')}
+              {showOAuthSetup ? (
+                <ChevronUp className="size-3.5" />
+              ) : (
+                <ChevronDown className="size-3.5" />
+              )}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="gap-1.5"
+              disabled={!oauthCfg?.configured || startOAuth.isPending}
+              onClick={handleStartOAuth}
+            >
+              <ExternalLink className="size-3.5" />
+              {isEdit
+                ? t('oauth.reconnect', { integration: meta.label })
+                : t('oauth.connect', { integration: meta.label })}
+            </Button>
+            {oauthSaved && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                {t('oauth.configSaved')}
+              </span>
+            )}
+          </div>
+
+          {oauthCfg?.clientReviewNote && (
+            <p className="text-xs text-muted-foreground">{oauthCfg.clientReviewNote}</p>
+          )}
+
+          {oauthError && <p className="text-xs text-destructive">{oauthError}</p>}
+
+          {showOAuthSetup && (
+            <div className="space-y-2.5 border-t border-border/60 pt-2.5">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={oauthMode === 'direct' ? 'default' : 'outline'}
+                  onClick={() => setOAuthMode('direct')}
+                >
+                  {t('oauth.modeDirect')}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={oauthMode === 'relay' ? 'default' : 'outline'}
+                  onClick={() => setOAuthMode('relay')}
+                >
+                  {t('oauth.modeRelay')}
+                </Button>
+              </div>
+
+              {oauthMode === 'direct' ? (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('oauth.clientId')}</Label>
+                    <Input
+                      value={oauthClientId}
+                      onChange={(e) => setOAuthClientId(e.target.value)}
+                      placeholder={
+                        oauthCfg?.hasClientId ? t('oauth.keepExisting') : 'OAuth Client ID'
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('oauth.clientSecret')}</Label>
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      value={oauthClientSecret}
+                      onChange={(e) => setOAuthClientSecret(e.target.value)}
+                      placeholder={
+                        oauthCfg?.hasClientSecret ? t('oauth.keepExisting') : 'OAuth Client Secret'
+                      }
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('oauth.relayUrl')}</Label>
+                    <Input
+                      type="url"
+                      value={oauthRelayUrl}
+                      onChange={(e) => setOAuthRelayUrl(e.target.value)}
+                      placeholder="https://auth.itsaplan.com"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t('oauth.relaySecret')}</Label>
+                    <Input
+                      type="password"
+                      autoComplete="off"
+                      value={oauthRelaySecret}
+                      onChange={(e) => setOAuthRelaySecret(e.target.value)}
+                      placeholder={
+                        oauthCfg?.hasRelaySecret ? t('oauth.keepExisting') : '(optional)'
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {oauthCfg?.callbackUrl && (
+                <p className="font-mono text-xs break-all text-muted-foreground">
+                  {t('oauth.callbackUrl')}: {oauthCfg.callbackUrl}
+                </p>
+              )}
+
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={saveOAuthConfig.isPending}
+                onClick={handleSaveOAuthConfig}
+              >
+                {t('oauth.saveConfig')}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasOAuth && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          <span>{t('oauth.orManual')}</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+      )}
+
       {meta.credentialSchema.map((field) => (
         <div key={field.key} className="space-y-1.5">
           {field.type === 'boolean' ? (
@@ -157,9 +367,7 @@ export function CredentialForm({
               </Label>
               <Input
                 type={INPUT_TYPES[field.type] ?? 'text'}
-                // A browser ignores "off" on a password field: it fills a saved login
-                // there and the account's email into the text field before it.
-                autoComplete={field.type === 'secret' ? 'new-password' : 'off'}
+                autoComplete="off"
                 value={typeof values[field.key] === 'string' ? (values[field.key] as string) : ''}
                 onChange={(e) => setField(field.key, e.target.value)}
                 placeholder={
@@ -185,7 +393,7 @@ export function CredentialForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => onDone()} disabled={busy}>
+        <Button variant="outline" onClick={onDone} disabled={busy}>
           {tCommon('cancel')}
         </Button>
         <Button onClick={submit} disabled={!canSubmit}>

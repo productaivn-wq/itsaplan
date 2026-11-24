@@ -11,13 +11,11 @@ export default function RowAction({
   icon: Icon,
   label,
   destructive,
-  className,
   onClick,
 }: {
   icon: LucideIcon;
   label: string;
   destructive?: boolean;
-  className?: string;
   onClick: () => void;
 }) {
   return (
@@ -29,7 +27,6 @@ export default function RowAction({
           className={cn(
             'size-8 text-muted-foreground',
             destructive ? 'hover:text-destructive' : 'hover:text-foreground',
-            className,
           )}
           aria-label={label}
           onClick={onClick}

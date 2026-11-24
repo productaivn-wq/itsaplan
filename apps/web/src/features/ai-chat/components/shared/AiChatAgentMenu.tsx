@@ -1,8 +1,10 @@
 'use client';
 
-import { Bot, Check } from 'lucide-react';
+import Link from 'next/link';
+import { Bot, Check, Settings2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AiAgent } from '@/lib/api/endpoints/agents';
+import { aiAgentsPath } from '@/utils/paths';
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -20,11 +22,15 @@ export function AiChatAgentMenu({
   selectedId,
   providerLabel,
   onSelect,
+  projectKey,
+  canManageAgents = false,
 }: {
   agents: AiAgent[];
   selectedId: number | null;
   providerLabel: (key: string) => string;
   onSelect: (agentId: number) => void;
+  projectKey?: string;
+  canManageAgents?: boolean;
 }) {
   const t = useTranslations('aiChat');
 
@@ -48,6 +54,17 @@ export function AiChatAgentMenu({
           {agent.id === selectedId && <Check className="size-4 shrink-0" />}
         </DropdownMenuItem>
       ))}
+      {projectKey && canManageAgents && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild className="gap-2 text-muted-foreground">
+            <Link href={aiAgentsPath(projectKey)}>
+              <Settings2 className="size-4 shrink-0" />
+              <span>{t('manageAgents')}</span>
+            </Link>
+          </DropdownMenuItem>
+        </>
+      )}
     </DropdownMenuContent>
   );
 }

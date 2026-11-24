@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth-client';
 import { markSignedIn } from '@/lib/api/core/client';
-import { qk } from '@/services/queryKeys';
 
 // Everything cached in this tab belongs to one account. Signing in as somebody else
 // without a full page load (sign out and back in, a magic link opened in the same
@@ -14,14 +13,6 @@ import { qk } from '@/services/queryKeys';
 //
 // Clearing on a changed user id fixes that. The remembered "last project" needs no
 // cleanup: it is stored on the account, so the new session reads its own value.
-//
-// The instance's sign-in configuration is not account data, and the sign-in screen
-// may still be waiting on it when the session ends, so it stays.
-export function clearAccountQueries(queryClient: QueryClient) {
-  queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== qk.authConfig[0] });
-  queryClient.getMutationCache().clear();
-}
-
 export default function SessionScope() {
   const queryClient = useQueryClient();
   const { data: session, isPending } = useSession();
@@ -36,7 +27,7 @@ export default function SessionScope() {
     previous.current = userId;
     if (before === undefined || before === userId) return;
     if (userId) markSignedIn();
-    clearAccountQueries(queryClient);
+    queryClient.clear();
   }, [userId, isPending, queryClient]);
 
   return null;

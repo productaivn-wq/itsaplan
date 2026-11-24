@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react';
 import { CircleDashed } from 'lucide-react';
 import type { Column } from '@/lib/api/endpoints/columns';
 import { colorDot } from './colorDot';
@@ -12,7 +11,6 @@ export default function StatusSelect({
   onChange,
   onClear,
   readOnly,
-  trigger,
 }: {
   columns: Column[];
   // Null only where nothing is picked yet: an issue always has a state, a template
@@ -23,8 +21,6 @@ export default function StatusSelect({
   // only a caller that presets one (an issue template) can clear it.
   onClear?: () => void;
   readOnly?: boolean;
-  // Replaces the pill where a caller needs its own (a Timeline cell).
-  trigger?: ReactNode;
 }) {
   const t = useTranslations('issue.fieldSelects');
   const column = columns.find((c) => c.id === value);
@@ -32,12 +28,10 @@ export default function StatusSelect({
     <PopoverPick
       readOnly={readOnly}
       trigger={
-        trigger ?? (
-          <Pill active={column != null}>
-            {column ? colorDot(column.color) : <CircleDashed />}
-            <span className="truncate">{column?.name ?? t('state')}</span>
-          </Pill>
-        )
+        <Pill active={column != null}>
+          {column ? colorDot(column.color) : <CircleDashed />}
+          <span className="truncate">{column?.name ?? t('state')}</span>
+        </Pill>
       }
       inputPlaceholder={t('changeState')}
       emptyText={t('noState')}

@@ -1,0 +1,25 @@
+{
+  "eyebrow": "Đã cập nhật",
+  "title": "Có gì mới trong phiên bản {version}",
+  "done": "Đã hiểu",
+  "backup": {
+    "title": "Đã tạo bản sao lưu trước khi cập nhật",
+    "body": "Cơ sở dữ liệu đã được sao lưu trước khi chạy di chuyển dữ liệu của bản phát hành này: {size}, lưu giữ đến {expires} rồi tự động xóa. Hãy khôi phục bản sao lưu này nếu bạn quay về phiên bản trước.",
+    "credentialsHint": "Tên người dùng và tên cơ sở dữ liệu lấy từ POSTGRES_USER và POSTGRES_DB trong tệp .env của bạn."
+  },
+  "report": {
+    "title": "Thay đổi trong dữ liệu của bạn",
+    "subtitle": "Các dự án hiện thuộc về một nhóm, và mỗi nhóm dùng chung danh sách vai trò, kỹ năng, tác nhân AI và thông tin xác thực tích hợp.",
+    "teamsHeading": "Các nhóm và dự án trực thuộc",
+    "renamedRoles": "Vai trò đã đổi tên",
+    "renamedSkills": "Kỹ năng đã đổi tên",
+    "renamedAgents": "Định danh tác nhân đã đổi tên",
+    "renamedCredentials": "Thông tin xác thực tích hợp đã đổi nhãn",
+    "mergedHeading": "Đã gộp và di chuyển",
+    "mergedRoles": "{count, plural, one {# vai trò mặc định trùng lặp đã được gộp làm một} other {# vai trò mặc định trùng lặp đã được gộp làm một}}",
+    "mergedTools": "{count, plural, one {# công cụ cấu hình trùng lặp đã được gộp làm một} other {# công cụ cấu hình trùng lặp đã được gộp làm một}}",
+    "movedInvites": "{count, plural, one {# lời mời đang chờ đã được chuyển sang nhóm} other {# lời mời đang chờ đã được chuyển sang nhóm}}",
+    "notificationsHeading": "Nhà cung cấp thông báo",
+    "notificationsBody": "Mỗi nhóm giữ một cấu hình nhà cung cấp thông báo, nên cấu hình lưu gần nhất đã được giữ lại. Vui lòng nhập lại cài đặt cho: {projects}."
+  }
+}

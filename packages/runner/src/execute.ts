@@ -1,6 +1,13 @@
 import { spawn } from 'node:child_process';
 import { presetOf, type RunnerConfig } from './config';
-import { presetArgv, presetPrompt, type Preset } from './presets';
+import {
+  presetArgv,
+  presetOptionArgs,
+  presetPrompt,
+  type ChatTurnOptions,
+  type Preset,
+} from './presets';
+import { assertRunnerPresetPolicy } from './policy';
 
 // Runs one task: the command the preset builds, or the operator's own in a shell, with the
 // task on stdin and its context in the environment. Everything the agent needs beyond the
@@ -16,6 +23,7 @@ export interface Task {
   env: Record<string, string>;
   // The coding agent session to resume, for a preset that keeps them.
   sessionId?: string | null;
+  options?: ChatTurnOptions;
 }
 
 export interface Outcome {
@@ -42,7 +50,6 @@ function childEnv(config: RunnerConfig, task: Task): Record<string, string> {
     ITSAPLAN_URL: config.url,
     ITSAPLAN_API_KEY: config.apiKey,
     ...task.env,
-    ITSAPLAN_TIMEOUT_MS: String(config.timeoutMs),
   };
 }
 
@@ -52,7 +59,11 @@ function childEnv(config: RunnerConfig, task: Task): Record<string, string> {
 // pipeline leaves its children behind.
 function killGroup(pid: number): void {
   try {
-    process.kill(-pid, 'SIGKILL');
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true });
+    } else {
+      process.kill(-pid, 'SIGKILL');
+    }
   } catch {
     // Already gone.
   }
@@ -65,11 +76,12 @@ function spawnArgs(
   config: RunnerConfig,
   preset: Preset | undefined,
   task: Task,
+  combinedExtraArgs: string[],
 ): [string, string[]] {
   if (!preset) return ['sh', ['-c', config.command ?? '']];
   return [
     preset.bin,
-    presetArgv(preset, task.sessionId ?? null, task.systemPrompt, config.args, task.prompt),
+    presetArgv(preset, task.sessionId ?? null, task.systemPrompt, combinedExtraArgs, task.prompt),
   ];
 }
 
@@ -88,12 +100,26 @@ export async function execute(
   task: Task,
   opts: { onData?: (chunk: string) => void; signal?: AbortSignal } = {},
 ): Promise<Outcome> {
-  const preset = presetOf(config);
-  const [bin, args] = spawnArgs(config, preset, task);
+  const rawPreset = presetOf(config);
+  const combinedExtraArgs = [
+    ...config.args,
+    ...(config.agent ? presetOptionArgs(config.agent, task.options) : []),
+  ];
+  const preset =
+    rawPreset && process.env.ITSAPLAN_ENTERPRISE_HITL === 'true'
+      ? assertRunnerPresetPolicy({
+          preset: rawPreset,
+          extraArgs: combinedExtraArgs,
+          tenantIsolated: true,
+          allowUnsafeAutoApprove: false,
+        })
+      : rawPreset;
+  const [bin, args] = spawnArgs(config, preset, task, combinedExtraArgs);
   const child = spawn(bin, args, {
     cwd: config.cwd,
     env: childEnv(config, task),
-    detached: true,
+    detached: process.platform !== 'win32',
+    windowsHide: true,
   });
 
   const kill = () => {

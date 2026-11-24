@@ -67,13 +67,8 @@
       "custom": "Everything has a date."
     }
   },
-  "empty": {
-    "title": "No issues",
-    "description": "Issues will show up here.",
-    "filteredTitle": "No matching issues",
-    "filteredDescription": "Change the filters to see more."
-  },
   "timeline": {
+    "empty": "No issues to place on the timeline yet.",
     "expandGroup": "Expand group",
     "collapseGroup": "Collapse group",
     "inferredStart": "Start inferred from the created date",
@@ -110,7 +105,7 @@
   "share": {
     "issueTitle": "Issue",
     "issueUnavailable": "This issue is not available.",
-    "boardUnavailable": "This shared board is not available. The link may have been revoked or may have expired."
+    "boardUnavailable": "This shared board is not available. The link may have been revoked."
   },
   "groups": {
     "noAssignee": "No assignee",

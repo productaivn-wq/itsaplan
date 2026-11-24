@@ -1,0 +1,168 @@
+{
+  "title": "Sáng kiến",
+  "newInitiative": "Sáng kiến mới",
+  "notFound": "Không tìm thấy sáng kiến.",
+  "options": "Tùy chọn sáng kiến",
+  "showDescription": "Hiện mô tả",
+  "noDescription": "Không có mô tả.",
+  "noOwner": "Chưa có chủ sở hữu",
+  "startDate": "Ngày bắt đầu",
+  "targetDate": "Ngày mục tiêu",
+  "progress": "Tiến độ",
+  "activity": "Hoạt động",
+  "noActivity": "Chưa có hoạt động nào.",
+  "noIssuesLinked": "Chưa có công việc nào được liên kết.",
+  "inProgress": "Đang thực hiện",
+  "emptyTitle": "Chưa có sáng kiến nào",
+  "emptyDescription": "Sáng kiến nhóm các công việc liên quan dưới một mục tiêu chung.",
+  "emptyTabDescription": "Sáng kiến sẽ chuyển đổi giữa các thẻ khi trạng thái thay đổi.",
+  "emptyTab": {
+    "active": "Không có sáng kiến đang hoạt động",
+    "planned": "Không có sáng kiến đã lên kế hoạch",
+    "proposed": "Không có sáng kiến đề xuất",
+    "completed": "Không có sáng kiến đã hoàn thành"
+  },
+  "tabs": {
+    "active": "Đang hoạt động",
+    "planned": "Đã lên kế hoạch",
+    "proposed": "Đề xuất",
+    "completed": "Đã hoàn thành",
+    "all": "Tất cả sáng kiến"
+  },
+  "detailTabs": {
+    "overview": "Tổng quan",
+    "progress": "Tiến độ",
+    "issues": "Công việc"
+  },
+  "columns": {
+    "name": "Tên",
+    "priority": "Độ ưu tiên",
+    "owner": "Chủ sở hữu",
+    "target": "Mục tiêu",
+    "progress": "Tiến độ",
+    "health": "Tình trạng"
+  },
+  "status": {
+    "proposed": "Đề xuất",
+    "planned": "Đã lên kế hoạch",
+    "active": "Đang hoạt động",
+    "completed": "Đã hoàn thành",
+    "canceled": "Đã hủy"
+  },
+  "stateGroups": {
+    "backlog": "Tồn đọng",
+    "unstarted": "Cần làm",
+    "started": "Đang thực hiện",
+    "completed": "Đã xong",
+    "canceled": "Đã hủy"
+  },
+  "health": {
+    "on_track": "Đúng tiến độ",
+    "at_risk": "Có rủi ro",
+    "off_track": "Chậm tiến độ",
+    "unknown": "Chưa có cập nhật"
+  },
+  "healthInfo": {
+    "trigger": "Tình trạng được tính như thế nào?",
+    "title": "Tình trạng",
+    "description": "So sánh khối lượng công việc đã hoàn thành với thời gian đã trôi qua. Tự động cập nhật.",
+    "legend": {
+      "on_track": "Công việc đang bám sát tiến độ kế hoạch.",
+      "at_risk": "Công việc đang bắt đầu chậm hơn so với kế hoạch.",
+      "off_track": "Công việc bị chậm nhiều hoặc đã quá ngày mục tiêu.",
+      "unknown": "Chưa đủ dữ liệu: chưa có công việc hoặc chưa đặt ngày mục tiêu."
+    },
+    "howCalculated": "Cách tính toán",
+    "workDone": "Công việc đã hoàn thành",
+    "timeElapsed": "Thời gian đã trôi qua",
+    "trail": "Mức độ công việc chậm hơn so với thời gian",
+    "trailOnTrack": "chậm dưới 10%",
+    "trailAtRisk": "chậm từ 10-25%",
+    "trailOffTrack": "chậm trên 25%"
+  },
+  "timeline": {
+    "title": "Dòng thời gian",
+    "started": "Đã bắt đầu",
+    "target": "Mục tiêu",
+    "remaining": "Còn lại",
+    "overdue": "Quá hạn {days} ngày",
+    "dueToday": "Đến hạn hôm nay",
+    "left": "Còn {days} ngày",
+    "timeElapsed": "Thời gian đã trôi qua",
+    "workDone": "Công việc đã hoàn thành",
+    "noTargetDate": "Đặt ngày mục tiêu để theo dõi tiến độ."
+  },
+  "form": {
+    "titlePlaceholder": "Ra mắt Quý 3",
+    "descriptionPlaceholder": "Sáng kiến này hướng tới mục tiêu gì?",
+    "create": "Tạo sáng kiến",
+    "creating": "Đang tạo…",
+    "editTitle": "Chỉnh sửa sáng kiến",
+    "save": "Lưu thay đổi"
+  },
+  "pagination": {
+    "range": "{from}–{to} trên {total}",
+    "previous": "Trang trước",
+    "next": "Trang sau"
+  },
+  "select": {
+    "label": "Sáng kiến",
+    "search": "Liên kết với sáng kiến…",
+    "empty": "Không có sáng kiến nào.",
+    "none": "Không có sáng kiến",
+    "create": "Tạo sáng kiến"
+  },
+  "feed": {
+    "system": "Hệ thống",
+    "createdInitiative": "đã tạo sáng kiến",
+    "createdIssue": "đã tạo công việc",
+    "renamed": "đã đổi tên thành “{title}”",
+    "descriptionUpdated": "đã cập nhật mô tả",
+    "descriptionCleared": "đã xóa mô tả",
+    "statusSet": "đã đặt trạng thái thành {status}",
+    "statusMoved": "đã chuyển từ {from} sang {to}",
+    "prioritySet": "đã đặt độ ưu tiên thành {priority}",
+    "priorityRemoved": "đã xóa độ ưu tiên",
+    "ownerSet": "đã đặt chủ sở hữu là {name}",
+    "ownerRemoved": "đã xóa chủ sở hữu {name}",
+    "assigneeSet": "đã giao cho {name}",
+    "assigneeRemoved": "đã hủy giao cho {name}",
+    "delegateSet": "đã ủy quyền cho {name}",
+    "delegateRemoved": "đã hủy ủy quyền cho {name}",
+    "targetDateSet": "đã đặt ngày mục tiêu là {date}",
+    "targetDateRemoved": "đã xóa ngày mục tiêu",
+    "startDateSet": "đã đặt ngày bắt đầu là {date}",
+    "startDateRemoved": "đã xóa ngày bắt đầu",
+    "dueDateSet": "đã đặt hạn hoàn thành là {date}",
+    "dueDateRemoved": "đã xóa hạn hoàn thành",
+    "labelAdded": "đã thêm nhãn {label}",
+    "labelRemoved": "đã xóa nhãn {label}",
+    "typeSet": "đã đặt loại thành {type}",
+    "typeRemoved": "đã xóa loại",
+    "linked": "đã liên kết với {name}",
+    "unlinked": "đã hủy liên kết khỏi sáng kiến"
+  },
+  "attachments": {
+    "title": "Tệp đính kèm",
+    "add": "Thêm",
+    "uploading": "Đang tải lên…",
+    "empty": "Chưa có tệp đính kèm nào.",
+    "emptyHint": "Thả tệp vào đây, hoặc nhấn Thêm để tải lên.",
+    "dropToUpload": "Thả tệp để tải lên",
+    "uploadFailed": "Tải lên thất bại",
+    "open": "Mở {name}",
+    "download": "Tải xuống",
+    "downloadFile": "Tải xuống {name}",
+    "deleteFile": "Xóa {name}",
+    "deleteTitle": "Xóa tệp đính kèm",
+    "deleteConfirmation": "Xóa {name}? Tệp này cũng sẽ bị xóa khỏi phần mô tả ở những nơi được chèn vào. Không thể hoàn tác."
+  },
+  "documents": {
+    "title": "Tài liệu",
+    "add": "Liên kết Tài liệu",
+    "empty": "Chưa có Tài liệu nào được liên kết.",
+    "loadFailed": "Không thể tải các Tài liệu đã liên kết. Hãy thử lại.",
+    "untitled": "Không có tiêu đề",
+    "remove": "Hủy liên kết {title}"
+  }
+}

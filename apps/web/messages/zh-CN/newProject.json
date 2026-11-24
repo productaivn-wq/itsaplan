@@ -4,11 +4,6 @@
   "copyKey": "标识",
   "description": "描述",
   "issueTypes": "工作项类型",
-  "templates": "模板",
-  "blank": "空白项目",
-  "blankHint": "默认状态和你选择的工作项类型",
-  "startFrom": "起点",
-  "continue": "继续",
   "typesCreated": "将创建 {count, plural, other {# 个工作项类型}}",
   "defaultType": "新工作项默认使用 {type} 类型，可在设置中编辑。",
   "presets": {
@@ -38,7 +33,6 @@
     "issueTypes": "工作项类型",
     "labels": "标签",
     "customFields": "自定义字段",
-    "issueTemplates": "问题模板",
     "views": "视图",
     "dashboards": "仪表盘",
     "documents": "文档",
@@ -53,5 +47,16 @@
   "create": "新建项目",
   "copyAction": "复制项目",
   "defaultAgents": "将加入此项目的代理：{names}",
-  "copyName": "{name} 副本"
+  "copyName": "{name} 副本",
+  "primaryLocation": "Primary storing location (optional)",
+  "primaryLocationPlaceholder": "~/workspace or https://drive.google.com/...",
+  "tabGeneral": "General",
+  "tabChannels": "Channels & Groups",
+  "tabContacts": "Contacts",
+  "tabLocations": "Locations",
+  "channelsHint": "Add Zalo, Telegram, Discord, Email, or Messenger channels and groups where agents collect context.",
+  "contactsHint": "Add project contacts, RACI roles, and messaging handles for agent coordination.",
+  "locationsHint": "Add local folders, Google Drive links, Git repos, or knowledge bases where project files live.",
+  "setupSummary": "{channels} channels/groups · {contacts} contacts · {locations} locations",
+  "nextStep": "Next →"
 }

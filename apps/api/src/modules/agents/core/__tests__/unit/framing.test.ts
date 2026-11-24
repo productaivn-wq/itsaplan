@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'bun:test';
-import { framePrompt, projectPreamble, type RunForPrompt } from '../../prompt/framing';
+import {
+  multiProjectDirectoryPreamble,
+  projectDirectoryPreamble,
+  projectPreamble,
+} from '../../prompt/framing';
 import { PROJECT_DESCRIPTION_LIMIT } from '#modules/projects/model';
 
 describe('projectPreamble', () => {
@@ -21,80 +25,97 @@ describe('projectPreamble', () => {
   });
 });
 
-const run: RunForPrompt = {
-  id: 1,
-  trigger: 'field',
-  prompt: 'Work item MKT-7: "Checkout" now has you as its "Reviewer". Review it.',
-  issueId: 7,
-  issueIdentifier: 'MKT-7',
-  issueTitle: 'Checkout',
-  assigneeName: null,
-  assigneeUsername: 'ann',
-  requesterName: null,
-  requesterUsername: null,
-  agentUserId: 'agent-user',
-  agentUsername: 'bot',
-  threadContext: null,
-  sourceActivityId: null,
-  documentId: null,
-  documentTitle: null,
-  documentQuote: null,
-  threadRootId: null,
-};
+describe('projectDirectoryPreamble', () => {
+  it('returns empty string when all directory collections are empty', () => {
+    expect(
+      projectDirectoryPreamble({ contacts: [], channels: [], storageLocations: [] }),
+    ).toBe('');
+    expect(projectDirectoryPreamble(null)).toBe('');
+  });
 
-describe('framePrompt', () => {
-  it('frames a document mention as a reply in its thread, with the thread for context', () => {
-    const text = framePrompt({
-      ...run,
-      trigger: 'mention',
-      prompt: '@bot can you check this?',
-      issueId: null,
-      issueIdentifier: null,
-      issueTitle: null,
-      documentId: 12,
-      documentTitle: 'Onboarding',
-      documentQuote: 'Ship on Friday',
-      threadRootId: 'root-id',
-      threadContext: 'Ann: Is Friday realistic?',
+  it('formats storing locations, groups/channels, and contacts with vault pointers', () => {
+    const text = projectDirectoryPreamble({
+      storageLocations: [
+        {
+          kind: 'local_folder',
+          label: 'Workspace Root',
+          uriOrPath: '~/workspace',
+          accessScope: 'read_write',
+          isPrimary: true,
+          description: 'Specs and deliverables',
+        },
+      ],
+      channels: [
+        {
+          platform: 'zalo',
+          threadType: 'GROUP',
+          displayName: 'Nhóm Marketing',
+          targetId: 'zalo-grp-1',
+          aliases: ['MKT Ops'],
+          status: 'ACTIVE',
+        },
+      ],
+      contacts: [
+        {
+          name: 'Project Owner',
+          role: 'Sponsor',
+          raciRole: 'ACCOUNTABLE',
+          primaryEmail: 'vault://itsaplan/CONTACTS_REGISTRY_JSON#CON-001.primary_email',
+          phone: '',
+          channelHandles: { telegram: { direct: '@thanb' } },
+        },
+      ],
     });
-    expect(text).toContain('"Onboarding" (documentId 12)');
-    expect(text).toContain('add_document_comment tool (documentId 12, parentId root-id)');
-    expect(text).toContain('Ship on Friday');
-    expect(text).toContain('Ann: Is Friday realistic?');
-    expect(text.endsWith('@bot can you check this?')).toBe(true);
-    expect(text).not.toContain('issueId');
+
+    expect(text).toContain('## Project Directory & Information Sources');
+    expect(text).toContain('[PRIMARY] [local_folder | read_write] Workspace Root');
+    expect(text).toContain('[GROUP] Nhóm Marketing (zalo, ACTIVE)');
+    expect(text).toContain('Project Owner [ACCOUNTABLE] — Sponsor');
+    expect(text).toContain('vault://itsaplan/CONTACTS_REGISTRY_JSON#CON-001.primary_email');
+    expect(text).toContain('telegram: @thanb');
   });
 
-  it('frames an answer to the agent in a document thread as one, not as a mention', () => {
-    const text = framePrompt({
-      ...run,
-      trigger: 'mention',
-      prompt: 'Thanks, now the summary',
-      issueId: null,
-      issueIdentifier: null,
-      issueTitle: null,
-      documentId: 12,
-      documentTitle: 'Onboarding',
-      threadRootId: 'root-id',
-    });
-    expect(text.startsWith('Someone answered your comment on the document "Onboarding"')).toBe(
-      true,
-    );
-    expect(text).toContain('The answer to your comment:');
-  });
-
-  it('frames a field run as work on the issue, not as an answer to a comment', () => {
-    const text = framePrompt(run);
-    expect(text.startsWith(run.prompt)).toBe(true);
-    expect(text).toContain('issueId 7');
-    expect(text).toContain('@ann');
-    expect(text).not.toContain('comment on issue');
-  });
-
-  it('frames a status run the same way, with the task its prompt carries', () => {
-    const prompt = 'Work item MKT-7: "Checkout" entered the "Analysis" status.\n\nWrite the spec.';
-    const text = framePrompt({ ...run, trigger: 'status', prompt });
-    expect(text.startsWith(prompt)).toBe(true);
-    expect(text).toContain('carry out the task above');
+  it('summarizes multiple projects for runner chat sessions', () => {
+    const text = multiProjectDirectoryPreamble([
+      {
+        key: 'MKT',
+        name: 'Marketing',
+        directory: {
+          storageLocations: [
+            {
+              kind: 'local_folder',
+              label: 'MKT Root',
+              uriOrPath: '~/workspace',
+              accessScope: 'read_write',
+              isPrimary: true,
+              description: '',
+            },
+          ],
+          channels: [],
+          contacts: [],
+        },
+      },
+      {
+        key: 'OPS',
+        name: 'Operations',
+        directory: {
+          storageLocations: [],
+          channels: [
+            {
+              platform: 'telegram',
+              threadType: 'GROUP',
+              displayName: 'Ops Alerts',
+              targetId: '-100123',
+              aliases: [],
+              status: 'ACTIVE',
+            },
+          ],
+          contacts: [],
+        },
+      },
+    ]);
+    expect(text).toContain('## Project Directories & Information Sources');
+    expect(text).toContain('**MKT** (Marketing)');
+    expect(text).toContain('**OPS** (Operations)');
   });
 });

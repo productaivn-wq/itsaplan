@@ -23,13 +23,16 @@ export default function AllViewTab({
   return (
     <ViewTabChrome
       active={active}
-      className={cn(dragging && 'ring-1 ring-primary/40', isOver && 'bg-accent')}
+      className={cn(
+        dragging && 'ring-1 ring-primary/40',
+        isOver && (active ? 'ring-2 ring-primary/50' : 'bg-accent text-foreground'),
+      )}
     >
       <button
         ref={setNodeRef}
         type="button"
         onClick={onClick}
-        className="flex items-center gap-1.5 py-1 pr-2 pl-2"
+        className="flex h-8 items-center gap-1.5 rounded-full px-3 text-xs"
       >
         <Layers className="size-3.5" />
         {t('all')}

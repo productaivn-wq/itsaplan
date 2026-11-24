@@ -27,12 +27,14 @@ import {
   VIEWABLE_IMAGES,
 } from '#modules/attachments/storage';
 import {
+  FeedItemResponse,
   FeedPageResponse,
   InitiativeCountsResponse,
   InitiativeOptionListResponse,
   InitiativePageResponse,
   InitiativeResponse,
   createInitiativeBody,
+  createInitiativeCommentBody,
   initiativeFeedQuery,
   initiativeOptionsQuery,
   initiativeParams,
@@ -59,7 +61,7 @@ import {
   removeInitiativeAttachmentEmbeds,
   type InitiativeAttachmentRow,
 } from './attachments';
-import { listFeed } from './activity';
+import { listFeed, recordComment } from './activity';
 
 // Public shape returned to the UI, identical to an issue attachment's: never the
 // object key. `url` is the public, no-auth download route, so it can be embedded
@@ -266,6 +268,24 @@ export const initiativeRoutes = new Elysia({
         summary: 'Get an initiative feed',
         description: "Get an initiative's activity feed by its numeric id.",
         ...mcpTool('list_initiative_activity'),
+      },
+    },
+  )
+
+  .post(
+    '/initiatives/:initiativeId/comments',
+    async ({ params, body, user, set }) => {
+      set.status = 201;
+      return recordComment(params.initiativeId, body.body, requireUser(user).id);
+    },
+    {
+      params: initiativeParams,
+      body: createInitiativeCommentBody,
+      initiative: 'edit',
+      response: { 201: FeedItemResponse, ...commonErrors },
+      detail: {
+        summary: 'Add an initiative comment',
+        description: 'Post a comment to an initiative activity feed by its numeric id.',
       },
     },
   )

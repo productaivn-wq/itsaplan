@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Building2, LogOut, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { signOut, useSession } from '@/lib/auth-client';
 import { ACCOUNT_SECTIONS, accountPath } from '@/utils/accountSections';
+import { companySettingsPath, manageTeamsPath } from '@/utils/paths';
 import { useAccountSectionLabel } from '@/hooks/useSectionLabels';
 import Avatar from '@/components/common/Avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,11 +24,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 // Signed-in user control in the header: shows the account avatar and a menu with
 // the email, the role, links to preferences, connected accounts, account security
 // (passkeys) and API keys, and sign out.
-// Signing out clears the session and loads the sign-in page itself.
+// Signing out clears the session and the proxy sends the browser back to
+// the login page.
 export default function UserMenu() {
   const t = useTranslations('nav');
   const tCommon = useTranslations('common');
   const sectionLabel = useAccountSectionLabel();
+  const router = useRouter();
   const { data: session, isPending } = useSession();
 
   // better-auth reads the session on the client, so the server renders no user and
@@ -35,15 +39,17 @@ export default function UserMenu() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  if (!mounted || isPending) return <Skeleton className="size-7 rounded-full" />;
+  if (!mounted || isPending) return <Skeleton className="size-8 rounded-full" />;
   if (!session) return null;
 
   const { user } = session;
   const role = (user as { role?: string }).role ?? 'user';
   const image = (user as { image?: string | null }).image ?? null;
 
-  function onSignOut() {
-    void signOut();
+  async function onSignOut() {
+    await signOut();
+    router.push('/login');
+    router.refresh();
   }
 
   return (
@@ -51,8 +57,8 @@ export default function UserMenu() {
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label={user.email} className="rounded-full outline-none">
-              <Avatar name={user.name || user.email} image={image} className="size-7 text-[11px]" />
+            <button type="button" aria-label={user.email} className="inline-flex size-8 items-center justify-center rounded-full outline-none">
+              <Avatar name={user.name || user.email} image={image} className="size-8 text-xs" />
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
@@ -64,6 +70,18 @@ export default function UserMenu() {
           <span className="text-xs text-muted-foreground capitalize">{t('role', { role })}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={companySettingsPath()}>
+            <Building2 />
+            {t('companySettings')}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href={manageTeamsPath()}>
+            <Users />
+            {t('controlPlane')}
+          </Link>
+        </DropdownMenuItem>
         {ACCOUNT_SECTIONS.map(({ slug, icon: Icon }) => (
           <DropdownMenuItem key={slug} asChild>
             <Link href={accountPath(slug)}>

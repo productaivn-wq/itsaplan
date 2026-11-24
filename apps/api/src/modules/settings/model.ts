@@ -1,5 +1,4 @@
 import { t } from 'elysia';
-import { MAX_CONCURRENT_RUNS, MAX_RUN_SECONDS, MIN_RUN_SECONDS } from './service';
 
 export const StorageSettingsSchema = t.Object({
   maxAttachmentMb: t.Number(),
@@ -8,39 +7,42 @@ export const StorageSettingsSchema = t.Object({
   projectQuotaMb: t.Number(),
 });
 
-export const InviteSearchSchema = t.Object({ enabled: t.Boolean() });
+export const AutonomyTierSchema = t.UnionEnum(['TIER_0', 'TIER_1', 'TIER_2']);
+
+export const CompanySettingsSchema = t.Object({
+  companyName: t.String(),
+  legalName: t.String(),
+  slug: t.String(),
+  domain: t.String(),
+  industry: t.String(),
+  timezone: t.String(),
+  defaultLocale: t.String(),
+  defaultAutonomyTier: AutonomyTierSchema,
+  requireSodApproval: t.Boolean(),
+  allowAgentTeamBootstrap: t.Boolean(),
+  onboardingCompleted: t.Boolean(),
+  updatedByUserId: t.Nullable(t.String()),
+  updatedAt: t.Nullable(t.String()),
+});
+
+export const UpdateCompanySettingsBody = t.Partial(
+  t.Object({
+    companyName: t.String({ minLength: 1, maxLength: 120 }),
+    legalName: t.String({ maxLength: 160 }),
+    slug: t.String({ pattern: '^[a-z][a-z0-9-]{1,39}$' }),
+    domain: t.String({ maxLength: 160 }),
+    industry: t.String({ maxLength: 120 }),
+    timezone: t.String({ maxLength: 80 }),
+    defaultLocale: t.String({ maxLength: 16 }),
+    defaultAutonomyTier: AutonomyTierSchema,
+    requireSodApproval: t.Boolean(),
+    allowAgentTeamBootstrap: t.Boolean(),
+    onboardingCompleted: t.Boolean(),
+  }),
+);
 
 export const ProjectDefaultsSchema = t.Object({
   mcpEnabled: t.Boolean(),
-});
-
-export const SharingSettingsSchema = t.Object({
-  enabled: t.Boolean({
-    description:
-      'Whether public links work on this instance. Off closes every link until it is on again.',
-  }),
-});
-
-export const AgentSettingsSchema = t.Object({
-  traceRetentionDays: t.Integer({
-    minimum: 0,
-    maximum: 3650,
-    description:
-      'Days the traces of an agent run are kept for. 0 keeps them until they are deleted by hand.',
-  }),
-  maxRunSeconds: t.Integer({
-    minimum: MIN_RUN_SECONDS,
-    maximum: MAX_RUN_SECONDS,
-    description:
-      "Seconds one agent run may take before it is stopped and saved as failed. An agent's own limit cannot exceed it.",
-  }),
-  maxConcurrentRuns: t.Integer({
-    minimum: 0,
-    maximum: MAX_CONCURRENT_RUNS,
-    description:
-      'Runs of internal agents in flight at once across the instance; the rest wait in the ' +
-      "queue. 0 sets no limit. A workspace's own limit cannot exceed it.",
-  }),
 });
 
 // A command id bound to a combination written as modifier tokens plus a key
@@ -50,14 +52,6 @@ export const HotkeyCombosSchema = t.Record(
   t.String({ pattern: '^[a-z][a-z0-9.-]{0,63}$' }),
   t.String({ pattern: '^(mod\\+|shift\\+|alt\\+)*[a-z0-9]{1,10}$' }),
 );
-
-export const EmbedSitesSchema = t.Object({
-  origins: t.Array(t.String({ maxLength: 300 }), {
-    maxItems: 50,
-    description:
-      'Sites that may show the public pages in a frame, as origins such as https://example.com.',
-  }),
-});
 
 const ReleaseSchema = t.Object({
   tag: t.String(),

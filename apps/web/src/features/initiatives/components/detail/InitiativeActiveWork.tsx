@@ -64,7 +64,7 @@ export default function InitiativeActiveWork({
                   <Avatar
                     name={owner.name}
                     image={owner.image}
-                    className="size-5 shrink-0 text-[8px]"
+                    className="size-5 shrink-0 text-xs"
                   />
                 )}
               </button>

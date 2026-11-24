@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useRefusalMessage } from '@/hooks/useRefusalMessage';
+import { useTranslations } from 'next-intl';
 
 // Runs an auth action while tracking pending + error, and redirects into the
 // planner on success. `setError` is exposed so a form can report client-side
@@ -12,17 +12,17 @@ import { useRefusalMessage } from '@/hooks/useRefusalMessage';
 // the same screen with a "check your inbox" message instead, so they pass
 // `redirect: false` and keep `pending` cleared.
 //
-// A failure is worded by useRefusalMessage; `fallback` is the text for a refusal it
-// cannot name, shown instead of the server's English message.
+// A failure carries the message the auth server sent; `fallback` covers the ones
+// that arrive without one and where the generic wording is too vague.
 export function useAuthAction() {
   const router = useRouter();
-  const refusalMessage = useRefusalMessage();
+  const t = useTranslations('auth.errors');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function run(
     action: () => Promise<void>,
-    options?: { redirect?: boolean; fallback?: string },
+    options?: { redirect?: boolean; redirectTo?: string; fallback?: string },
   ) {
     setError(null);
     setPending(true);
@@ -32,10 +32,11 @@ export function useAuthAction() {
         setPending(false);
         return;
       }
-      router.push('/');
+      router.push(options?.redirectTo ?? '/');
       router.refresh();
     } catch (err) {
-      setError(refusalMessage(err, options?.fallback));
+      const message = err instanceof Error ? err.message : '';
+      setError(message || options?.fallback || t('generic'));
       setPending(false);
     }
   }

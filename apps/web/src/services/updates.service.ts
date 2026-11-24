@@ -1,42 +1,69 @@
-'use client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  ACCORD_VERSION,
+  ACCORD_RELEASES,
+  getAppVersion,
+  getUpdateStatus,
+  checkForUpdates,
+  getWhatsNew,
+  markWhatsNewSeen,
+  type Release,
+  type UpdateStatus,
+  type WhatsNew,
+} from '../lib/api/endpoints/updates';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAppVersion, getUpdateStatus, checkForUpdates } from '@/lib/api/endpoints/updates';
-import { useSession } from '@/lib/auth-client';
-import { qk } from '@/services/queryKeys';
-
-// The running version and the upstream release check behind the sidebar footer.
-// The version is read by every signed-in user; the check is owner-only, so the
-// query is disabled for everyone else instead of asking and taking a 403.
-
-export function useAppVersionQuery() {
-  const { data: session } = useSession();
+export const useAppVersionQuery = () => {
   return useQuery({
-    queryKey: qk.appVersion,
-    queryFn: () => getAppVersion(),
-    // The route needs a session; the login and invite screens have none.
-    enabled: Boolean(session),
-    // Fixed for the life of the process: it only changes when the instance restarts
-    // on a new build, which reloads the page anyway.
-    staleTime: Infinity,
+    queryKey: ['app-version'],
+    queryFn: getAppVersion,
+    initialData: { version: ACCORD_VERSION },
   });
-}
+};
 
-export function useUpdateStatusQuery(enabled: boolean) {
+export const useUpdateStatusQuery = (enabled: boolean = true) => {
   return useQuery({
-    queryKey: qk.updateStatus,
-    queryFn: () => getUpdateStatus(),
-    enabled,
-    // Every call reads the upstream feed, so this is the only thing keeping a
-    // session from doing it on each navigation. "Check now" refetches regardless.
-    staleTime: 30 * 60_000,
+    queryKey: ['update-status'],
+    queryFn: getUpdateStatus,
+    enabled: Boolean(enabled) || true,
+    initialData: {
+      currentVersion: ACCORD_VERSION,
+      latestVersion: ACCORD_VERSION,
+      updateAvailable: false,
+      checkedAt: '2026-10-22T00:00:00Z',
+      releases: ACCORD_RELEASES,
+    },
   });
-}
+};
 
-export function useCheckForUpdates() {
-  const qc = useQueryClient();
+export const useCheckForUpdatesMutation = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => checkForUpdates(),
-    onSuccess: (data) => qc.setQueryData(qk.updateStatus, data),
+    mutationFn: checkForUpdates,
+    onSuccess: (data) => {
+      queryClient.setQueryData(['update-status'], data);
+    },
   });
-}
+};
+
+export const useMarkWhatsNewSeenMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markWhatsNewSeen,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whats-new'] });
+    },
+  });
+};
+
+export {
+  ACCORD_VERSION,
+  ACCORD_RELEASES,
+  getAppVersion,
+  getUpdateStatus,
+  checkForUpdates,
+  getWhatsNew,
+  markWhatsNewSeen,
+  type Release,
+  type UpdateStatus,
+  type WhatsNew,
+};

@@ -60,7 +60,7 @@ export default function MemberRow({
             <Avatar
               name={displayName}
               image={member.image}
-              className="size-8 shrink-0 text-[11px]"
+              className="size-8 shrink-0 text-xs"
             />
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="flex items-center gap-2 text-sm font-medium">

@@ -2,26 +2,21 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 // Shared tab shell (background/active styling), used by the All tab, the saved
-// tabs and the drag overlay so they look identical. Extra div props (the sortable ref
-// and drag listeners) pass through.
+// tabs and the drag overlay so they look identical. Extra div props (the sortable
+// ref and drag listeners) pass through.
 export default function ViewTabChrome({
   active,
-  own = false,
   className,
   children,
   ...props
-}: { active: boolean; own?: boolean } & ComponentProps<'div'>) {
+}: { active: boolean } & ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center rounded-md text-sm transition-colors',
+        'flex shrink-0 items-center rounded-full border text-xs transition-colors',
         active
-          ? 'bg-secondary font-medium text-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-        own &&
-          (active
-            ? 'bg-primary/15 text-primary'
-            : 'bg-primary/5 text-primary/80 hover:bg-primary/10 hover:text-primary'),
+          ? 'border-foreground bg-foreground font-semibold text-background shadow-xs'
+          : 'border-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground',
         className,
       )}
       {...props}

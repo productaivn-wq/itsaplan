@@ -1,92 +1,28 @@
-import type { Project } from '@/lib/api/endpoints/projects';
-import type { WorkItemsView } from '@/utils/viewTypes';
-import type { CommandSection } from '@/utils/commands';
-import { useShell } from '@/context/shellContext';
-import { useAppCommands } from '@/hooks/useAppCommands';
-import { useNavigationCommands } from '@/hooks/useNavigationCommands';
-import { useIssueCommands } from '@/features/issue/hooks/useIssueCommands';
-import CommandPalette from '@/components/layout/CommandPalette';
+'use client';
 
-// Builds the palette's sections and renders it. It sits inside the Shell's
-// context provider (the command hooks read the project and the viewer's
-// permissions from it), and owns the confirm dialogs the issue commands open —
-// the palette closes when a command runs, so those must outlive it.
-//
-// Section order: the issue in front of the user first, then the board it came
-// from, then the commands and destinations that apply anywhere.
-export default function CommandLayer({
-  open,
-  onOpenChange,
-  projects,
-  currentProjectKey,
-  onBoard,
-  view,
-  currentIssueId,
-  onViewChange,
-  onNewIssue,
-  onSelectAll,
-  onNewInitiative,
-  onNewProject,
-  onSelectProject,
-  onOpenIssue,
-  onIssueDeleted,
-  onToggleChat,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  projects: Project[];
-  currentProjectKey: string | null;
-  onBoard: boolean;
-  view: WorkItemsView;
-  // The issue the user is looking at: the open detail panel, or the issue page.
-  currentIssueId: number | null;
-  onViewChange: (view: WorkItemsView) => void;
-  onNewIssue: () => void;
-  onSelectAll: () => void;
-  onNewInitiative: () => void;
-  onNewProject: (() => void) | null;
-  onSelectProject: (key: string) => void;
-  onOpenIssue: (sequenceNumber: number) => void;
-  onIssueDeleted: () => void;
-  onToggleChat: () => void;
-}) {
-  const { project } = useShell();
-  const hasProject = !!project;
+import { useEffect, useState } from 'react';
+import CommandLayerContent, {
+  type CommandLayerProps,
+} from '@/components/layout/CommandLayerContent';
 
-  const issue = useIssueCommands(project, currentIssueId, onIssueDeleted);
-  const app = useAppCommands({
-    hasProject,
-    initiativesEnabled: !!project?.project.initiativesEnabled,
-    onBoard,
-    view,
-    projects,
-    currentProjectKey,
-    onViewChange,
-    onNewIssue,
-    onSelectAll,
-    onNewInitiative,
-    onNewProject,
-    onSelectProject,
-    onToggleChat,
-  });
-  const navigation = useNavigationCommands(currentProjectKey);
+// Pre-warms the command palette during idle time after mount so ⌘K opens in <50ms,
+// while still keeping initial Shell mount free of command-building overhead.
+export default function CommandLayer(props: CommandLayerProps) {
+  const [hasOpened, setHasOpened] = useState(props.open);
 
-  // Empty sections are dropped here so each hook can return one unconditionally.
-  const sections = [issue.section, app.board, app.general, app.projects, navigation].filter(
-    (s): s is CommandSection => s != null && s.items.length > 0,
-  );
+  useEffect(() => {
+    if (props.open) {
+      setHasOpened(true);
+      return;
+    }
+    if (hasOpened) return;
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(() => setHasOpened(true), { timeout: 250 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(() => setHasOpened(true), 150);
+    return () => clearTimeout(timer);
+  }, [props.open, hasOpened]);
 
-  return (
-    <>
-      <CommandPalette
-        open={open}
-        onOpenChange={onOpenChange}
-        sections={sections}
-        currentProjectKey={currentProjectKey}
-        currentProjectId={project?.project.id ?? null}
-        onOpenIssue={onOpenIssue}
-      />
-      {issue.dialogs}
-    </>
-  );
+  return hasOpened ? <CommandLayerContent {...props} /> : null;
 }

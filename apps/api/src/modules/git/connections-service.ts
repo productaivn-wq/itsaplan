@@ -351,46 +351,37 @@ async function reconcileConnectionWebhooks(
     .where(eq(gitManagedRepository.connectionId, connectionId));
   const settingsByProject = new Map<number, GitSettings>();
   for (const repository of repositories) {
-    let settings = settingsByProject.get(repository.projectId);
-    if (!settings) {
-      settings = await getOrCreateGitSettings(repository.projectId);
-      settingsByProject.set(repository.projectId, settings);
+    try {
+      let settings = settingsByProject.get(repository.projectId);
+      if (!settings) {
+        settings = await getOrCreateGitSettings(repository.projectId);
+        settingsByProject.set(repository.projectId, settings);
+      }
+      const webhookExternalId = await installProviderWebhook(
+        input,
+        {
+          externalId: repository.externalId,
+          fullName: repository.fullName,
+          webUrl: repository.webUrl,
+          private: false,
+        },
+        webhookPayloadUrl(settings),
+        settings.secret,
+      );
+      await db
+        .update(gitManagedRepository)
+        .set({ webhookExternalId, status: 'connected', lastError: null, updatedAt: new Date() })
+        .where(eq(gitManagedRepository.id, repository.id));
+    } catch (error) {
+      await db
+        .update(gitManagedRepository)
+        .set({
+          status: 'error',
+          lastError: error instanceof Error ? error.message : 'Webhook update failed',
+          updatedAt: new Date(),
+        })
+        .where(eq(gitManagedRepository.id, repository.id));
     }
-    await reconcileRepositoryWebhook(input, repository, settings);
-  }
-}
-
-async function reconcileRepositoryWebhook(
-  input: ProviderConnectionInput,
-  repository: typeof gitManagedRepository.$inferSelect,
-  settings: GitSettings,
-): Promise<void> {
-  try {
-    const webhookExternalId = await installProviderWebhook(
-      input,
-      {
-        externalId: repository.externalId,
-        fullName: repository.fullName,
-        webUrl: repository.webUrl,
-        private: false,
-      },
-      settings.payloadUrl,
-      settings.secret,
-      repository.webhookExternalId,
-    );
-    await db
-      .update(gitManagedRepository)
-      .set({ webhookExternalId, status: 'connected', lastError: null, updatedAt: new Date() })
-      .where(eq(gitManagedRepository.id, repository.id));
-  } catch (error) {
-    await db
-      .update(gitManagedRepository)
-      .set({
-        status: 'error',
-        lastError: error instanceof Error ? error.message : 'Webhook update failed',
-        updatedAt: new Date(),
-      })
-      .where(eq(gitManagedRepository.id, repository.id));
   }
 }
 
@@ -421,6 +412,12 @@ export async function listAvailableRepositories(
   };
 }
 
+function webhookPayloadUrl(settings: GitSettings): string {
+  const apiUrl = process.env.API_URL;
+  if (!apiUrl) throw new HttpError(500, 'API_URL is not configured');
+  return `${apiUrl.replace(/\/$/, '')}/webhooks/git/${settings.webhookId}`;
+}
+
 export async function connectRepositories(
   projectId: number,
   connectionId: number,
@@ -442,15 +439,15 @@ export async function connectRepositories(
     );
   const existingIds = new Set(existing.map((repo) => repo.externalId));
   const settings = await getOrCreateGitSettings(projectId);
+  const payloadUrl = webhookPayloadUrl(settings);
   for (const externalId of ids) {
     if (existingIds.has(externalId)) continue;
     const repository = await getProviderRepository(providerInput(connection), externalId);
     const webhookExternalId = await installProviderWebhook(
       providerInput(connection),
       repository,
-      settings.payloadUrl,
+      payloadUrl,
       settings.secret,
-      null,
     );
     await db.insert(gitManagedRepository).values({
       projectId,
@@ -528,19 +525,33 @@ export async function reconcileManagedWebhooks(
   settings: GitSettings,
 ): Promise<void> {
   const connections = await listGitProviderConnections(projectId);
+  const payloadUrl = webhookPayloadUrl(settings);
   for (const item of connections) {
-    const input = providerInput(await connectionSecret(item.id, projectId));
-    const repositories = await db
-      .select()
-      .from(gitManagedRepository)
-      .where(
-        and(
-          eq(gitManagedRepository.projectId, projectId),
-          eq(gitManagedRepository.connectionId, item.id),
-        ),
-      );
-    for (const repository of repositories) {
-      await reconcileRepositoryWebhook(input, repository, settings);
+    const connection = await connectionSecret(item.id, projectId);
+    for (const repository of item.repositories) {
+      try {
+        const webhookExternalId = await installProviderWebhook(
+          providerInput(connection),
+          {
+            externalId: repository.externalId,
+            fullName: repository.fullName,
+            webUrl: repository.webUrl,
+            private: false,
+          },
+          payloadUrl,
+          settings.secret,
+        );
+        await db
+          .update(gitManagedRepository)
+          .set({ webhookExternalId, status: 'connected', lastError: null, updatedAt: new Date() })
+          .where(eq(gitManagedRepository.id, repository.id));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Webhook update failed';
+        await db
+          .update(gitManagedRepository)
+          .set({ status: 'error', lastError: message, updatedAt: new Date() })
+          .where(eq(gitManagedRepository.id, repository.id));
+      }
     }
   }
 }

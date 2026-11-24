@@ -1,5 +1,5 @@
-import SettingsCustomFieldsPage from '@/features/settings/SettingsCustomFieldsPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsCustomFieldsPage />;
+  return <ProjectSettingsCutRedirect />;
 }

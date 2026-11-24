@@ -1,12 +1,10 @@
 import { request } from '@/lib/api/core/client';
 import type { StateType } from '@/lib/api/endpoints/columns';
 
-// Inbox notifications. Each row is enriched with the issue or the document and the
-// project it points at, so the list renders without extra calls.
+// Inbox notifications. Each row is enriched with the issue and project it points at
+// so the list renders without extra calls.
 export type NotificationType = 'assigned' | 'mentioned' | 'commented' | 'state_changed';
 
-// The issue fields are set on an issue's notification, the document fields on a
-// document's.
 export interface Notification {
   id: number;
   type: NotificationType;
@@ -15,17 +13,10 @@ export interface Notification {
   readAt: string | null;
   snoozedUntil: string | null;
   createdAt: string;
-  issueId: number | null;
-  issueSeq: number | null;
-  issueTitle: string | null;
-  issueStateType: StateType | null;
-  // Set while the comment it is about still exists.
-  issueCommentId: number | null;
-  documentId: number | null;
-  documentTitle: string | null;
-  documentIcon: string | null;
-  // Set when the mention is in a comment on the document.
-  documentCommentId: string | null;
+  issueId: number;
+  issueSeq: number;
+  issueTitle: string;
+  issueStateType: StateType;
   projectId: number;
   projectKey: string;
   projectName: string;
@@ -51,13 +42,13 @@ export interface NotificationFilters {
   includeSnoozed?: boolean;
 }
 
-export type NotificationDeleteScope = 'all' | 'read' | 'read-completed' | 'completed';
+export type NotificationDeleteScope = 'all' | 'read' | 'read-completed';
 
-// Inbox notifications. The list is the session user's own; projectId scopes it to
-// one project (the per-project inbox). cursor is the JSON-encoded keyset from the
-// previous page.
+// Inbox notifications. The list is the session user's own; when projectId is set it
+// scopes to one project, and when omitted it returns notifications across all projects
+// the user is a member of. cursor is the JSON-encoded keyset from the previous page.
 export const listNotifications = (
-  projectId: number,
+  projectId: number | null | undefined,
   params: {
     cursor?: NotificationCursor | null;
     limit?: number;
@@ -65,7 +56,7 @@ export const listNotifications = (
   } = {},
 ) => {
   const q = new URLSearchParams();
-  q.set('projectId', String(projectId));
+  if (projectId != null) q.set('projectId', String(projectId));
   if (params.limit) q.set('limit', String(params.limit));
   if (params.cursor) q.set('cursor', JSON.stringify(params.cursor));
   const f = params.filters ?? {};
@@ -73,14 +64,14 @@ export const listNotifications = (
   if (f.from) q.set('from', f.from);
   if (f.includeRead === false) q.set('includeRead', 'false');
   if (f.includeSnoozed) q.set('includeSnoozed', 'true');
-  return request<NotificationPage>(`/notifications?${q.toString()}`);
+  const qs = q.toString();
+  return request<NotificationPage>(qs ? `/notifications?${qs}` : '/notifications');
 };
 
-// Unread count for the sidebar badge, refetched when the inbox scope moves. Without a
-// project it counts every project's, for the app icon badge.
-export const getUnreadCount = (projectId?: number) =>
+// Unread count for the sidebar badge or inbox header, scoped to one project or all.
+export const getUnreadCount = (projectId?: number | null) =>
   request<{ unread: number }>(
-    projectId == null ? '/notifications/unread' : `/notifications/unread?projectId=${projectId}`,
+    projectId != null ? `/notifications/unread?projectId=${projectId}` : '/notifications/unread',
   );
 
 export const setNotificationRead = (id: number, read: boolean) =>
@@ -92,28 +83,19 @@ export const snoozeNotification = (id: number, until: string | null) =>
     body: JSON.stringify({ until }),
   });
 
-export const markAllNotificationsRead = (projectId: number, filters: NotificationFilters) =>
+export const markAllNotificationsRead = (projectId?: number | null) =>
   request<{ count: number }>(`/notifications/read-all`, {
     method: 'POST',
-    body: JSON.stringify({
-      projectId,
-      ...filters,
-      includeSnoozed: filters.includeSnoozed ?? false,
-    }),
+    body: JSON.stringify(projectId != null ? { projectId } : {}),
   });
 
 export const deleteNotification = (id: number) =>
   request<void>(`/notifications/${id}`, { method: 'DELETE' });
 
-export const deleteNotifications = (
-  scope: NotificationDeleteScope,
-  projectId: number,
-  filters: NotificationFilters,
-) => {
-  const q = new URLSearchParams({ scope, projectId: String(projectId) });
-  if (filters.types?.length) q.set('types', filters.types.join(','));
-  if (filters.from) q.set('from', filters.from);
-  if (filters.includeRead === false) q.set('includeRead', 'false');
-  q.set('includeSnoozed', String(filters.includeSnoozed ?? false));
-  return request<{ count: number }>(`/notifications?${q.toString()}`, { method: 'DELETE' });
+export const deleteNotifications = (scope: NotificationDeleteScope, projectId?: number | null) => {
+  const q = new URLSearchParams({ scope });
+  if (projectId != null) q.set('projectId', String(projectId));
+  return request<{ count: number }>(`/notifications?${q.toString()}`, {
+    method: 'DELETE',
+  });
 };

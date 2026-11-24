@@ -1,12 +1,13 @@
 import { useTranslations } from 'next-intl';
 import type { TimelineScale, ViewSettings } from '@/utils/viewSettings';
 import { byKey } from '@/utils/messageKey';
-import DisplaySection from '@/components/layout/DisplaySection';
-import DisplaySegmented from '@/components/layout/DisplaySegmented';
+import { Checkbox } from '@/components/ui/checkbox';
 import DisplaySettingsRow from '@/components/layout/DisplaySettingsRow';
+import DisplaySettingsSelect from '@/components/layout/DisplaySettingsSelect';
 
 const SCALES: TimelineScale[] = ['week', 'month', 'quarter'];
 
+// The Display settings rows that only apply to the Timeline layout.
 export default function DisplayTimelineRows({
   settings,
   onChange,
@@ -17,14 +18,20 @@ export default function DisplayTimelineRows({
   const t = useTranslations('display.rows');
   const scale = byKey(useTranslations('display.timelineScales'));
   return (
-    <DisplaySection>
+    <>
+      <DisplaySettingsRow label={t('startCollapsed')}>
+        <Checkbox
+          checked={settings.timelineCollapseAll}
+          onCheckedChange={(checked) => onChange({ timelineCollapseAll: checked === true })}
+        />
+      </DisplaySettingsRow>
       <DisplaySettingsRow label={t('scale')}>
-        <DisplaySegmented
+        <DisplaySettingsSelect
           value={settings.timelineScale}
-          onChange={(timelineScale) => onChange({ timelineScale })}
+          onChange={(v) => onChange({ timelineScale: v as TimelineScale })}
           options={SCALES.map((value) => ({ value, label: scale(value) }))}
         />
       </DisplaySettingsRow>
-    </DisplaySection>
+    </>
   );
 }

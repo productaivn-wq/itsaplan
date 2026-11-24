@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bot,
   CalendarDays,
+  Gauge,
   Hash,
   ListChecks,
   PieChart,
@@ -18,6 +19,7 @@ import type { WidgetType } from '@/utils/dashboardWidgets';
 // in @/utils/dashboardWidgets. The label and description of a type are messages
 // under `dashboards.widgets`.
 export const WIDGET_ICON: Record<WidgetType, LucideIcon> = {
+  watched_metrics: Gauge,
   stat: Hash,
   recent_issues: ListChecks,
   activity_feed: Activity,
@@ -33,7 +35,11 @@ export const WIDGET_ICON: Record<WidgetType, LucideIcon> = {
 
 // Widget types grouped by subject for the add-widget picker. The picker renders one
 // section per group, in this order.
-export const WIDGET_GROUPS: { key: 'issues' | 'agents'; types: WidgetType[] }[] = [
+export const WIDGET_GROUPS: { key: 'metrics' | 'issues' | 'agents'; types: WidgetType[] }[] = [
+  {
+    key: 'metrics',
+    types: ['watched_metrics'],
+  },
   {
     key: 'issues',
     types: ['stat', 'breakdown', 'throughput', 'burnup', 'pulse', 'recent_issues', 'activity_feed'],

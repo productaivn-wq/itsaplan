@@ -1,6 +1,5 @@
 import { ChevronRight } from 'lucide-react';
 import type { Issue } from '@/lib/api/endpoints/issues';
-import { noDragProps } from '@/lib/dnd';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useParentIssue } from '../../context/useSubtasks';
@@ -28,16 +27,16 @@ export function IssueIdentifier({
             <TooltipTrigger asChild>
               <button
                 type="button"
-                // The card and the row start a drag on press and open themselves
-                // on click; the parent link must do neither.
-                {...noDragProps}
+                // The card and the row start a drag on pointerdown and open
+                // themselves on click; the parent link must do neither.
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   onOpenParent?.(parent.id);
                 }}
                 className={cn(
-                  'text-muted-foreground/60',
+                  'inline-flex min-h-8 items-center text-muted-foreground/60',
                   onOpenParent && 'cursor-pointer hover:text-foreground hover:underline',
                 )}
               >

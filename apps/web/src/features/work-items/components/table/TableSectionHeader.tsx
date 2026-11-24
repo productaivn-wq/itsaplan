@@ -39,12 +39,12 @@ export function TableSectionHeader({
       id={dropId}
       disabled={disabled}
       onDrop={onDrop}
-      className="flex items-center justify-between bg-muted/40 px-4 py-1.5"
+      className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-4 py-2"
     >
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-2 text-sm font-medium text-foreground"
+        className="flex min-h-8 items-center gap-2 text-sm font-medium text-foreground"
       >
         {collapsed ? (
           <ChevronRight className="size-3.5 text-muted-foreground" />
@@ -53,7 +53,9 @@ export function TableSectionHeader({
         )}
         <GroupDot group={group} />
         {group.name}
-        <span className="text-muted-foreground">{count}</span>
+        <span className="rounded-full border border-border/70 bg-background/80 px-2 py-0.5 font-mono text-xs text-muted-foreground tabular-nums">
+          {count}
+        </span>
       </button>
       {canCreateIssue && (
         <Tooltip>
@@ -61,7 +63,7 @@ export function TableSectionHeader({
             <Button
               variant="ghost"
               size="icon"
-              className="size-6 text-muted-foreground"
+              className="size-8 text-muted-foreground"
               onClick={onAddIssue}
               aria-label={t('newIssue')}
             >

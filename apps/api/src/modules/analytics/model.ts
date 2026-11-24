@@ -1,7 +1,5 @@
 import { t } from 'elysia';
 import { ActivityPayloadResponse } from '#shared/activity';
-import { agentRunTrigger } from '#modules/agents/model';
-import { instantQuery } from '#shared/schemas';
 
 export const StatsDto = t.Object({
   open: t.Number(),
@@ -22,6 +20,8 @@ const BreakdownItem = t.Object({
 const PulseBucket = t.Object({
   label: t.String(),
   count: t.Number(),
+  date: t.String(),
+  isFuture: t.Boolean(),
 });
 
 const ThroughputWeek = t.Object({
@@ -79,7 +79,13 @@ export const ActivityPage = t.Object({
 const AgentRunFeedItem = t.Object({
   id: t.Number(),
   status: t.String(),
-  trigger: agentRunTrigger,
+  trigger: t.Union([
+    t.Literal('mention'),
+    t.Literal('delegation'),
+    t.Literal('field'),
+    t.Literal('schedule'),
+    t.Literal('manual'),
+  ]),
   agentId: t.Number(),
   agentName: t.String(),
   issueId: t.Nullable(t.Number()),
@@ -149,16 +155,10 @@ export const burnupQuery = t.Object({
 });
 
 export const activityQuery = t.Object({
-  limit: t.Optional(t.Numeric({ description: 'Max entries (1-100). Default 25.' })),
-  cursor: t.Optional(
-    t.String({ description: 'nextCursor of the previous page, as a JSON string.' }),
-  ),
+  limit: t.Optional(t.Numeric()),
+  cursor: t.Optional(t.String()),
   actorUserId: t.Optional(t.String()),
-  action: t.Optional(
-    t.String({ description: "Change-log action, such as 'created' or 'status'." }),
-  ),
-  from: instantQuery('Inclusive earliest entry time.'),
-  to: instantQuery('Exclusive latest entry time.'),
+  action: t.Optional(t.String()),
   // Comma-separated issue ids the client resolved from the widget's work items
   // filter; absent means no issue-scope restriction.
   issueIds: t.Optional(t.String()),
@@ -170,3 +170,33 @@ export const agentRunFeedQuery = t.Object({
 });
 
 export const daysQuery = t.Object({ days: t.Optional(t.Numeric()) });
+
+export const StatFilterOperatorSchema = t.Union([
+  t.Literal('is'),
+  t.Literal('is_not'),
+  t.Literal('before'),
+  t.Literal('after'),
+  t.Literal('is_set'),
+  t.Literal('is_not_set'),
+  t.Literal('contains'),
+  t.Literal('not_contains'),
+]);
+
+export const StatFilterValueSchema = t.Union([t.String(), t.Number(), t.Boolean(), t.Null()]);
+
+export const StatFilterConditionSchema = t.Object({
+  id: t.Optional(t.String()),
+  field: t.String(),
+  op: StatFilterOperatorSchema,
+  values: t.Array(StatFilterValueSchema),
+});
+
+export const StatFilterSetBody = t.Object({
+  filters: t.Object({
+    conditions: t.Array(StatFilterConditionSchema),
+  }),
+});
+
+export const StatCountResponse = t.Object({
+  count: t.Number(),
+});

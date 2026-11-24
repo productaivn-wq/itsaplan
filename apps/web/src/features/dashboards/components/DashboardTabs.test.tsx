@@ -109,4 +109,36 @@ describe('DashboardTabs', () => {
     assert.equal(overview.textContent, dashboards.defaultName);
     assert.equal(overview.getAttribute('aria-current'), 'page');
   });
+
+  it('renders Watched Metrics tab with breach count and handles selection', () => {
+    let watchedSelected = 0;
+    act(() =>
+      root.render(
+        <NextIntlClientProvider locale="en" messages={{ dashboards, common }} timeZone="UTC">
+          <DashboardTabs
+            dashboards={[]}
+            activeDashboardId={null}
+            isVirtual={true}
+            watchedActive={true}
+            watchedBreachCount={3}
+            onSelect={(id) => selections.push(id)}
+            onSelectWatched={() => {
+              watchedSelected += 1;
+            }}
+            onNewDashboard={() => {}}
+            onRename={() => {}}
+            onDelete={() => {}}
+            onReorder={() => {}}
+          />
+        </NextIntlClientProvider>,
+      ),
+    );
+    const watchedBtn = document.querySelector('[data-testid="dashboard-tab-watched"]') as HTMLButtonElement | null;
+    assert.ok(watchedBtn);
+    assert.equal(watchedBtn.getAttribute('aria-current'), 'page');
+    assert.ok(watchedBtn.textContent?.includes(dashboards.watchedMetricsTab));
+    assert.ok(watchedBtn.textContent?.includes('3'));
+    act(() => watchedBtn.click());
+    assert.equal(watchedSelected, 1);
+  });
 });

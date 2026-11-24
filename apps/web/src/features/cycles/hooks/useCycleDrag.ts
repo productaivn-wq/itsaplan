@@ -3,9 +3,8 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import type { Cycle, CyclePatch } from '@/lib/api/endpoints/cycles';
 import { ApiError } from '@/lib/api/core/client';
-import { addDays, daysBetween, toDateStr } from '@/utils/dates';
 import { useUpdateCycle } from '@/services/cycles.service';
-import { cycleSpan, dateWindow, movableEnds } from '../utils/cycleDates';
+import { cycleSpan, movableEnds } from '../utils/cycleDates';
 
 // Whether a bar drag moves the whole cycle or resizes one end.
 export type CycleDragMode = 'move' | 'start' | 'end';
@@ -22,12 +21,10 @@ const CLICK_SLOP = 3;
 // cycle.
 export function useCycleDrag({
   projectKey,
-  cycles,
   dayW,
   onOpen,
 }: {
   projectKey: string;
-  cycles: Cycle[];
   dayW: number;
   onOpen: (id: number) => void;
 }) {
@@ -40,7 +37,6 @@ export function useCycleDrag({
     e.stopPropagation();
     const span = cycleSpan(cycle);
     if (!span) return;
-    const limits = dateWindow(cycles, cycle);
     const ends = movableEnds(cycle.status);
     const startX = e.clientX;
     const current = { start: span.start, end: span.end };
@@ -48,23 +44,23 @@ export function useCycleDrag({
 
     const onMove = (ev: PointerEvent) => {
       if (Math.abs(ev.clientX - startX) > CLICK_SLOP) travelled = true;
-      const delta = Math.round((ev.clientX - startX) / dayW);
+      const deltaSlots = Math.round((ev.clientX - startX) / dayW);
+      const deltaMs = deltaSlots * 15 * 60 * 1000;
       if (!ends[mode]) return;
       if (mode === 'move') {
-        const min = limits.from ? -daysBetween(limits.from, span.start) : -Infinity;
-        const max = limits.to ? daysBetween(span.end, limits.to) : Infinity;
-        const held = Math.min(Math.max(delta, min), max);
-        current.start = addDays(span.start, held);
-        current.end = addDays(span.end, held);
+        current.start = new Date(span.start.getTime() + deltaMs);
+        current.end = new Date(span.end.getTime() + deltaMs);
       } else if (mode === 'start') {
-        let start = addDays(span.start, delta);
-        if (limits.from && start < limits.from) start = limits.from;
-        if (start > span.end) start = span.end;
+        let start = new Date(span.start.getTime() + deltaMs);
+        if (start.getTime() > span.end.getTime() - 15 * 60 * 1000) {
+          start = new Date(span.end.getTime() - 15 * 60 * 1000);
+        }
         current.start = start;
       } else {
-        let end = addDays(span.end, delta);
-        if (limits.to && end > limits.to) end = limits.to;
-        if (end < span.start) end = span.start;
+        let end = new Date(span.end.getTime() + deltaMs);
+        if (end.getTime() < span.start.getTime() + 15 * 60 * 1000) {
+          end = new Date(span.start.getTime() + 15 * 60 * 1000);
+        }
         current.end = end;
       }
       setPreview({ cycleId: cycle.id, start: current.start, end: current.end });
@@ -84,8 +80,8 @@ export function useCycleDrag({
       endDrag();
 
       const patch: CyclePatch = {};
-      const startDate = toDateStr(current.start);
-      const endDate = toDateStr(current.end);
+      const startDate = current.start.toISOString();
+      const endDate = current.end.toISOString();
       if (mode !== 'end' && startDate !== cycle.startDate) patch.startDate = startDate;
       if (mode !== 'start' && endDate !== cycle.endDate) patch.endDate = endDate;
 

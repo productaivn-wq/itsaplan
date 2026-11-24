@@ -6,11 +6,11 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { LayoutDashboard, Plus } from 'lucide-react';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { Gauge, LayoutDashboard, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Dashboard } from '@/lib/api/endpoints/dashboards';
-import { useDndSensors, useDroppedOrder } from '@/lib/dnd';
+import { useStripSortSensors } from '@/lib/dnd';
 import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import DashboardTab from './DashboardTab';
@@ -23,8 +23,11 @@ export default function DashboardTabs({
   dashboards,
   activeDashboardId,
   isVirtual,
+  watchedActive = false,
+  watchedBreachCount = 0,
   actions,
   onSelect,
+  onSelectWatched,
   onNewDashboard,
   onRename,
   onDelete,
@@ -33,22 +36,24 @@ export default function DashboardTabs({
   dashboards: Dashboard[];
   activeDashboardId: number | null;
   isVirtual: boolean;
+  watchedActive?: boolean;
+  watchedBreachCount?: number;
   actions?: React.ReactNode;
   onSelect: (id: number | null) => void;
+  onSelectWatched?: () => void;
   onNewDashboard: (name: string) => void;
   onRename: (d: Dashboard, name: string) => void;
   onDelete: (d: Dashboard) => void;
-  onReorder: (ids: number[]) => void;
+  onReorder: (draggedId: number, targetId: number) => void;
 }) {
   const t = useTranslations('dashboards');
   const { can } = usePermissions();
   const canCreate = can('dashboards', 'create');
   const canEdit = can('dashboards', 'edit');
   const canDelete = can('dashboards', 'delete');
-  const sensors = useDndSensors();
+  const sensors = useStripSortSensors();
   const [activeId, setActiveId] = useState<number | null>(null);
   const dragged = activeId != null ? dashboards.find((d) => d.id === activeId) : null;
-  const { items: shown, drop } = useDroppedOrder(dashboards);
   // Name dialog state: 'new' to create, a dashboard to rename, or null (closed).
   const [dialog, setDialog] = useState<'new' | Dashboard | null>(null);
   const renaming = dialog && dialog !== 'new' ? dialog : null;
@@ -56,75 +61,100 @@ export default function DashboardTabs({
   function handleDragEnd(e: DragEndEvent) {
     setActiveId(null);
     const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = dashboards.map((d) => d.id);
-    const from = ids.indexOf(Number(active.id));
-    const to = ids.indexOf(Number(over.id));
-    if (from === -1 || to === -1) return;
-    const next = arrayMove(ids, from, to);
-    drop(next);
-    onReorder(next);
+    if (over && active.id !== over.id) onReorder(Number(active.id), Number(over.id));
   }
 
   return (
-    <div className="flex items-center gap-1 border-b px-2 py-1.5 sm:px-3">
-      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-        <button
-          type="button"
-          aria-current={isVirtual ? 'page' : undefined}
-          onClick={() => onSelect(null)}
-          className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors',
-            isVirtual
-              ? 'bg-secondary font-medium text-foreground'
-              : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-          )}
-        >
-          <LayoutDashboard className="size-3.5" />
-          {t('defaultName')}
-        </button>
-
-        {dashboards.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={(e: DragStartEvent) => setActiveId(Number(e.active.id))}
-            onDragCancel={() => setActiveId(null)}
-            onDragEnd={handleDragEnd}
+    <div className="flex min-h-9 items-center justify-between gap-2 border-b border-border/75 bg-card/65 px-3 py-1 sm:px-4">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        <div className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border/85 bg-muted/65 p-0.5">
+          <button
+            type="button"
+            aria-current={isVirtual && !watchedActive ? 'page' : undefined}
+            onClick={() => onSelect(null)}
+            className={cn(
+              'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs transition-colors',
+              isVirtual && !watchedActive
+                ? 'bg-foreground font-semibold text-background shadow-xs'
+                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+            )}
           >
-            <SortableContext
-              items={shown.map((d) => d.id)}
-              strategy={horizontalListSortingStrategy}
+            <LayoutDashboard className="size-3.5" />
+            {t('defaultName')}
+          </button>
+
+          {onSelectWatched && (
+            <button
+              type="button"
+              data-testid="dashboard-tab-watched"
+              aria-current={watchedActive ? 'page' : undefined}
+              onClick={onSelectWatched}
+              className={cn(
+                'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs transition-colors',
+                watchedActive
+                  ? 'bg-foreground font-semibold text-background shadow-xs'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
+              )}
             >
-              {shown.map((d) => (
-                <DashboardTab
-                  key={d.id}
-                  dashboard={d}
-                  active={!isVirtual && activeDashboardId === d.id}
-                  canEdit={canEdit}
-                  canDelete={canDelete}
-                  onSelect={() => onSelect(d.id)}
-                  onRename={() => setDialog(d)}
-                  onDelete={() => onDelete(d)}
-                />
-              ))}
-            </SortableContext>
-            <DragOverlay>
-              {dragged ? (
-                <span className="flex items-center gap-1.5 rounded-md bg-secondary px-2 py-1 text-sm font-medium text-foreground shadow-md">
-                  <LayoutDashboard className="size-3.5" />
-                  {dragged.name}
+              <Gauge className="size-3.5" />
+              <span>{t('watchedMetricsTab')}</span>
+              {watchedBreachCount > 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0 font-mono text-xs tabular-nums',
+                    watchedActive
+                      ? 'bg-background/20 text-background'
+                      : 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
+                  )}
+                >
+                  {watchedBreachCount}
                 </span>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
+              )}
+            </button>
+          )}
+
+          {dashboards.length > 0 && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={(e: DragStartEvent) => setActiveId(Number(e.active.id))}
+              onDragCancel={() => setActiveId(null)}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={dashboards.map((d) => d.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {dashboards.map((d) => (
+                  <DashboardTab
+                    key={d.id}
+                    dashboard={d}
+                    active={!isVirtual && !watchedActive && activeDashboardId === d.id}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    onSelect={() => onSelect(d.id)}
+                    onRename={() => setDialog(d)}
+                    onDelete={() => onDelete(d)}
+                  />
+                ))}
+              </SortableContext>
+              <DragOverlay>
+                {dragged ? (
+                  <span className="flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1 text-xs font-semibold text-background shadow-md">
+                    <LayoutDashboard className="size-3.5" />
+                    {dragged.name}
+                  </span>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
 
         {canCreate && (
           <button
             type="button"
             onClick={() => setDialog('new')}
-            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-border/85 bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Plus className="size-3.5" />
             {t('newDashboard')}
@@ -132,7 +162,7 @@ export default function DashboardTabs({
         )}
       </div>
 
-      {actions && <div className="flex shrink-0 items-center gap-2 pl-2">{actions}</div>}
+      {actions && <div className="flex shrink-0 items-center gap-2 ps-2">{actions}</div>}
 
       <DashboardNameDialog
         key={renaming?.id ?? (dialog === 'new' ? 'new' : 'closed')}

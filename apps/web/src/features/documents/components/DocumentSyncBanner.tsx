@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { CloudOff, Download, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,14 @@ export default function DocumentSyncBanner({
   onDiscardRecovery: () => void;
 }) {
   const t = useTranslations('documents.sync');
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+
+  useEffect(() => {
+    if (!confirmDiscard) return;
+    const timer = window.setTimeout(() => setConfirmDiscard(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, [confirmDiscard]);
+
   if (state === 'saved' || state === 'saving') return null;
   return (
     <div
@@ -36,15 +45,32 @@ export default function DocumentSyncBanner({
             <Download className="size-3.5" />
             {t('exportRecovery')}
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              if (window.confirm(t('discardConfirm'))) onDiscardRecovery();
-            }}
-          >
-            {t('discardRecovery')}
-          </Button>
+          {confirmDiscard ? (
+            <>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  setConfirmDiscard(false);
+                  onDiscardRecovery();
+                }}
+              >
+                {t('discardRecovery')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setConfirmDiscard(false)}>
+                ×
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              title={t('discardConfirm')}
+              onClick={() => setConfirmDiscard(true)}
+            >
+              {t('discardRecovery')}
+            </Button>
+          )}
         </>
       )}
       {!recoveryConflict && state !== 'connecting' && (

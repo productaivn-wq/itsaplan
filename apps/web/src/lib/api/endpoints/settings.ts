@@ -84,6 +84,18 @@ export interface PublicAuthConfig {
   hasUsers: boolean;
 }
 
+export interface ProjectDefaults {
+  mcpEnabled: boolean;
+}
+
+export const getProjectDefaults = () => request<ProjectDefaults>('/settings/project-defaults');
+
+export const updateProjectDefaults = (patch: ProjectDefaults) =>
+  request<ProjectDefaults>('/settings/project-defaults', {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
+
 // Project settings: MCP reachability and the enabled sections. Owner-only; the
 // current state comes with the project payload (getProject), so there is no read
 // here.
@@ -130,10 +142,6 @@ export const getStorageSettings = () => request<StorageSettings>('/settings/stor
 // The instance keyboard shortcuts. The read is open to any signed-in user (every
 // client applies them); the write is god mode.
 export const getHotkeySettings = () => request<HotkeyOverrides>('/settings/hotkeys');
-
-// Whether a team's invite dialog may look up accounts by name or address. The read is
-// open to any signed-in user; the write is god mode.
-export const getInviteSearch = () => request<{ enabled: boolean }>('/settings/invite-search');
 
 // The instance's own sign-in policy, readable without a session: the sign-up
 // screen needs it before an account exists.

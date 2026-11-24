@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react';
 import {
   Building2,
   FolderKanban,
@@ -6,38 +5,32 @@ import {
   Keyboard,
   KeyRound,
   Mail,
-  Mails,
   Send,
-  ShieldCheck,
   SlidersHorizontal,
   Users,
   UsersRound,
   type LucideIcon,
 } from 'lucide-react';
-import { godSections } from '@/cloud';
 
 // The god mode sections, in sidebar order. God mode is instance administration,
 // open only to the owner account; the sections mirror the project settings pattern
 // (one slug per page under /god/<slug>), so adding one is an entry here plus a page.
-// `group` is the sidebar heading a section sits under; the groups come in the order
-// their first section has in the list.
+// `group` is the sidebar heading a section sits under; GOD_GROUPS gives the order.
 // A section with `integration: true` is not listed under its group directly: it sits
 // inside the "Integrations" item at the end of the group. The name and the blurb of
-// a section are messages under `sections.god`, the name of a group under
-// `sections.godGroups`. The hosted build gets the list through `godSections` in `@/cloud`
-// and may add, replace or drop sections; one it adds carries its page in `Component`,
-// opened at /god/<slug>, may open a group of its own, and its messages come with the
-// hosted build's.
+// a section, and the name of a group, are messages under `sections.god`.
+
+export const GOD_GROUPS = ['management', 'instance'] as const;
+export type GodGroup = (typeof GOD_GROUPS)[number];
 
 export interface GodSection {
   slug: string;
-  group: string;
+  group: GodGroup;
   icon: LucideIcon;
   integration?: true;
-  Component?: ComponentType;
 }
 
-export const GOD_SECTIONS: GodSection[] = godSections([
+export const GOD_SECTIONS: GodSection[] = [
   {
     slug: 'users',
     group: 'management',
@@ -52,11 +45,6 @@ export const GOD_SECTIONS: GodSection[] = godSections([
     slug: 'projects',
     group: 'management',
     icon: FolderKanban,
-  },
-  {
-    slug: 'roles',
-    group: 'management',
-    icon: ShieldCheck,
   },
   {
     slug: 'general',
@@ -77,11 +65,6 @@ export const GOD_SECTIONS: GodSection[] = godSections([
     slug: 'storage',
     group: 'instance',
     icon: HardDrive,
-  },
-  {
-    slug: 'email-templates',
-    group: 'instance',
-    icon: Mails,
   },
   {
     slug: 'telegram',
@@ -107,9 +90,7 @@ export const GOD_SECTIONS: GodSection[] = godSections([
     icon: UsersRound,
     integration: true,
   },
-]);
-
-export const GOD_GROUPS = [...new Set(GOD_SECTIONS.map((s) => s.group))];
+];
 
 export function godSection(slug: string): GodSection {
   const section = GOD_SECTIONS.find((s) => s.slug === slug);
@@ -117,10 +98,10 @@ export function godSection(slug: string): GodSection {
   return section;
 }
 
-export function godSectionsIn(group: string): GodSection[] {
+export function godSectionsIn(group: GodGroup): GodSection[] {
   return GOD_SECTIONS.filter((s) => s.group === group && !s.integration);
 }
 
-export function godIntegrationsIn(group: string): GodSection[] {
+export function godIntegrationsIn(group: GodGroup): GodSection[] {
   return GOD_SECTIONS.filter((s) => s.group === group && s.integration);
 }

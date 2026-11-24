@@ -17,7 +17,7 @@ export default function McpServerPage() {
       title={t('title')}
       description={t('description')}
       wide
-      widthClassName="min-w-[600px] max-w-[60%]"
+      widthClassName="w-full max-w-4xl"
     >
       <div className="space-y-10">
         {detail && !reachable && (

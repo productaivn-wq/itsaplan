@@ -3,49 +3,60 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
-import { useCreateImportJob } from '../../services/settings.service';
-import { useImportReviewPreview } from '../../hooks/useImportReviewPreview';
-import {
-  importJobFields,
-  type ImportReviewTarget,
-  type TrelloImportChoices,
-} from '../../utils/importJobFields';
+import { useCreateImportJob, useTestPlaneStatesPreview } from '../../services/settings.service';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import SettingsCard from '@/components/common/page/SettingsCard';
 import ListSkeleton from '@/components/common/skeleton/ListSkeleton';
 import SettingsImportExportStateOverrideRow from './SettingsImportExportStateOverrideRow';
-import SettingsImportExportUnmatchedUserPolicy from './SettingsImportExportUnmatchedUserPolicy';
-import SettingsImportExportTrelloOptions from './SettingsImportExportTrelloOptions';
-import type { StateCategory, UnmatchedUserPolicy } from '@/lib/api/endpoints/importExport';
+import type {
+  PlaneProjectOption,
+  StateCategory,
+  UnmatchedUserPolicy,
+} from '@/lib/api/endpoints/importExport';
+import type { PlaneConnection } from './SettingsImportExport';
 
 // Shown once a source project is picked, before the job is created: the states
-// the source reports for it, each pre-filled with the category itsaplan would map it
-// to automatically, and how people are matched. Only a state row the user actually
-// changes from its default is sent as an override.
+// Plane reports for it, each pre-filled with the category itsaplan would map it to
+// automatically, and the unmatched-assignee/comment-author policy. Only a state row
+// the user actually changes from its default is sent as an override.
 export default function SettingsImportExportMappingReview({
   projectKey,
-  target,
+  connection,
+  selected,
   onImported,
 }: {
   projectKey: string;
-  target: ImportReviewTarget;
+  connection: PlaneConnection;
+  selected: PlaneProjectOption;
   onImported: () => void;
 }) {
   const t = useTranslations('settings.importExport');
-  const preview = useImportReviewPreview(projectKey, target);
+  const preview = useTestPlaneStatesPreview(projectKey, {
+    baseUrl: connection.baseUrl,
+    workspaceSlug: connection.workspaceSlug,
+    apiToken: connection.apiToken,
+    planeProjectId: selected.id,
+  });
   const createJob = useCreateImportJob(projectKey);
   const [overrides, setOverrides] = useState<Record<string, StateCategory>>({});
   const [unmatchedUserPolicy, setUnmatchedUserPolicy] = useState<UnmatchedUserPolicy>('unassigned');
-  const [trello, setTrello] = useState<TrelloImportChoices>({
-    archivedCards: 'archive',
-    memberMap: null,
-  });
 
   async function start() {
     try {
       await createJob.mutateAsync({
-        ...importJobFields(target, trello),
+        baseUrl: connection.baseUrl,
+        workspaceSlug: connection.workspaceSlug,
+        apiToken: connection.apiToken,
+        planeProjectId: selected.id,
+        planeProjectKey: selected.identifier,
         unmatchedUserPolicy,
         stateOverrides: overrides,
       });
@@ -99,19 +110,21 @@ export default function SettingsImportExportMappingReview({
         </div>
       )}
 
-      {target.source === 'trello' ? (
-        <SettingsImportExportTrelloOptions
-          members={preview.data?.members ?? []}
-          people={target.people}
-          value={trello}
-          onChange={setTrello}
-        />
-      ) : (
-        <SettingsImportExportUnmatchedUserPolicy
+      <div className="w-64 space-y-1.5">
+        <Label htmlFor="unmatched-user-policy">{t('unmatchedUserPolicyLabel')}</Label>
+        <Select
           value={unmatchedUserPolicy}
-          onChange={setUnmatchedUserPolicy}
-        />
-      )}
+          onValueChange={(value) => setUnmatchedUserPolicy(value as UnmatchedUserPolicy)}
+        >
+          <SelectTrigger id="unmatched-user-policy" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unassigned">{t('unmatchedUserPolicyUnassigned')}</SelectItem>
+            <SelectItem value="skip">{t('unmatchedUserPolicySkip')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <Button disabled={createJob.isPending} onClick={() => void start()}>
         {createJob.isPending ? t('starting') : t('startImport')}

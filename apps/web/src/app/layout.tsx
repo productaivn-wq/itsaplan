@@ -1,32 +1,22 @@
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { AfterSignIn } from '@/cloud';
 import { Providers } from '@/components/providers';
 import RuntimeEnvScript from '@/components/runtime-env-script';
 import WhatsNew from '@/features/whats-new/WhatsNew';
 import { localeDirection, type Locale } from '@/i18n/locales';
-import { APP_NAME } from '@/utils/app';
+import { ACCORD_VERSION } from '@/lib/api/endpoints/updates';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('meta');
   return {
-    title: APP_NAME,
+    title: t('title'),
     description: t('description'),
-    appleWebApp: { title: APP_NAME, capable: true, statusBarStyle: 'default' },
+    icons: { icon: [{ url: `/design_system/assets/favicon.svg?v=accord-${ACCORD_VERSION}`, type: 'image/svg+xml' }, { url: `/favicon.svg?v=accord-${ACCORD_VERSION}`, type: 'image/svg+xml' }, { url: `/favicon.ico?v=accord-${ACCORD_VERSION}`, sizes: '32x32', type: 'image/x-icon' }], shortcut: `/design_system/assets/favicon.svg?v=accord-${ACCORD_VERSION}`, apple: `/design_system/assets/favicon.svg?v=accord-${ACCORD_VERSION}` },
   };
 }
-
-// The `--background` of each theme in globals.css, so the browser chrome of an
-// installed app matches the page.
-export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#131313' },
-  ],
-};
 
 export default async function RootLayout({
   children,
@@ -37,23 +27,19 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={localeDirection(locale as Locale)} suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased" data-design-system="accord-milled-carbon-v3.3.0">
         <RuntimeEnvScript />
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
-          // A distinct key: next-themes defaults to "theme", which collides with any
-          // other app sharing the same localhost origin. A shared key makes two such
-          // apps fight over the value through cross-tab storage events.
           storageKey="itsaplan-theme"
         >
           <NextIntlClientProvider>
             <Providers>
               {children}
               <WhatsNew />
-              <AfterSignIn />
             </Providers>
           </NextIntlClientProvider>
         </ThemeProvider>

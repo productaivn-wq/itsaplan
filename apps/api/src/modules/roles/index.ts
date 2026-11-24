@@ -7,40 +7,48 @@ import { HttpError, rethrowDuplicate } from '#shared/lib';
 import {
   PERMISSION_RESOURCES,
   PERMISSION_ACTIONS,
-  extendedFrom,
+  hasPermission,
   resourceActions,
+  type PermissionAction,
+  type PermissionResource,
 } from '#shared/permissions';
 import { accessErrors, commonErrors, errors } from '#shared/responses';
+import { getCompanySettings } from '#modules/settings/service';
+import { getTeamMembership } from '#modules/teams/service';
 import {
   listRoles,
   listRolesPage,
   getRole,
-  getAssignableRole,
   getRoleUsage,
   isRoleInUse,
   createRole,
   updateRole,
   deleteRole,
+  upsertRoleByName,
+  countTeamMembersByRank,
 } from './service';
 import {
+  CheckAuthorizationResponse,
   PermissionCatalogResponse,
   RolePageResponse,
   RoleResponse,
   RoleUsageResponse,
+  TeamAuthorizationResponse,
+  checkAuthorizationBody,
   createRoleBody,
   deleteRoleQuery,
   roleListQuery,
   roleParams,
   teamParams,
   updateRoleBody,
+  upsertRoleBody,
 } from './model';
 
-// Roles CRUD. Every project of a team assigns from one list: the system roles and the
-// team's own. The team writes only its own; the system roles are god mode's. Who may
-// write one is the team's own ranks, not the permission matrix: a member with
-// members_manage could otherwise grant itself a more powerful role. An owner or a
-// manager creates and edits; deleting stays with the owner, since a deletion moves
-// every member, agent and invite on the role to another one.
+// Roles CRUD. A role belongs to a team and every project the team owns assigns from
+// that one list. Who may write one is the team's own ranks, not the permission
+// matrix: a member with members_manage could otherwise grant itself a more powerful
+// role. An owner or a manager creates and edits; deleting stays with the owner,
+// since a deletion moves every member, agent and invite on the role to another one.
 export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] } })
   .use(guards)
 
@@ -48,11 +56,7 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
   .get(
     '/permission-catalog',
     () => ({
-      resources: PERMISSION_RESOURCES.map((key) => ({
-        key,
-        actions: [...resourceActions(key)],
-        from: extendedFrom(key),
-      })),
+      resources: PERMISSION_RESOURCES.map((key) => ({ key, actions: [...resourceActions(key)] })),
       actions: [...PERMISSION_ACTIONS],
     }),
     {
@@ -84,9 +88,8 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
       detail: {
         summary: "List a team's roles",
         description:
-          'One page of the roles a team offers: the system roles first, then its own, each ' +
-          'oldest first. `search` matches the name. A system role (system: true) is edited ' +
-          'only by the instance owner. Use list_role_options to read every one of them.',
+          'One page of the roles a team offers, oldest first. `search` matches the name. ' +
+          'Use list_role_options to read every one of them.',
         ...mcpTool('list_roles'),
       },
     },
@@ -102,8 +105,8 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
     detail: {
       summary: "List a team's role options",
       description:
-        'Every role the team assigns, system roles included, with its permission matrix, for ' +
-        'the pickers that assign one. Use list_roles to read them a page at a time.',
+        'Every role of the team, with its permission matrix, for the pickers that assign one. ' +
+        'Use list_roles to read them a page at a time.',
       ...mcpTool('list_role_options'),
     },
   })
@@ -174,14 +177,15 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
     },
   )
 
-  // Deletes a custom role. A role that members, agents, pending invites or provisioned
-  // group mappings are on is deleted only together with targetRoleId, the role they are
-  // all moved to: another of the team's roles or a system role.
+  // Deletes a custom role. The default role cannot be deleted. A role that members,
+  // agents, pending invites or provisioned group mappings are on is deleted only
+  // together with targetRoleId, the role they are all moved to.
   .delete(
     '/teams/:teamId/roles/:roleId',
     async ({ membership, params, query }) => {
       const role = await getRole(membership.teamId, params.roleId);
       if (!role) throw new HttpError(404, 'Role not found');
+      if (role.isDefault) throw new HttpError(400, 'The default role cannot be deleted');
 
       let targetRoleId: number | null = null;
       if (isRoleInUse(await getRoleUsage(params.roleId))) {
@@ -194,7 +198,7 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
         if (query.targetRoleId === params.roleId) {
           throw new HttpError(400, 'Move to a role other than the one being deleted');
         }
-        const target = await getAssignableRole(membership.teamId, query.targetRoleId);
+        const target = await getRole(membership.teamId, query.targetRoleId);
         if (!target) throw new HttpError(404, 'Target role not found');
         targetRoleId = target.id;
       }
@@ -210,8 +214,195 @@ export const roleRoutes = new Elysia({ name: 'roles', detail: { tags: ['Roles'] 
       detail: {
         summary: 'Delete a role',
         description:
-          'Delete a custom role of the team. A role in use requires targetRoleId, the role its members, agents, pending invites and group mappings are moved to: another role of the team or a system role.',
+          'Delete a custom role. The default role cannot be deleted. A role in use requires targetRoleId, the role its members, agents, pending invites and group mappings are moved to.',
         ...mcpTool('delete_role'),
+      },
+    },
+  )
+
+  .put(
+    '/teams/:teamId/roles/upsert',
+    async ({ membership, body }) => {
+      const trimmed = body.name.trim();
+      if (!trimmed) throw new HttpError(400, 'Role name is required');
+      try {
+        return await upsertRoleByName(membership.teamId, {
+          name: trimmed,
+          permissions: body.permissions,
+          isDefault: body.isDefault,
+        });
+      } catch (err) {
+        rethrowDuplicate(err, 'role');
+      }
+    },
+    {
+      params: teamParams,
+      body: upsertRoleBody,
+      teamManager: true,
+      response: { 200: RoleResponse, ...commonErrors, ...errors(409) },
+      detail: {
+        summary: 'Create or update a role by name',
+        description:
+          'Idempotently create or update a custom role permission matrix for the team.',
+        ...mcpTool('upsert_team_role', { idempotentHint: true }),
+      },
+    },
+  )
+
+  .get(
+    '/teams/:teamId/authorization',
+    async ({ membership }) => {
+      const [governance, counts, roles] = await Promise.all([
+        getCompanySettings(),
+        countTeamMembersByRank(membership.teamId),
+        listRoles(membership.teamId),
+      ]);
+      return {
+        teamId: membership.teamId,
+        governance: {
+          defaultAutonomyTier: governance.defaultAutonomyTier,
+          requireSodApproval: governance.requireSodApproval,
+          allowAgentTeamBootstrap: governance.allowAgentTeamBootstrap,
+        },
+        teamRanks: [
+          {
+            rank: 'owner',
+            count: counts.owner,
+            fullAccess: true,
+            canManageRoles: true,
+            canDeleteRoles: true,
+          },
+          {
+            rank: 'manager',
+            count: counts.manager,
+            fullAccess: true,
+            canManageRoles: true,
+            canDeleteRoles: false,
+          },
+          {
+            rank: 'member',
+            count: counts.member,
+            fullAccess: false,
+            canManageRoles: false,
+            canDeleteRoles: false,
+          },
+          {
+            rank: 'agent',
+            count: counts.agent,
+            fullAccess: false,
+            canManageRoles: false,
+            canDeleteRoles: false,
+          },
+        ],
+        roles,
+        catalog: {
+          resources: PERMISSION_RESOURCES.map((key) => ({
+            key,
+            actions: [...resourceActions(key)],
+          })),
+          actions: [...PERMISSION_ACTIONS],
+        },
+      };
+    },
+    {
+      params: teamParams,
+      teamMember: true,
+      response: { 200: TeamAuthorizationResponse, ...accessErrors },
+      detail: {
+        summary: 'Get unified team authorization matrix and governance posture',
+        description:
+          'Read team standing ranks, company autonomy/SoD governance guardrails, custom roles, and permission catalog.',
+        ...mcpTool('get_team_authorization'),
+      },
+    },
+  )
+
+  .post(
+    '/teams/:teamId/authorization/check',
+    async ({ membership, body }) => {
+      const governance = await getCompanySettings();
+      const sodCompliant = !(
+        governance.requireSodApproval &&
+        body.executorUserId &&
+        body.approverUserId &&
+        body.executorUserId === body.approverUserId
+      );
+
+      const validResource = (PERMISSION_RESOURCES as readonly string[]).includes(body.resource);
+      const validAction = (PERMISSION_ACTIONS as readonly string[]).includes(body.action);
+      const validResAct = validResource && validAction;
+
+      let matrixAllowed = false;
+      let effectiveRank = 'member';
+      let roleName: string | null = null;
+
+      if (body.roleId != null) {
+        const role = await getRole(membership.teamId, body.roleId);
+        if (!role) throw new HttpError(404, 'Role not found');
+        roleName = role.name;
+        matrixAllowed = validResAct
+          ? hasPermission(
+              role.permissions,
+              body.resource as PermissionResource,
+              body.action as PermissionAction,
+            )
+          : false;
+      } else {
+        const targetUserId = body.userId ?? membership.userId;
+        const standing = await getTeamMembership(membership.teamId, targetUserId);
+        if (!standing) {
+          effectiveRank = 'none';
+          matrixAllowed = false;
+        } else if (standing === 'owner' || standing === 'manager') {
+          effectiveRank = standing;
+          roleName = standing;
+          matrixAllowed = validResAct;
+        } else {
+          effectiveRank = standing;
+          const roles = await listRoles(membership.teamId);
+          const defRole = roles.find((r) => r.isDefault);
+          roleName = defRole?.name ?? null;
+          matrixAllowed =
+            defRole && validResAct
+              ? hasPermission(
+                  defRole.permissions,
+                  body.resource as PermissionResource,
+                  body.action as PermissionAction,
+                )
+              : false;
+        }
+      }
+
+      const effectiveTier = body.riskTier ?? governance.defaultAutonomyTier;
+      const requiresHitl = effectiveTier === 'TIER_2';
+      const allowed = sodCompliant && matrixAllowed;
+      const reason = !sodCompliant
+        ? 'Separation of Duties (GW-SOD-01) violation: executorUserId cannot equal approverUserId.'
+        : allowed
+          ? 'Authorized by role/rank policy.'
+          : 'Denied by role permission matrix.';
+
+      return {
+        allowed,
+        sodCompliant,
+        requiresHitl,
+        effectiveRank,
+        roleName,
+        resource: body.resource,
+        action: body.action,
+        reason,
+      };
+    },
+    {
+      params: teamParams,
+      body: checkAuthorizationBody,
+      teamMember: true,
+      response: { 200: CheckAuthorizationResponse, ...commonErrors },
+      detail: {
+        summary: 'Evaluate RBAC permission and SoD compliance',
+        description:
+          'Deterministically check whether a role or user is authorized for a resource action under team RBAC and GW-SOD-01.',
+        ...mcpTool('check_team_authorization', { readOnlyHint: true }),
       },
     },
   );

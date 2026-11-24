@@ -1,19 +1,28 @@
-import { useTranslations } from 'next-intl';
-import { APP_NAME } from '@/utils/app';
+import { APP_NAME, APP_TAGLINE } from '@/utils/app';
 import AppLogo from '@/components/common/AppLogo';
+import { AccordWordmarkSvg } from '@/components/brand/ItsAPlanMark';
 
-// Branded panel shown beside the form on wide screens, in place of an external
-// image — self-contained, no asset. Shared by the auth screens and the invite
-// accept screen; the subtitle differs per context.
+// ACCORD Sovereign Agentic OS Brand Panel ("Milled Carbon & Swiss Vellum" v3.3.0)
 export default function BrandPanel({ subtitle }: { subtitle?: string }) {
-  const t = useTranslations('common');
+  const showSubtitle = Boolean(
+    subtitle && subtitle.trim().toLowerCase() !== APP_TAGLINE.trim().toLowerCase(),
+  );
   return (
-    <div className="relative hidden flex-col items-center justify-center gap-3 bg-primary text-primary-foreground md:flex">
-      <AppLogo className="size-12" />
-      <span className="text-lg font-semibold">{APP_NAME}</span>
-      <p className="max-w-[16rem] text-center text-sm text-primary-foreground/70">
-        {subtitle ?? t('brandSubtitle')}
+    <div
+      data-brand-panel="accord-sovereign-os"
+      className="relative hidden flex-col items-center justify-center gap-4 border-l border-border/75 bg-muted/45 p-8 text-foreground md:flex"
+    >
+      <AppLogo className="size-16" />
+      <AccordWordmarkSvg className="h-7 w-auto text-foreground" />
+      <span className="sr-only">{APP_NAME}</span>
+      <p className="max-w-[18rem] text-center font-mono text-xs font-medium tracking-wider text-primary">
+        {APP_TAGLINE}
       </p>
+      {showSubtitle && (
+        <p className="max-w-[18rem] text-center text-xs leading-relaxed text-muted-foreground">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }

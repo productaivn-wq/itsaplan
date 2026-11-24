@@ -1,0 +1,209 @@
+{
+  "uc_id": "UC-009",
+  "spec_id": "SPEC-ITSAPLAN-PORTFOLIO-AUTOSYNC-321",
+  "governing_refs": [
+    "53.REF.112",
+    "UC-009",
+    "FR-049",
+    "FR-050",
+    "FR-051",
+    "FR-052"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC009-01",
+      "slice_id": "UC-009.S01",
+      "fr_ref": "FR-049",
+      "input": {
+        "folder": "55_EUREKA_SCIENTIFIC_RESEARCH",
+        "derived_key": "ESR",
+        "team_id": 1
+      },
+      "expected": {
+        "upserted": true,
+        "required_state_types": [
+          "backlog",
+          "unstarted",
+          "started",
+          "completed",
+          "canceled"
+        ]
+      }
+    },
+    {
+      "tc_id": "TC-UC009-04",
+      "slice_id": "UC-009.S02",
+      "fr_ref": "FR-050",
+      "input": {
+        "project_key": "LEG",
+        "archived": true,
+        "historical_issues": 12
+      },
+      "expected": {
+        "team_id": 3,
+        "is_hidden": true,
+        "preserved_issues": 12
+      }
+    },
+    {
+      "tc_id": "TC-UC009-07",
+      "slice_id": "UC-009.S03",
+      "fr_ref": "FR-051",
+      "input": {
+        "project_key": "NEWP",
+        "issue_count": 0
+      },
+      "expected": {
+        "seeded_horizons": [
+          "H1",
+          "H2",
+          "H3",
+          "H4",
+          "H5",
+          "H6",
+          "H7"
+        ]
+      }
+    },
+    {
+      "tc_id": "TC-UC009-10",
+      "slice_id": "UC-009.S04",
+      "fr_ref": "FR-052",
+      "input": {
+        "scope": "projects:1",
+        "mutation": "project_upsert"
+      },
+      "expected": {
+        "revision_bumped": true,
+        "max_ui_refresh_ms": 2000
+      }
+    },
+    {
+      "tc_id": "TC-UC009-02",
+      "slice_id": "UC-009.S02",
+      "fr_ref": "FR-050",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "positive_02",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC009-03",
+      "slice_id": "UC-009.S03",
+      "fr_ref": "FR-050",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "boundary_03",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC009-05",
+      "slice_id": "UC-009.S01",
+      "fr_ref": "FR-050",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "negative_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC009-06",
+      "slice_id": "UC-009.S02",
+      "fr_ref": "FR-050",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "stateful_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC009-08",
+      "slice_id": "UC-009.S04",
+      "fr_ref": "FR-050",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "positive_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC009-09",
+      "slice_id": "UC-009.S01",
+      "fr_ref": "FR-050",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "boundary_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC009-11",
+      "slice_id": "UC-009.S03",
+      "fr_ref": "FR-050",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC009-12",
+      "slice_id": "UC-009.S04",
+      "fr_ref": "FR-050",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — Portfolio Directory & 7H Provisioning",
+      "input": {
+        "uc_id": "UC-009",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import type { Integration } from '../../types';
+import { OAUTH2_PROVIDER_SPECS } from '../../oauth-catalog';
 import {
   instagramGetAccount,
   instagramListMedia,
@@ -50,6 +51,8 @@ import {
 export const instagram: Integration = {
   key: 'instagram',
   label: 'Instagram',
+  authModes: ['oauth2', 'api_key'],
+  oauth2: OAUTH2_PROVIDER_SPECS.instagram,
   credentialSchema: [
     {
       key: 'accessToken',

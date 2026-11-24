@@ -42,10 +42,21 @@ const ConfigFieldResponse = t.Object({
   help: t.Optional(t.String()),
 });
 
+const OAuth2CatalogMetaResponse = t.Object({
+  scopes: t.Array(t.String()),
+  allowedDomains: t.Array(t.String()),
+  pkce: t.Boolean(),
+  delivery: t.Union([t.Literal('bearer'), t.Literal('env')]),
+  envVar: t.Optional(t.String()),
+  clientReviewNote: t.Optional(t.String()),
+});
+
 const IntegrationResponse = t.Object({
   key: t.String(),
   label: t.String(),
   kind: t.String(),
+  authModes: t.Optional(t.Array(t.Union([t.Literal('api_key'), t.Literal('oauth2')]))),
+  oauth2: t.Optional(OAuth2CatalogMetaResponse),
   credentialSchema: t.Array(ConfigFieldResponse),
   tools: t.Array(
     t.Object({
@@ -53,7 +64,6 @@ const IntegrationResponse = t.Object({
       label: t.String(),
       description: t.String(),
       scopes: t.Optional(t.Array(t.String())),
-      group: t.Optional(t.String()),
     }),
   ),
 });
@@ -82,4 +92,60 @@ export const createCredentialBody = t.Object({
 export const updateCredentialBody = t.Object({
   label: t.Optional(t.Nullable(t.String())),
   credential: t.Optional(t.Record(t.String(), t.Any())),
+});
+
+export const oauthProviderParams = t.Object({
+  teamId: t.Numeric(),
+  integrationKey: t.String({ minLength: 1 }),
+});
+
+export const OAuthProviderConfigResponse = t.Object({
+  integrationKey: t.String(),
+  mode: t.Union([t.Literal('direct'), t.Literal('relay'), t.Literal('unconfigured')]),
+  configured: t.Boolean(),
+  source: t.Union([t.Literal('db'), t.Literal('env'), t.Literal('none')]),
+  hasClientId: t.Boolean(),
+  hasClientSecret: t.Boolean(),
+  relayUrl: t.Nullable(t.String()),
+  hasRelaySecret: t.Boolean(),
+  callbackUrl: t.String(),
+  scopes: t.Array(t.String()),
+  allowedDomains: t.Array(t.String()),
+  clientReviewNote: t.Nullable(t.String()),
+});
+
+export const saveOAuthProviderConfigBody = t.Object({
+  mode: t.Union([t.Literal('direct'), t.Literal('relay')]),
+  clientId: t.Optional(t.Nullable(t.String())),
+  clientSecret: t.Optional(t.Nullable(t.String())),
+  relayUrl: t.Optional(t.Nullable(t.String())),
+  relaySecret: t.Optional(t.Nullable(t.String())),
+});
+
+export const startOAuthBody = t.Object({
+  label: t.Optional(t.Nullable(t.String())),
+  credentialId: t.Optional(t.Nullable(t.Number())),
+  returnTo: t.Optional(t.String()),
+});
+
+export const StartOAuthResponse = t.Object({
+  authorizeUrl: t.String(),
+  mode: t.Union([t.Literal('direct'), t.Literal('relay')]),
+  integrationKey: t.String(),
+  callbackUrl: t.String(),
+});
+
+export const leaseEphemeralTokenBody = t.Object({
+  requestedDomain: t.Optional(t.String()),
+});
+
+export const EphemeralTokenResponse = t.Object({
+  credentialId: t.Number(),
+  integrationKey: t.String(),
+  accessToken: t.String(),
+  tokenType: t.String(),
+  expiresAt: t.Nullable(t.String()),
+  envVar: t.Nullable(t.String()),
+  allowedDomains: t.Array(t.String()),
+  accountEmail: t.Nullable(t.String()),
 });

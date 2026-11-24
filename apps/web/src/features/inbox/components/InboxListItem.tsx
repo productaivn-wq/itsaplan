@@ -36,6 +36,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 import InboxItemActions from './InboxItemActions';
 import InboxSnoozeCalendar from './InboxSnoozeCalendar';
 
@@ -62,13 +63,14 @@ const contextMenu = {
   SubContent: ContextMenuSubContent,
 };
 
-// One inbox row: the issue identifier and title or the document title, the event line,
-// elapsed time, an unread dot, and the actions menu (opened from the "…" button or a
-// right-click). Read rows are dimmed. Clicking the row selects it; the menu handles its
-// own clicks without selecting.
+// One inbox row: the issue identifier and title, the event line, elapsed time, an
+// unread dot, and the actions menu (opened from the "…" button or a right-click).
+// Read rows are dimmed. Clicking the row selects it; the menu handles its own
+// clicks without selecting.
 export default function InboxListItem({
   notification: n,
   selected,
+  showProjectBadge = false,
   onSelect,
   onToggleRead,
   onSnooze,
@@ -76,6 +78,7 @@ export default function InboxListItem({
 }: {
   notification: Notification;
   selected: boolean;
+  showProjectBadge?: boolean;
   onSelect: () => void;
   onToggleRead: (read: boolean) => void;
   onSnooze: (until: string | null) => void;
@@ -83,15 +86,8 @@ export default function InboxListItem({
 }) {
   const tCommon = useTranslations('common');
   const te = useTranslations('inbox.event');
-  const tDocuments = useTranslations('documents');
   const [pickOpen, setPickOpen] = useState(false);
   const Icon = TYPE_ICON[n.type];
-  const subject =
-    n.documentId != null
-      ? [n.documentIcon, n.documentTitle?.trim() || tDocuments('untitled')]
-          .filter(Boolean)
-          .join(' ')
-      : `${n.projectKey}-${n.issueSeq} ${n.issueTitle}`;
   const who = n.actorName ?? te('someone');
   // The verb phrase for a notification, addressed to the reader ("you").
   const eventText =
@@ -122,8 +118,8 @@ export default function InboxListItem({
           onClick={onSelect}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect()}
           className={cn(
-            'group flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors',
-            selected ? 'bg-accent' : 'hover:bg-accent/50',
+            'group flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition-colors',
+            selected ? 'bg-accent/80' : 'hover:bg-accent/45',
           )}
         >
           <Icon
@@ -133,14 +129,21 @@ export default function InboxListItem({
             )}
           />
           <div className="min-w-0 flex-1">
-            <span
-              className={cn(
-                'block truncate text-sm',
-                unread ? 'font-medium text-foreground' : 'text-muted-foreground',
+            <div className="flex items-center gap-1.5">
+              {showProjectBadge && n.projectKey && (
+                <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-xs">
+                  {n.projectKey}
+                </Badge>
               )}
-            >
-              {subject}
-            </span>
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate text-sm',
+                  unread ? 'font-medium text-foreground' : 'text-muted-foreground',
+                )}
+              >
+                {n.projectKey}-{n.issueSeq} {n.issueTitle}
+              </span>
+            </div>
             <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
               {snoozed && <Clock className="size-3 shrink-0" />}
               {/* Truncating the flex row instead would drop the ellipsis. */}

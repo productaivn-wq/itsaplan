@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import type { Cycle } from '@/lib/api/endpoints/cycles';
 import { ApiError } from '@/lib/api/core/client';
-import { addDays, daysBetween, parseDate, toDateStr } from '@/utils/dates';
+import { parseDate } from '@/utils/dates';
 import Modal from '@/components/common/overlay/Modal';
 import DatePill from '@/components/common/fields/DatePill';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,8 @@ export default function CycleForm({
 
   const start = parseDate(startDate);
   const end = parseDate(endDate);
-  const length = start && end ? daysBetween(start, end) + 1 : 0;
+  const lengthMinutes =
+    start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000)) : 15;
 
   const busy = busyRanges(cycles, cycle?.id);
   const lastDay = endLimit(cycles, startDate, cycle?.id);
@@ -58,23 +59,15 @@ export default function CycleForm({
   const startLocked = cycle !== undefined && cycle.status !== 'upcoming';
   const endLocked = cycle?.status === 'completed';
 
-  // A range may not run into the cycle that follows it, so an end computed from a
-  // length stops at the day before that one starts.
-  const endFrom = (from: Date, days: number): string => {
-    const limit = endLimit(cycles, toDateStr(from), cycle?.id);
-    const candidate = addDays(from, days - 1);
-    return toDateStr(limit && candidate > limit ? limit : candidate);
-  };
-
   // Both dates move together: changing the length or the start keeps the span, so
   // only the end date is ever picked by hand.
-  const changeLength = (days: number) => {
-    if (start) setEndDate(endFrom(start, days));
+  const changeLength = (mins: number) => {
+    if (start) setEndDate(new Date(start.getTime() + mins * 60000).toISOString());
   };
   const changeStart = (next: string) => {
     setStartDate(next);
     const from = parseDate(next);
-    if (from && length > 0) setEndDate(endFrom(from, length));
+    if (from && lengthMinutes > 0) setEndDate(new Date(from.getTime() + lengthMinutes * 60000).toISOString());
   };
 
   const submit = async () => {
@@ -119,7 +112,7 @@ export default function CycleForm({
         {!endLocked && (
           <div className="flex flex-col gap-1.5">
             <Label>{t('form.length')}</Label>
-            <CycleLengthPicker days={length} onChange={changeLength} />
+            <CycleLengthPicker minutes={lengthMinutes} onChange={changeLength} />
           </div>
         )}
         <div className="flex items-center gap-3">

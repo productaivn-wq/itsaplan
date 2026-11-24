@@ -1,8 +1,7 @@
 import { type DragEvent } from 'react';
 import { Download, PenLine, Plus, Trash2 } from 'lucide-react';
 import type { Attachment } from '@/lib/api/endpoints/attachments';
-import { attachmentHtml, isImage } from '@/components/common/editor/attachmentEmbed';
-import { attachmentPreviewKind } from '@/components/common/attachments/attachmentPreviewKind';
+import { attachmentHtml, isImage, isVideo } from '@/components/common/editor/attachmentEmbed';
 import { formatSize } from '@/utils/fileSize';
 import AttachmentThumb from '@/components/common/attachments/AttachmentThumb';
 import { Button } from '@/components/ui/button';
@@ -37,7 +36,7 @@ export default function IssueAttachmentCard({
 }) {
   const t = useTranslations('issue.attachments');
   const tCommon = useTranslations('common');
-  const viewable = attachmentPreviewKind(attachment) !== null;
+  const viewable = isImage(attachment) || isVideo(attachment);
   const dragProps = readOnly
     ? {}
     : {
@@ -130,7 +129,7 @@ export default function IssueAttachmentCard({
         <p className="truncate text-xs" title={attachment.filename}>
           {attachment.filename}
         </p>
-        <p className="text-[11px] text-muted-foreground">{formatSize(attachment.sizeBytes)}</p>
+        <p className="text-xs text-muted-foreground">{formatSize(attachment.sizeBytes)}</p>
       </div>
     </div>
   );

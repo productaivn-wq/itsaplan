@@ -5,15 +5,12 @@ export const LOCALES = [
   'uk',
   'ru',
   'zh-CN',
-  'zh-TW',
   'ar',
-  'fa',
   'fr',
   'pt-BR',
   'id',
   'es-ES',
-  'ko',
-  'tr',
+  'vi',
 ] as const;
 
 export type Locale = (typeof LOCALES)[number];
@@ -31,15 +28,12 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   uk: 'Українська',
   ru: 'Русский',
   'zh-CN': '简体中文',
-  'zh-TW': '繁體中文（台灣）',
   ar: 'العربية (المصرية)',
-  fa: 'فارسی',
   fr: 'Français',
   'pt-BR': 'Português (Brasil)',
   id: 'Bahasa Indonesia',
   'es-ES': 'Español (España)',
-  ko: '한국어',
-  tr: 'Türkçe',
+  vi: 'Tiếng Việt',
 };
 
 export const LOCALE_FLAGS: Record<Locale, string> = {
@@ -47,15 +41,12 @@ export const LOCALE_FLAGS: Record<Locale, string> = {
   uk: '🇺🇦',
   ru: '🇷🇺',
   'zh-CN': '🇨🇳',
-  'zh-TW': '🇹🇼',
   ar: '🇪🇬',
-  fa: '🇮🇷',
   fr: '🇫🇷',
   'pt-BR': '🇧🇷',
   id: '🇮🇩',
   'es-ES': '🇪🇸',
-  ko: '🇰🇷',
-  tr: '🇹🇷',
+  vi: '🇻🇳',
 };
 
 export function isLocale(value: string | undefined | null): value is Locale {
@@ -64,7 +55,7 @@ export function isLocale(value: string | undefined | null): value is Locale {
 
 // The languages written right to left. Listed rather than derived from
 // `Intl.Locale`, so adding a language is a deliberate choice of direction.
-const RTL_LOCALES: readonly Locale[] = ['ar', 'fa'];
+const RTL_LOCALES: readonly Locale[] = ['ar'];
 
 // Set on <html> during the server render, so the first paint is already mirrored
 // and the layout does not flip after hydration.

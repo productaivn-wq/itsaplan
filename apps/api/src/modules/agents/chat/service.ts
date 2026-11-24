@@ -1,10 +1,56 @@
 import { db, agentChatEvent, agentChatFavorite, agentChatMessage, agentChatThread } from '@repo/db';
 import { and, asc, desc, eq, gt, inArray, notExists, sql } from 'drizzle-orm';
-import { setTimeout as sleep } from 'node:timers/promises';
-import { intEnv, iso, likePattern } from '#shared/lib';
+import { EventEmitter } from 'node:events';
+
+const chatEventBus = new EventEmitter();
+chatEventBus.setMaxListeners(0);
+
+export function notifyChatMessageUpdate(messageId: number): void {
+  chatEventBus.emit(`msg:${messageId}`);
+}
+
+export function waitForChatMessageUpdate(messageId: number, timeoutMs: number): Promise<void> {
+  if (timeoutMs <= 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const channel = `msg:${messageId}`;
+    let settled = false;
+    const onEvent = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      chatEventBus.off(channel, onEvent);
+      resolve();
+    };
+    const timer = setTimeout(onEvent, timeoutMs);
+    chatEventBus.once(channel, onEvent);
+  });
+}
+
+export function notifyAgentClaimReady(agentId: number): void {
+  chatEventBus.emit(`claim:${agentId}`);
+}
+
+export function waitForAgentClaimReady(agentId: number, timeoutMs: number): Promise<void> {
+  if (timeoutMs <= 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const channel = `claim:${agentId}`;
+    let settled = false;
+    const onEvent = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      chatEventBus.off(channel, onEvent);
+      resolve();
+    };
+    const timer = setTimeout(onEvent, timeoutMs);
+    chatEventBus.once(channel, onEvent);
+  });
+}
+import { intEnv, iso } from '#shared/lib';
 import { deleteContextUsage, recordContextUsage, type ContextUsage } from '../chat-usage';
 import { deleteFavorite, FAVORITES_LIMIT } from '../chat-favorites';
 import {
+  likePattern,
   searchTerm,
   snippetOf,
   summarize,
@@ -12,11 +58,24 @@ import {
   type ThreadRow,
 } from '../chat-history';
 import { appendTextPart } from '../chat-parts';
-import { attachmentPreamble, chartPreamble, projectsPreamble } from '../core/prompt/framing';
+import {
+  attachmentPreamble,
+  chartPreamble,
+  multiProjectDirectoryPreamble,
+  projectsPreamble,
+  type ProjectDirectoryContext,
+} from '../core/prompt/framing';
+import { getProjectDirectoriesByIds } from '#modules/directory/service';
 import { peoplePreamble, type Person } from '../core/prompt/run-context';
+import {
+  buildModeAndEffortPreamble,
+  isReadOnlyTurn,
+  normalizeChatTurnOptions,
+  type ChatTurnOptions,
+} from '../core/prompt/run-options';
 import type { ChatMessagePage, ChatPart, ChatThreadPage } from '../model';
 import { newChatThreadId } from '../core/runtime/thread-ids';
-import { assertRunnerDrained, touchRunner, type RunnerAgent } from '../runner/service';
+import { touchRunner, type RunnerAgent } from '../runner/service';
 import type { AgUiEventBody, ChatMessageStatus } from './model';
 
 // Chat with an external agent. The answer is produced by a runner on the operator's
@@ -38,8 +97,8 @@ export const agentChatConfig = {
   // How long a claim waits for work before it answers "nothing", and how often it looks
   // while it waits. The wait is what makes an answer start the moment it is sent.
   claimWaitMs: () => Math.min(intEnv('AGENT_CHAT_CLAIM_WAIT_MS', 25_000), 30_000),
-  claimPollMs: () => intEnv('AGENT_CHAT_CLAIM_POLL_MS', 500),
-  streamPollMs: () => intEnv('AGENT_CHAT_STREAM_POLL_MS', 300),
+  claimPollMs: () => intEnv('AGENT_CHAT_CLAIM_POLL_MS', 200),
+  streamPollMs: () => intEnv('AGENT_CHAT_STREAM_POLL_MS', 100),
   historyMessages: () => intEnv('AGENT_CHAT_HISTORY_MESSAGES', 20),
 };
 
@@ -237,13 +296,20 @@ export async function getThreadMessages(
   return { items, nextPage: hasMore ? page + 1 : null };
 }
 
-// The event types a transcript is made of: the answer's text, and the tool calls with
-// what each was given and answered. The lifecycle events say nothing the reader sees.
+// The event types a transcript is made of: the answer's text, reasoning traces,
+// tool calls, HITL approvals, emitted artifacts, and subagent nodes. The lifecycle
+// events say nothing the reader sees.
 const TRANSCRIPT_EVENTS = [
   'TEXT_MESSAGE_CONTENT',
+  'THINKING_DELTA',
   'TOOL_CALL_START',
   'TOOL_CALL_ARGS',
   'TOOL_CALL_RESULT',
+  'APPROVAL_REQUIRED',
+  'APPROVAL_DECISION',
+  'ARTIFACT_EMIT',
+  'SUBAGENT_SPAWN',
+  'SUBAGENT_DONE',
 ];
 
 // Rebuilds each answer's parts from the events its runner reported. A call's start is
@@ -260,6 +326,20 @@ async function readAnswerParts(messageIds: number[]): Promise<Map<number, ChatPa
       content: sql<string | null>`${agentChatEvent.payload}->>'content'`,
       toolCallId: sql<string | null>`${agentChatEvent.payload}->>'toolCallId'`,
       toolCallName: sql<string | null>`${agentChatEvent.payload}->>'toolCallName'`,
+      approvalId: sql<string | null>`${agentChatEvent.payload}->>'approvalId'`,
+      toolName: sql<string | null>`${agentChatEvent.payload}->>'toolName'`,
+      args: sql<string | null>`${agentChatEvent.payload}->>'args'`,
+      requireSod: sql<boolean | null>`(${agentChatEvent.payload}->>'requireSod')::boolean`,
+      decision: sql<string | null>`${agentChatEvent.payload}->>'decision'`,
+      artifactId: sql<string | null>`${agentChatEvent.payload}->>'artifactId'`,
+      kind: sql<string | null>`${agentChatEvent.payload}->>'kind'`,
+      title: sql<string | null>`${agentChatEvent.payload}->>'title'`,
+      language: sql<string | null>`${agentChatEvent.payload}->>'language'`,
+      subagentId: sql<string | null>`${agentChatEvent.payload}->>'subagentId'`,
+      role: sql<string | null>`${agentChatEvent.payload}->>'role'`,
+      task: sql<string | null>`${agentChatEvent.payload}->>'task'`,
+      status: sql<string | null>`${agentChatEvent.payload}->>'status'`,
+      summary: sql<string | null>`${agentChatEvent.payload}->>'summary'`,
     })
     .from(agentChatEvent)
     .where(
@@ -271,6 +351,8 @@ async function readAnswerParts(messageIds: number[]): Promise<Map<number, ChatPa
     .orderBy(asc(agentChatEvent.id));
   // The call an answer's arguments and result belong to, by the id the runner gave it.
   const calls = new Map<string, Extract<ChatPart, { type: 'tool' }>>();
+  const approvals = new Map<string, Extract<ChatPart, { type: 'approval' }>>();
+  const subagents = new Map<string, Extract<ChatPart, { type: 'subagent' }>>();
   for (const row of rows) {
     const message = parts.get(row.messageId) ?? [];
     parts.set(row.messageId, message);
@@ -279,6 +361,14 @@ async function readAnswerParts(messageIds: number[]): Promise<Map<number, ChatPa
       case 'TEXT_MESSAGE_CONTENT':
         appendTextPart(message, row.delta ?? '');
         break;
+      case 'THINKING_DELTA': {
+        const delta = row.delta ?? '';
+        if (!delta) break;
+        const last = message[message.length - 1];
+        if (last?.type === 'thinking') last.text += delta;
+        else message.push({ type: 'thinking', text: delta });
+        break;
+      }
       case 'TOOL_CALL_START': {
         const started = {
           type: 'tool' as const,
@@ -297,6 +387,63 @@ async function readAnswerParts(messageIds: number[]): Promise<Map<number, ChatPa
       case 'TOOL_CALL_RESULT': {
         const call = calls.get(callKey);
         if (call && row.content) call.result = row.content;
+        break;
+      }
+      case 'APPROVAL_REQUIRED': {
+        const part: Extract<ChatPart, { type: 'approval' }> = {
+          type: 'approval',
+          approvalId: row.approvalId ?? '',
+          toolCallId: row.toolCallId ?? '',
+          toolName: row.toolName ?? row.toolCallName ?? 'tool_mutation',
+          ...(row.args ? { args: row.args } : {}),
+          ...(row.requireSod != null ? { requireSod: row.requireSod } : {}),
+          status: 'pending',
+        };
+        message.push(part);
+        approvals.set(`${row.messageId}:${part.approvalId}`, part);
+        break;
+      }
+      case 'APPROVAL_DECISION': {
+        const approval = approvals.get(`${row.messageId}:${row.approvalId}`);
+        if (approval && (row.decision === 'approved' || row.decision === 'rejected')) {
+          approval.status = row.decision;
+        }
+        break;
+      }
+      case 'ARTIFACT_EMIT': {
+        const rawKind = row.kind;
+        const kind =
+          rawKind === 'diff' || rawKind === 'code' || rawKind === 'mermaid' || rawKind === 'markdown'
+            ? rawKind
+            : 'code';
+        message.push({
+          type: 'artifact',
+          artifactId: row.artifactId ?? '',
+          kind,
+          title: row.title ?? 'Artifact',
+          content: row.content ?? '',
+          ...(row.language ? { language: row.language } : {}),
+        });
+        break;
+      }
+      case 'SUBAGENT_SPAWN': {
+        const part: Extract<ChatPart, { type: 'subagent' }> = {
+          type: 'subagent',
+          subagentId: row.subagentId ?? '',
+          role: row.role ?? 'worker',
+          task: row.task ?? '',
+          status: 'running',
+        };
+        message.push(part);
+        subagents.set(`${row.messageId}:${part.subagentId}`, part);
+        break;
+      }
+      case 'SUBAGENT_DONE': {
+        const sub = subagents.get(`${row.messageId}:${row.subagentId}`);
+        if (sub) {
+          if (row.status === 'completed' || row.status === 'failed') sub.status = row.status;
+          if (row.summary) sub.summary = row.summary;
+        }
         break;
       }
     }
@@ -338,9 +485,10 @@ export async function sendMessage(input: {
   userId: string;
   prompt: string;
   threadId?: string;
+  options?: ChatTurnOptions;
 }): Promise<{ threadId: string; messageId: number } | null> {
-  const { agentId, userId, prompt } = input;
-  return db.transaction(async (tx) => {
+  const { agentId, userId, prompt, options } = input;
+  const created = await db.transaction(async (tx) => {
     let threadId = input.threadId;
     if (threadId) {
       const rows = await tx
@@ -365,15 +513,25 @@ export async function sendMessage(input: {
         .insert(agentChatThread)
         .values({ id: threadId, agentId, userId, title: prompt.slice(0, TITLE_LIMIT) });
     }
-    await tx
+    const [userMsg] = await tx
       .insert(agentChatMessage)
-      .values({ threadId, agentId, role: 'user', content: prompt, status: 'success' });
+      .values({ threadId, agentId, role: 'user', content: prompt, status: 'success' })
+      .returning({ id: agentChatMessage.id });
+    if (options && userMsg) {
+      // Stored on the user message row (not the assistant row) so runner retries
+      // never wipe it and assistant SSE streams never expose internal metadata.
+      await tx
+        .insert(agentChatEvent)
+        .values({ messageId: userMsg.id, payload: { type: 'TURN_OPTIONS', options } });
+    }
     const answer = await tx
       .insert(agentChatMessage)
       .values({ threadId, agentId, role: 'assistant' })
       .returning({ id: agentChatMessage.id });
     return { threadId, messageId: answer[0].id };
   });
+  if (created) notifyAgentClaimReady(agentId);
+  return created;
 }
 
 export interface ClaimedChat {
@@ -383,6 +541,7 @@ export interface ClaimedChat {
   systemPrompt: string;
   attempts: number;
   sessionId: string | null;
+  options?: ChatTurnOptions;
 }
 
 // The claim's raw row: the answer plus what the prompts are built from.
@@ -420,7 +579,6 @@ async function expireExhausted(agentId: number): Promise<void> {
 // when none turns up in time. Waiting instead of polling is what makes an answer start
 // the moment it is sent.
 export async function claimNextMessage(agent: RunnerAgent): Promise<ClaimedChat | null> {
-  assertRunnerDrained(agent);
   await touchRunner(agent.id);
   await expireExhausted(agent.id);
   const deadline = Date.now() + agentChatConfig.claimWaitMs();
@@ -428,77 +586,44 @@ export async function claimNextMessage(agent: RunnerAgent): Promise<ClaimedChat 
     const message = await claimMessage(agent);
     if (message) return message;
     if (Date.now() >= deadline) return null;
-    await sleep(Math.min(agentChatConfig.claimPollMs(), Math.max(0, deadline - Date.now())));
+    await waitForAgentClaimReady(
+      agent.id,
+      Math.min(agentChatConfig.claimPollMs(), Math.max(10, deadline - Date.now())),
+    );
   }
-}
-
-// The agent's next due answer without waiting for one, for an agent whose answers are
-// sent to its invocation URL rather than claimed.
-export async function takeNextMessage(agent: RunnerAgent): Promise<ClaimedChat | null> {
-  await expireExhausted(agent.id);
-  return claimMessage(agent);
 }
 
 // Takes the agent's next due answer, or null when it has none. Claiming clears whatever
 // a previous attempt produced: the answer is generated again from the start, and the
 // browser would otherwise read the abandoned half twice.
 async function claimMessage(agent: RunnerAgent): Promise<ClaimedChat | null> {
-  const rows = await db.transaction(async (tx) => {
-    const threads = await tx.execute(sql`
-      WITH live_heads AS MATERIALIZED (
-        SELECT q.thread_id, min(q.id) AS id FROM agent_chat_message q
-        WHERE q.agent_id = ${agent.id}
-          AND q.role = 'assistant'
-          AND q.status IN ('pending', 'streaming')
-        GROUP BY q.thread_id
-      ), ready_heads AS MATERIALIZED (
-        SELECT h.thread_id FROM live_heads h
-        JOIN agent_chat_message head ON head.id = h.id
-        WHERE head.next_attempt_at <= now()
-          AND head.attempts < ${agentChatConfig.maxAttempts()}
-        ORDER BY head.next_attempt_at, head.id
-      )
-      SELECT t.id FROM ready_heads h
-      CROSS JOIN LATERAL (
-        SELECT t.id FROM agent_chat_thread t
-        WHERE t.id = h.thread_id AND t.agent_id = ${agent.id}
-        FOR UPDATE SKIP LOCKED
-      ) t
+  const rows = await db.execute(sql`
+    UPDATE agent_chat_message m
+    SET attempts = m.attempts + 1,
+        status = 'streaming',
+        content = '',
+        started_at = coalesce(m.started_at, now()),
+        next_attempt_at = now() + make_interval(secs => ${agentChatConfig.leaseSeconds()})
+    WHERE m.id = (
+      SELECT id FROM agent_chat_message q
+      WHERE q.agent_id = ${agent.id}
+        AND q.role = 'assistant'
+        AND q.status IN ('pending', 'streaming')
+        AND q.next_attempt_at <= now()
+      ORDER BY q.next_attempt_at, q.id
+      FOR UPDATE SKIP LOCKED
       LIMIT 1
-    `);
-    const thread = (threads as unknown as { id: string }[])[0];
-    if (!thread) return [];
-    // Re-read the first unfinished answer after taking the thread lock: a concurrent
-    // claim may have committed while the thread selection used an earlier snapshot.
-    return tx.execute(sql`
-      UPDATE agent_chat_message m
-      SET attempts = m.attempts + 1,
-          status = 'streaming',
-          content = '',
-          started_at = coalesce(m.started_at, now()),
-          next_attempt_at = now() + make_interval(secs => ${agentChatConfig.leaseSeconds()})
-      WHERE m.id = (
-        SELECT q.id FROM agent_chat_message q
-        WHERE q.thread_id = ${thread.id}
-          AND q.role = 'assistant'
-          AND q.status IN ('pending', 'streaming')
-        ORDER BY q.id
-        LIMIT 1
-      )
-        AND m.status IN ('pending', 'streaming')
-        AND m.next_attempt_at <= now()
-        AND m.attempts < ${agentChatConfig.maxAttempts()}
-      RETURNING
-        m.id,
-        m.thread_id AS "threadId",
-        m.attempts,
-        (SELECT u.name FROM agent_chat_thread t JOIN "user" u ON u.id = t.user_id
-           WHERE t.id = m.thread_id) AS "requesterName",
-        (SELECT u.username FROM agent_chat_thread t JOIN "user" u ON u.id = t.user_id
-           WHERE t.id = m.thread_id) AS "requesterUsername",
-        (SELECT cli_session_id FROM agent_chat_thread t WHERE t.id = m.thread_id) AS "sessionId"
-    `);
-  });
+    )
+    RETURNING
+      m.id,
+      m.thread_id AS "threadId",
+      m.attempts,
+      (SELECT u.name FROM agent_chat_thread t JOIN "user" u ON u.id = t.user_id
+         WHERE t.id = m.thread_id) AS "requesterName",
+      (SELECT u.username FROM agent_chat_thread t JOIN "user" u ON u.id = t.user_id
+         WHERE t.id = m.thread_id) AS "requesterUsername",
+      (SELECT cli_session_id FROM agent_chat_thread t WHERE t.id = m.thread_id) AS "sessionId"
+  `);
   const row = (rows as unknown as ClaimedRow[])[0];
   if (!row) return null;
   await db.delete(agentChatEvent).where(eq(agentChatEvent.messageId, row.id));
@@ -508,19 +633,67 @@ async function claimMessage(agent: RunnerAgent): Promise<ClaimedChat | null> {
   const resumed = row.sessionId !== null;
   const history = await readHistory(row.threadId, row.id, resumed);
   const question = history.pop()?.content ?? '';
+  const options = await readTurnOptions(row.threadId, row.id);
+  const projectDirs = resumed
+    ? new Map<number, ProjectDirectoryContext>()
+    : await getProjectDirectoriesByIds(
+        agent.projects.map((p) => p.id).filter((id): id is number => id != null),
+      );
+  const resumedQuestion =
+    resumed && isReadOnlyTurn(options)
+      ? `[Mode: /${options?.mode === 'ask' ? 'ask' : 'plan'} — Read-only analysis; do not mutate state without approval]\n\n${question}`
+      : question;
   return {
     id: row.id,
     threadId: row.threadId,
-    prompt: resumed ? question : frameChatPrompt(history, question),
+    prompt: resumed ? resumedQuestion : frameChatPrompt(history, question),
     systemPrompt: resumed
       ? ''
-      : buildSystemPrompt(agent, {
-          name: row.requesterName ?? 'the member',
-          username: row.requesterUsername,
-        }),
+      : buildSystemPrompt(
+          agent,
+          {
+            name: row.requesterName ?? 'the member',
+            username: row.requesterUsername,
+          },
+          options,
+          projectDirs,
+        ),
     attempts: row.attempts,
     sessionId: row.sessionId,
+    ...(options ? { options } : {}),
   };
+}
+
+async function readTurnOptions(
+  threadId: string,
+  assistantMessageId: number,
+): Promise<ChatTurnOptions | undefined> {
+  const [prevUser] = await db
+    .select({ id: agentChatMessage.id })
+    .from(agentChatMessage)
+    .where(
+      and(
+        eq(agentChatMessage.threadId, threadId),
+        eq(agentChatMessage.role, 'user'),
+        sql`${agentChatMessage.id} < ${assistantMessageId}`,
+      ),
+    )
+    .orderBy(desc(agentChatMessage.id))
+    .limit(1);
+  if (!prevUser) return undefined;
+  const [ev] = await db
+    .select({ payload: agentChatEvent.payload })
+    .from(agentChatEvent)
+    .where(
+      and(
+        eq(agentChatEvent.messageId, prevUser.id),
+        sql`${agentChatEvent.payload}->>'type' = 'TURN_OPTIONS'`,
+      ),
+    )
+    .orderBy(desc(agentChatEvent.id))
+    .limit(1);
+  const raw = (ev?.payload as { options?: Partial<ChatTurnOptions> } | undefined)?.options;
+  return normalizeChatTurnOptions(raw);
 }
 
 // Binds a thread to the session its runner started, addressed through the answer being
@@ -575,11 +748,27 @@ async function readHistory(
 // waiting in a chat, who that person is, and last the operator's own instructions,
 // which therefore win over the generic parts. A chat is held with the agent rather
 // than inside a project, so every project it reaches is named.
-function buildSystemPrompt(agent: RunnerAgent, requester: Person): string {
+function buildSystemPrompt(
+  agent: RunnerAgent,
+  requester: Person,
+  options?: ChatTurnOptions,
+  projectDirs?: Map<number, ProjectDirectoryContext>,
+): string {
   const instructions = agent.instructions?.trim();
+  const directoryEntries = projectDirs
+    ? agent.projects
+        .filter((p): p is typeof p & { id: number } => p.id != null && projectDirs.has(p.id))
+        .map((p) => ({
+          key: p.key,
+          name: p.name,
+          directory: projectDirs.get(p.id)!,
+        }))
+    : [];
   return (
     projectsPreamble(agent.projects) +
+    multiProjectDirectoryPreamble(directoryEntries) +
     chatModePreamble() +
+    buildModeAndEffortPreamble(options) +
     chartPreamble() +
     attachmentPreamble() +
     peoplePreamble({ requester }) +
@@ -655,6 +844,7 @@ export async function appendEvents(
     .returning({ id: agentChatMessage.id });
   if (!claimed[0]) return (await wasCanceled(agentId, messageId)) ? { canceled: true } : null;
   await db.insert(agentChatEvent).values(events.map((event) => ({ messageId, payload: event })));
+  notifyChatMessageUpdate(messageId);
   return { canceled: false };
 }
 
@@ -703,6 +893,7 @@ export async function cancelMessage(
     .update(agentChatMessage)
     .set({ status: 'canceled', finishedAt: new Date() })
     .where(liveAnswer(agentId, messageId));
+  notifyChatMessageUpdate(messageId);
   return true;
 }
 
@@ -734,10 +925,12 @@ export async function finishMessage(
     if (result.usage !== undefined) {
       await recordContextUsage(rows[0].threadId, agentId, result.usage);
     }
+    notifyChatMessageUpdate(messageId);
     return true;
   }
   // Stopped from the chat while the command was ending: the answer is already closed,
   // so there is nothing to record and nothing wrong.
+  notifyChatMessageUpdate(messageId);
   return wasCanceled(agentId, messageId);
 }
 

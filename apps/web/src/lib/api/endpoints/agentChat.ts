@@ -37,6 +37,19 @@ interface AgUiEvent {
   message?: string;
   toolCallId?: string;
   toolCallName?: string;
+  approvalId?: string;
+  toolName?: string;
+  args?: string;
+  requireSod?: boolean;
+  artifactId?: string;
+  kind?: 'diff' | 'code' | 'mermaid' | 'markdown';
+  title?: string;
+  language?: string;
+  subagentId?: string;
+  role?: string;
+  task?: string;
+  status?: 'completed' | 'failed';
+  summary?: string;
 }
 
 // How many times a dropped stream is picked up again. The answer keeps being produced
@@ -47,6 +60,8 @@ function toRunEvent(event: AgUiEvent): AgentRunEvent | null {
   switch (event.type) {
     case 'TEXT_MESSAGE_CONTENT':
       return { type: 'text', value: event.delta ?? '' };
+    case 'THINKING_DELTA':
+      return { type: 'thinking', value: event.delta ?? '' };
     case 'TOOL_CALL_START':
       return {
         type: 'tool-start',
@@ -59,9 +74,78 @@ function toRunEvent(event: AgUiEvent): AgentRunEvent | null {
     // batch as the call itself. The tool is done when its result arrives.
     case 'TOOL_CALL_RESULT':
       return { type: 'tool-end', toolCallId: event.toolCallId ?? '', result: event.content };
+    case 'APPROVAL_REQUIRED':
+      return {
+        type: 'approval-required',
+        approvalId: event.approvalId ?? '',
+        toolCallId: event.toolCallId ?? '',
+        toolName: event.toolName ?? event.toolCallName ?? 'tool_mutation',
+        args: event.args,
+        requireSod: event.requireSod,
+      };
+    case 'ARTIFACT_EMIT':
+      return {
+        type: 'artifact',
+        artifactId: event.artifactId ?? '',
+        kind: event.kind ?? 'code',
+        title: event.title ?? 'Artifact',
+        content: event.content ?? '',
+        language: event.language,
+      };
+    case 'SUBAGENT_SPAWN':
+      return {
+        type: 'subagent-spawn',
+        subagentId: event.subagentId ?? '',
+        role: event.role ?? 'worker',
+        task: event.task ?? '',
+      };
+    case 'SUBAGENT_DONE':
+      return {
+        type: 'subagent-done',
+        subagentId: event.subagentId ?? '',
+        status: event.status ?? 'completed',
+        summary: event.summary,
+      };
     default:
       return null;
   }
+}
+
+export type ChatExecutionMode = 'ask' | 'plan' | 'build' | 'auto';
+export type ChatEffortLevel = 'low' | 'medium' | 'high' | 'xhigh';
+export type ChatPermissionMode = 'ask' | 'plan' | 'auto';
+
+export interface ChatRunOptions {
+  model?: string | null;
+  modelCredentialId?: number | null;
+  mode?: ChatExecutionMode | null;
+  effort?: ChatEffortLevel | null;
+  thinking?: boolean | null;
+  permissionMode?: ChatPermissionMode | null;
+  temperature?: number | null;
+  maxSteps?: number | null;
+}
+
+function cleanTurnOptions(options?: ChatRunOptions): ChatRunOptions | undefined {
+  if (!options) return undefined;
+  const cleaned: ChatRunOptions = {};
+  if (typeof options.model === 'string' && options.model.trim().length > 0) {
+    cleaned.model = options.model.trim();
+  }
+  if (typeof options.modelCredentialId === 'number' && options.modelCredentialId > 0) {
+    cleaned.modelCredentialId = options.modelCredentialId;
+  }
+  if (options.mode) cleaned.mode = options.mode;
+  if (options.effort) cleaned.effort = options.effort;
+  if (typeof options.thinking === 'boolean') cleaned.thinking = options.thinking;
+  if (options.permissionMode) cleaned.permissionMode = options.permissionMode;
+  if (typeof options.temperature === 'number' && Number.isFinite(options.temperature)) {
+    cleaned.temperature = options.temperature;
+  }
+  if (typeof options.maxSteps === 'number' && Number.isFinite(options.maxSteps)) {
+    cleaned.maxSteps = options.maxSteps;
+  }
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
 }
 
 // The run is bound to this connection, so aborting `signal` is the whole stop: the API
@@ -73,12 +157,23 @@ function toRunEvent(event: AgUiEvent): AgentRunEvent | null {
 export async function* streamAiAgentRun(
   projectKey: string,
   agentId: number,
-  input: { prompt: string; threadId?: string | null },
+  input: {
+    prompt: string;
+    threadId?: string | null;
+    attachmentIds?: string[];
+    options?: ChatRunOptions;
+  },
   signal?: AbortSignal,
 ): AsyncGenerator<AgentRunEvent> {
-  const body = input.threadId
-    ? { prompt: input.prompt, threadId: input.threadId }
-    : { prompt: input.prompt };
+  const options = cleanTurnOptions(input.options);
+  const body = {
+    prompt: input.prompt,
+    ...(input.threadId ? { threadId: input.threadId } : {}),
+    ...(input.attachmentIds && input.attachmentIds.length > 0
+      ? { attachmentIds: input.attachmentIds }
+      : {}),
+    ...(options ? { options } : {}),
+  };
   const res = await fetch(`${API_URL}/projects/${projectKey}/ai-agents/${agentId}/run/stream`, {
     method: 'POST',
     credentials: 'include',
@@ -101,16 +196,27 @@ export async function* streamAiAgentRun(
 export async function* streamAiAgentChat(
   projectKey: string,
   agentId: number,
-  input: { prompt: string; threadId?: string | null },
+  input: {
+    prompt: string;
+    threadId?: string | null;
+    attachmentIds?: string[];
+    options?: ChatRunOptions;
+  },
   signal?: AbortSignal,
 ): AsyncGenerator<AgentRunEvent> {
-  const body = input.threadId
-    ? { prompt: input.prompt, threadId: input.threadId }
-    : { prompt: input.prompt };
+  const options = cleanTurnOptions(input.options);
+  const body = {
+    prompt: input.prompt,
+    ...(input.threadId ? { threadId: input.threadId } : {}),
+    ...(options ? { options } : {}),
+  };
   const sent = await request<{ threadId: string; messageId: number }>(
     `/projects/${projectKey}/ai-agents/${agentId}/chat`,
     { method: 'POST', body: JSON.stringify(body) },
   );
+  if (sent.threadId) {
+    yield { type: 'thread', threadId: sent.threadId };
+  }
   const chat = `/projects/${projectKey}/ai-agents/${agentId}/chat/${sent.messageId}`;
   const cancel = () => {
     // A stop the API refused leaves the answer being produced. The stream this belongs
@@ -212,7 +318,46 @@ export interface AiChatToolPart {
   result?: string;
 }
 
-export type AiChatPart = { type: 'text'; text: string } | AiChatToolPart;
+export interface AiChatThinkingPart {
+  type: 'thinking';
+  text: string;
+}
+
+export interface AiChatApprovalPart {
+  type: 'approval';
+  approvalId: string;
+  toolCallId: string;
+  toolName: string;
+  args?: string;
+  requireSod?: boolean;
+  status?: 'pending' | 'approved' | 'rejected';
+}
+
+export interface AiChatArtifactPart {
+  type: 'artifact';
+  artifactId: string;
+  kind: 'diff' | 'code' | 'mermaid' | 'markdown';
+  title: string;
+  content: string;
+  language?: string;
+}
+
+export interface AiChatSubagentPart {
+  type: 'subagent';
+  subagentId: string;
+  role: string;
+  task: string;
+  status: 'running' | 'completed' | 'failed';
+  summary?: string;
+}
+
+export type AiChatPart =
+  | { type: 'text'; text: string }
+  | AiChatToolPart
+  | AiChatThinkingPart
+  | AiChatApprovalPart
+  | AiChatArtifactPart
+  | AiChatSubagentPart;
 
 // One restored message of a chat thread's transcript. `stopped` marks an answer the
 // member ended part-way: what the agent had written by then is all there is.

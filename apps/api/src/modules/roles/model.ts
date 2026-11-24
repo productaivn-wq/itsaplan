@@ -30,9 +30,6 @@ export const RoleResponse = t.Object({
   id: t.Number(),
   name: t.String(),
   isDefault: t.Boolean(),
-  system: t.Boolean({
-    description: 'A system role: every team assigns it, only god mode edits it.',
-  }),
   permissions: PermissionMatrixSchema,
   createdAt: t.String(),
 });
@@ -54,12 +51,55 @@ export const RoleUsageResponse = t.Object({
 export const PermissionCatalogResponse = t.Object({
   // `actions` is the full action set, in the order a matrix renders its columns;
   // each resource names the subset it supports.
-  resources: t.Array(
+  resources: t.Array(t.Object({ key: t.String(), actions: t.Array(t.String()) })),
+  actions: t.Array(t.String()),
+});
+
+export const upsertRoleBody = t.Object({
+  name: t.String(),
+  permissions: t.Any(),
+  isDefault: t.Optional(t.Boolean()),
+});
+
+export const TeamAuthorizationResponse = t.Object({
+  teamId: t.Number(),
+  governance: t.Object({
+    defaultAutonomyTier: t.String(),
+    requireSodApproval: t.Boolean(),
+    allowAgentTeamBootstrap: t.Boolean(),
+  }),
+  teamRanks: t.Array(
     t.Object({
-      key: t.String(),
-      actions: t.Array(t.String()),
-      from: t.Optional(t.String({ description: 'The resource it was split out of, if any.' })),
+      rank: t.String(),
+      count: t.Number(),
+      fullAccess: t.Boolean(),
+      canManageRoles: t.Boolean(),
+      canDeleteRoles: t.Boolean(),
     }),
   ),
-  actions: t.Array(t.String()),
+  roles: t.Array(RoleResponse),
+  catalog: PermissionCatalogResponse,
+});
+
+export const checkAuthorizationBody = t.Object({
+  userId: t.Optional(t.String()),
+  roleId: t.Optional(t.Number()),
+  resource: t.String(),
+  action: t.String(),
+  riskTier: t.Optional(
+    t.Union([t.Literal('TIER_0'), t.Literal('TIER_1'), t.Literal('TIER_2')]),
+  ),
+  executorUserId: t.Optional(t.String()),
+  approverUserId: t.Optional(t.String()),
+});
+
+export const CheckAuthorizationResponse = t.Object({
+  allowed: t.Boolean(),
+  sodCompliant: t.Boolean(),
+  requiresHitl: t.Boolean(),
+  effectiveRank: t.String(),
+  roleName: t.Nullable(t.String()),
+  resource: t.String(),
+  action: t.String(),
+  reason: t.String(),
 });

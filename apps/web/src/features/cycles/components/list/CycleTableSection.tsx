@@ -21,7 +21,7 @@ export default function CycleTableSection({
     <button
       type="button"
       onClick={onToggle}
-      className="flex w-full items-center gap-2 bg-muted/40 px-4 py-1.5 text-sm font-medium text-foreground"
+      className="flex w-full items-center gap-2 border-b border-border/65 bg-muted/45 px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted/70"
     >
       {collapsed ? (
         <ChevronRight className="size-3.5 text-muted-foreground" />
@@ -29,8 +29,10 @@ export default function CycleTableSection({
         <ChevronDown className="size-3.5 text-muted-foreground" />
       )}
       {colorDot(color)}
-      {label}
-      <span className="text-muted-foreground">{count}</span>
+      <span>{label}</span>
+      <span className="rounded-full bg-card px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
+        {count}
+      </span>
     </button>
   );
 }
