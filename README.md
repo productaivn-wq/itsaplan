@@ -136,16 +136,25 @@ The whole stack in one click, with no server to maintain. You give Railway two h
 and it generates every secret. You need a domain of your own: [the guide](docs/railway.md)
 explains why, and what to do after the deploy.
 
-### Try it on your machine
+### Try it on your machine (Zero Bun / Zero Node.js)
 
-Requirements: Docker and [Bun](https://bun.sh).
+Requirements: Docker only.
 
+**macOS / Linux:**
 ```bash
 git clone https://github.com/productaivn-wq/itsaplan.git
 cd itsaplan
-bun install
-bun run setup   # answer "Try it"
+bash start.sh
 ```
+
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/productaivn-wq/itsaplan.git
+cd itsaplan
+.\start.ps1
+```
+
+*(Optional if you already have Bun installed: `bun install && bun run setup`.)*
 
 It picks free ports, generates the secrets, starts the whole stack in Docker, and opens
 <http://localhost:3001>. Everything runs on localhost, so no domain and no reverse proxy are
