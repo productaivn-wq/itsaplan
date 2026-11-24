@@ -32,6 +32,6 @@ export const config = [
   },
   eslintConfigPrettier,
   {
-    ignores: ['dist/**', '.next/**', 'node_modules/**', '.agents/**'],
+    ignores: ['dist/**', '.next/**', 'node_modules/**'],
   },
 ];

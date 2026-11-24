@@ -1,0 +1,204 @@
+{
+  "uc_id": "UC-014",
+  "spec_id": "SPEC-53.ACT.500",
+  "department_id": "central_lobby",
+  "department_name": "Đại Sảnh Chung",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-014",
+    "FR-064",
+    "UC-010"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC014-01",
+      "slice_id": "UC-014.S01",
+      "fr_ref": "FR-064",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state?project_key=PM",
+        "room_id": "central_lobby"
+      },
+      "expected": {
+        "department_id": "central_lobby",
+        "has_kpis": true,
+        "zero_fake_agents": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-02",
+      "slice_id": "UC-014.S02",
+      "fr_ref": "FR-064",
+      "category": "stateful",
+      "input": {
+        "department_id": "central_lobby",
+        "template_id": "ops_reconciliation",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "target_room": "central_lobby",
+        "creates_real_issue": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-03",
+      "slice_id": "UC-014.S02",
+      "fr_ref": "FR-064",
+      "category": "negative",
+      "input": {
+        "department_id": "central_lobby",
+        "adversarial_guard": "All Agents Currently Busy"
+      },
+      "expected": {
+        "rejected_fail_closed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-04",
+      "slice_id": "UC-014.S03",
+      "fr_ref": "FR-064",
+      "category": "positive",
+      "input": {
+        "department_id": "central_lobby",
+        "project_ref": "owner.PM"
+      },
+      "expected": {
+        "module_links": [
+          "/{teamRef}/{projectKey}/inbox",
+          "/{teamRef}/{projectKey}",
+          "#shell-chat-panel",
+          "/{teamRef}/{projectKey}/notifications"
+        ],
+        "dead_links": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC014-05",
+      "slice_id": "UC-014.S01",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "positive_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-06",
+      "slice_id": "UC-014.S02",
+      "fr_ref": "FR-061",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "boundary_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC014-07",
+      "slice_id": "UC-014.S03",
+      "fr_ref": "FR-061",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "negative_07",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC014-08",
+      "slice_id": "UC-014.S04",
+      "fr_ref": "FR-061",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "stateful_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-09",
+      "slice_id": "UC-014.S01",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "positive_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC014-10",
+      "slice_id": "UC-014.S02",
+      "fr_ref": "FR-061",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "boundary_10",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC014-11",
+      "slice_id": "UC-014.S03",
+      "fr_ref": "FR-061",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC014-12",
+      "slice_id": "UC-014.S04",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — Central Lobby Intake Triage & Dispatch",
+      "input": {
+        "uc_id": "UC-014",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

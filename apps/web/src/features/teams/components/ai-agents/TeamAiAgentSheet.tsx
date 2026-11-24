@@ -27,11 +27,13 @@ export function TeamAiAgentSheet({
   open,
   agent,
   onClose,
+  compact = false,
 }: {
   open: boolean;
   agent: AiAgent | null;
   // The project a new agent starts attached to, when the sheet is opened from one.
   onClose: () => void;
+  compact?: boolean;
 }) {
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -42,17 +44,27 @@ export function TeamAiAgentSheet({
           full-screen editor appears at once instead of sliding in from the right. */}
       <SheetContent
         side="right"
-        className="w-full gap-0 p-0 duration-0 data-[state=closed]:duration-0 data-[state=open]:duration-0 sm:max-w-none [&>button]:hidden"
+        className={
+          compact
+            ? 'w-full gap-0 p-0 duration-0 data-[state=closed]:duration-0 data-[state=open]:duration-0 sm:max-w-[420px] [&>button]:hidden'
+            : 'w-full gap-0 p-0 duration-0 data-[state=closed]:duration-0 data-[state=open]:duration-0 sm:max-w-none [&>button]:hidden'
+        }
       >
         {/* Key by agent (or 'new' for create) so switching gives a fresh form and chat
             session; create keeps the 'new' key while it becomes edit, so no remount. */}
-        {open && <SheetBody key={agent?.id ?? 'new'} initialAgent={agent} />}
+        {open && <SheetBody key={agent?.id ?? 'new'} initialAgent={agent} compact={compact} />}
       </SheetContent>
     </Sheet>
   );
 }
 
-function SheetBody({ initialAgent }: { initialAgent: AiAgent | null }) {
+function SheetBody({
+  initialAgent,
+  compact = false,
+}: {
+  initialAgent: AiAgent | null;
+  compact?: boolean;
+}) {
   const t = useTranslations('teams.agents');
   const tCommon = useTranslations('common');
   const { teamId } = useAgentSection();
@@ -94,7 +106,7 @@ function SheetBody({ initialAgent }: { initialAgent: AiAgent | null }) {
             </SheetDescription>
           </div>
           {agent && (
-            <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+            <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {agent.kind}
             </span>
           )}
@@ -113,34 +125,42 @@ function SheetBody({ initialAgent }: { initialAgent: AiAgent | null }) {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <div className="flex min-h-0 flex-1 basis-0 flex-col border-e border-border/60">
-          <AgentSheetForm agent={agent} expanded onCreated={setCreatedAgent} />
-        </div>
-
-        <div className="flex min-h-0 flex-1 basis-0 flex-col">
-          {chatReady ? (
-            <AgentChatPanel
-              agent={agent}
-              projectKey={chatProject.ref}
-              messages={chat.messages}
-              status={chat.status}
-              activeTool={chat.activeTool}
-              pending={chat.pending}
-              onSend={chat.send}
-              onStop={chat.stop}
-              onRemovePending={chat.removePending}
-              onReset={chat.newChat}
-            />
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-              <MessageSquare className="size-5 text-muted-foreground" />
-              <p className="text-sm font-medium">{t('testChat')}</p>
-              <p className="max-w-xs text-xs text-muted-foreground">
-                {agent ? t('chatNeedsProject') : t('chatNeedsAgent')}
-              </p>
+        {compact ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <AgentSheetForm agent={agent} expanded={false} onCreated={setCreatedAgent} />
+          </div>
+        ) : (
+          <>
+            <div className="flex min-h-0 flex-1 basis-0 flex-col border-e border-border/60">
+              <AgentSheetForm agent={agent} expanded onCreated={setCreatedAgent} />
             </div>
-          )}
-        </div>
+
+            <div className="flex min-h-0 flex-1 basis-0 flex-col">
+              {chatReady ? (
+                <AgentChatPanel
+                  agent={agent}
+                  projectKey={chatProject.ref}
+                  messages={chat.messages}
+                  status={chat.status}
+                  activeTool={chat.activeTool}
+                  pending={chat.pending}
+                  onSend={chat.send}
+                  onStop={chat.stop}
+                  onRemovePending={chat.removePending}
+                  onReset={chat.newChat}
+                />
+              ) : (
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                  <MessageSquare className="size-5 text-muted-foreground" />
+                  <p className="text-sm font-medium">{t('testChat')}</p>
+                  <p className="max-w-xs text-xs text-muted-foreground">
+                    {agent ? t('chatNeedsProject') : t('chatNeedsAgent')}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

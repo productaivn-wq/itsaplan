@@ -4,7 +4,7 @@ import { useTestPlaneConnection } from '../../services/settings.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { PlaneConnection } from './SettingsImportExportPlane';
+import type { PlaneConnection } from './SettingsImportExport';
 
 // baseUrl/workspaceSlug/apiToken for a source Plane instance, checked live
 // against it. Nothing is stored until an import is actually started.
@@ -63,7 +63,6 @@ export default function SettingsImportExportConnectForm({
           onChange={(event) => setWorkspaceSlug(event.target.value)}
           required
         />
-        <p className="text-xs text-muted-foreground">{t('workspaceSlugHint')}</p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="plane-token">{t('apiToken')}</Label>

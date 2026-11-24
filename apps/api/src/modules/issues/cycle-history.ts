@@ -89,8 +89,8 @@ export async function listIssueCycles(issueId: number): Promise<IssueCycleRow[]>
     byCycle.set(r.cycleId, {
       cycleId: r.cycleId,
       name: r.name,
-      startDate: r.startDate,
-      endDate: r.endDate,
+      startDate: iso(r.startDate),
+      endDate: iso(r.endDate),
       status: cycleStatus(r.startDate, r.endDate, r.completedAt),
       enteredAt: iso(r.enteredAt),
       leftAt: r.leftAt ? iso(r.leftAt) : null,

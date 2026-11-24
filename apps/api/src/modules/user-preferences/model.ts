@@ -1,10 +1,18 @@
 import { t } from 'elysia';
-import { LOCALES } from '@repo/mailer';
 import { HotkeyCombosSchema } from '#modules/settings/model';
 
-// t.UnionEnum defaults to its first value, which would reset the language on a patch that
-// leaves it out.
-const Locale = t.UnionEnum([...LOCALES], { default: undefined });
+const Locale = t.Union([
+  t.Literal('en'),
+  t.Literal('uk'),
+  t.Literal('ru'),
+  t.Literal('zh-CN'),
+  t.Literal('ar'),
+  t.Literal('fr'),
+  t.Literal('pt-BR'),
+  t.Literal('id'),
+  t.Literal('es-ES'),
+  t.Literal('vi'),
+]);
 const Theme = t.Union([t.Literal('light'), t.Literal('dark'), t.Literal('system')]);
 const IssueOpenMode = t.Union([t.Literal('panel'), t.Literal('page')]);
 const StartPage = t.Union([
@@ -12,6 +20,7 @@ const StartPage = t.Union([
   t.Literal('dashboard'),
   t.Literal('work-items'),
   t.Literal('initiatives'),
+  t.Literal('workspace'),
 ]);
 const IssueStatsView = t.Union([t.Literal('compact'), t.Literal('timeline')]);
 const IssueActivityView = t.Union([t.Literal('flat'), t.Literal('grouped')]);

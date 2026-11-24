@@ -32,23 +32,26 @@ export default function InitiativeRow({
   const href = initiativePath(projectKey, initiative.id);
 
   return (
-    <TableRow className="group/item cursor-pointer" onClick={() => router.push(href)}>
-      <TableCell className="px-3 py-2.5 align-middle whitespace-normal">
+    <TableRow
+      className="group/item cursor-pointer transition-colors hover:bg-muted/45"
+      onClick={() => router.push(href)}
+    >
+      <TableCell className="px-4 py-3 align-middle whitespace-normal">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="shrink-0">{colorDot(STATUS_META[initiative.status].color)}</span>
           <Link
             href={href}
             onClick={(e) => e.stopPropagation()}
-            className="min-w-0 truncate text-sm font-medium hover:underline"
+            className="inline-flex min-h-8 min-w-0 items-center truncate text-sm font-medium text-foreground hover:underline"
           >
             {initiative.title}
           </Link>
         </div>
       </TableCell>
 
-      <TableCell className="px-3 py-2.5 align-middle">
+      <TableCell className="px-3 py-3 align-middle">
         {initiative.priority ? (
-          <span className="flex items-center gap-1.5 text-sm">
+          <span className="flex items-center gap-1.5 text-xs">
             <PriorityIcon priority={initiative.priority} className="size-3.5" />
             <span className="text-muted-foreground">{priorityLabel(initiative.priority)}</span>
           </span>
@@ -57,26 +60,26 @@ export default function InitiativeRow({
         )}
       </TableCell>
 
-      <TableCell className="px-3 py-2.5 align-middle">
+      <TableCell className="px-3 py-3 align-middle">
         {owner ? (
-          <span className="flex items-center gap-1.5 text-sm">
+          <span className="flex items-center gap-1.5 text-xs">
             <AssigneeAvatar name={owner.name} image={owner.image} />
             <span className="truncate text-muted-foreground">{owner.name}</span>
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground">{t('noOwner')}</span>
+          <span className="text-xs text-muted-foreground">{t('noOwner')}</span>
         )}
       </TableCell>
 
-      <TableCell className="px-3 py-2.5 align-middle text-xs text-muted-foreground">
+      <TableCell className="px-3 py-3 align-middle text-xs text-muted-foreground tabular-nums">
         {initiative.targetDate ? formatShortDate(initiative.targetDate) : '—'}
       </TableCell>
 
-      <TableCell className="px-3 py-2.5 align-middle">
+      <TableCell className="px-3 py-3 align-middle">
         <ProgressBar progress={initiative.progress} />
       </TableCell>
 
-      <TableCell className="px-3 py-2.5 align-middle">
+      <TableCell className="px-3 py-3 align-middle">
         <HealthBadge health={initiative.health} />
       </TableCell>
     </TableRow>

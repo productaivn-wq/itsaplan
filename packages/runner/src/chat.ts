@@ -18,7 +18,7 @@ import { execute } from './execute';
 
 // Often enough to read as typing, rarely enough that a chatty command does not become a
 // request per line.
-const FLUSH_MS = 500;
+const FLUSH_MS = 150;
 
 export async function answer(
   config: RunnerConfig,
@@ -48,12 +48,22 @@ export async function answer(
       prompt: message.prompt,
       systemPrompt: message.systemPrompt,
       sessionId: message.sessionId,
+      options: message.options,
       env: {
         ITSAPLAN_TRIGGER: 'chat',
         ITSAPLAN_SYSTEM_PROMPT: message.systemPrompt,
         ITSAPLAN_THREAD_ID: message.threadId,
         ITSAPLAN_MESSAGE_ID: String(message.id),
         ITSAPLAN_SESSION_ID: message.sessionId ?? '',
+        ...(message.options?.model ? { ITSAPLAN_MODEL: message.options.model } : {}),
+        ...(message.options?.mode ? { ITSAPLAN_MODE: message.options.mode } : {}),
+        ...(message.options?.effort ? { ITSAPLAN_EFFORT: message.options.effort } : {}),
+        ...(typeof message.options?.thinking === 'boolean'
+          ? { ITSAPLAN_THINKING: String(message.options.thinking) }
+          : {}),
+        ...(message.options?.permissionMode
+          ? { ITSAPLAN_PERMISSION_MODE: message.options.permissionMode }
+          : {}),
       },
     },
     { onData: (chunk) => stream.write(chunk), signal: stop.signal },

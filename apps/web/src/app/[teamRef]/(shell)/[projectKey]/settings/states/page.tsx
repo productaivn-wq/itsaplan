@@ -1,5 +1,5 @@
-import SettingsStatesPage from '@/features/settings/SettingsStatesPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsStatesPage />;
+  return <ProjectSettingsCutRedirect />;
 }

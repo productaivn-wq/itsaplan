@@ -5,15 +5,11 @@ import { EMPTY_FILTER_SET, type FilterSet } from '@/utils/filters';
 
 // Display settings for an issue board that has no saved views — the one an
 // initiative or a cycle shows. Persisted in localStorage under `storeKey`, keyed by
-// the id of the thing the board belongs to; filters stay transient in state. The
-// active layout and the display settings of each layout are stored, so a reload
-// restores them and every layout keeps its own. Mirrors the localStorage store in
-// lib/viewSettings.
+// the id of the thing the board belongs to; filters stay transient in state. Layout
+// (kanban/table) and its display settings are stored together so a reload restores
+// them. Mirrors the localStorage store in lib/viewSettings.
 
-type Views = Partial<Record<WorkItemsView, Partial<ViewSettings>>>;
-// An entry written before the layouts were kept apart holds one flat settings
-// object instead of `views`, which belongs to the layout it was saved with.
-type Stored = { layout?: WorkItemsView; views?: Views } & Partial<ViewSettings>;
+type Stored = { layout?: WorkItemsView } & Partial<ViewSettings>;
 type Store = Record<string, Stored>;
 
 function readStore(storeKey: string): Store {
@@ -31,33 +27,29 @@ function writeStore(storeKey: string, store: Store) {
   localStorage.setItem(storeKey, JSON.stringify(store));
 }
 
-function viewsOf(stored: Stored | undefined): Views {
-  if (!stored) return {};
-  const { layout, views, ...flat } = stored;
-  return views ?? { [layout ?? 'kanban']: flat };
-}
-
 export function useLocalBoardSettings(storeKey: string, id: number) {
   const key = String(id);
   const [state, setState] = useState<{ view: WorkItemsView; settings: ViewSettings }>(() => {
     const stored = readStore(storeKey)[key];
-    const view: WorkItemsView = stored?.layout ?? 'kanban';
-    return { view, settings: normalizeViewSettings(viewsOf(stored)[view], view) };
+    const rawLayout = stored?.layout;
+    const view: WorkItemsView = !rawLayout || rawLayout === 'kanban' ? 'table' : rawLayout;
+    return { view, settings: normalizeViewSettings(stored, view) };
   });
   const [filters, setFilters] = useState<FilterSet>(EMPTY_FILTER_SET);
 
   const persist = useCallback(
     (view: WorkItemsView, settings: ViewSettings) => {
       const store = readStore(storeKey);
-      store[key] = { layout: view, views: { ...viewsOf(store[key]), [view]: settings } };
+      store[key] = { layout: view, ...settings };
       writeStore(storeKey, store);
     },
     [storeKey, key],
   );
 
   const changeView = useCallback(
-    (view: WorkItemsView) => {
-      const settings = normalizeViewSettings(viewsOf(readStore(storeKey)[key])[view], view);
+    (nextView: WorkItemsView) => {
+      const view: WorkItemsView = nextView === 'kanban' ? 'table' : nextView;
+      const settings = normalizeViewSettings(readStore(storeKey)[key], view);
       persist(view, settings);
       setState({ view, settings });
     },

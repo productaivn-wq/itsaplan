@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from '@/lib/api/endpoints/views';
 import type { WorkItemsView } from '@/utils/viewTypes';
 import {
   normalizeView,
-  useArrangeTabRow,
-  useResetTabRow,
-  useSetViewHidden,
   useCreateView,
   useDeleteView,
   useReorderViews,
@@ -28,11 +25,10 @@ const VIEW_KEY = 'planner_view';
 function loadView(): WorkItemsView {
   // Runs in a useState initializer, which also executes during server render —
   // there is no localStorage there, so fall back to the default layout.
-  if (typeof window === 'undefined') return 'kanban';
+  if (typeof window === 'undefined') return 'table';
   const raw = localStorage.getItem(VIEW_KEY);
-  return raw === 'kanban' || raw === 'table' || raw === 'timeline' || raw === 'calendar'
-    ? raw
-    : 'kanban';
+  if (raw === 'kanban') return 'table';
+  return raw === 'table' || raw === 'timeline' || raw === 'calendar' ? raw : 'table';
 }
 
 // The conditions of a saved view followed by the ad-hoc ones, re-keyed so the two
@@ -73,7 +69,6 @@ export function useViewEditor(
   views: View[],
   activeViewId: number | null,
   onSelectView: (id: number | null) => void,
-  keepsPrivateViews: boolean,
 ) {
   const [view, setView] = useState<WorkItemsView>(loadView);
   const [settings, setSettings] = useState<ViewSettings>(() => defaultViewSettings(loadView()));
@@ -83,10 +78,6 @@ export function useViewEditor(
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [draftIcon, setDraftIcon] = useState<string | null>(null);
-  // Whether Save creates a private view. New views start private for whoever may keep one,
-  // a member of the project who reads its views: making one the project's is the
-  // deliberate choice.
-  const [draftPrivate, setDraftPrivate] = useState(true);
   // Whether the filter row is shown. It is also shown once the live filters differ
   // from the selection's own filters, so ad-hoc filters can never be hidden.
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -95,9 +86,6 @@ export function useViewEditor(
   const updateView = useUpdateView(projectKey);
   const deleteViewMutation = useDeleteView(projectKey);
   const reorderViewsMutation = useReorderViews(projectKey);
-  const arrangeTabRowMutation = useArrangeTabRow(projectKey);
-  const resetTabRowMutation = useResetTabRow(projectKey);
-  const setViewHiddenMutation = useSetViewHidden(projectKey);
 
   const activeView =
     activeViewId != null ? (views.find((v) => v.id === activeViewId) ?? null) : null;
@@ -109,33 +97,68 @@ export function useViewEditor(
     [editing, filters, activeView],
   );
 
+  const stateRef = useRef({
+    projectKey,
+    views,
+    activeViewId,
+    activeView,
+    view,
+    settings,
+    filters,
+    editing,
+    draftName,
+    draftIcon,
+    onSelectView,
+    createView,
+    updateView,
+    deleteViewMutation,
+    reorderViewsMutation,
+  });
+  stateRef.current = {
+    projectKey,
+    views,
+    activeViewId,
+    activeView,
+    view,
+    settings,
+    filters,
+    editing,
+    draftName,
+    draftIcon,
+    onSelectView,
+    createView,
+    updateView,
+    deleteViewMutation,
+    reorderViewsMutation,
+  };
+
   // Load the live layout/settings for a selection and drop the ad-hoc filters: the
   // All tab restores the persisted global layout and its stored settings; a saved
   // view uses its own stored display. forEdit loads the view's own conditions into
   // the filter row, for the edit bar to change them.
-  function loadSelection(id: number | null, forEdit = false) {
+  const loadSelection = useCallback((id: number | null, forEdit = false) => {
+    const cur = stateRef.current;
     if (id == null) {
       setFilters(EMPTY_FILTER_SET);
       const allView = loadView();
       setView(allView);
-      if (projectKey) setSettings(getViewSettings(projectKey, allView));
+      if (cur.projectKey) setSettings(getViewSettings(cur.projectKey, allView));
       return;
     }
-    const v = views.find((x) => x.id === id);
+    const v = cur.views.find((x) => x.id === id);
     if (!v) return;
     setFilters(forEdit ? mergeFilters(v.filters, EMPTY_FILTER_SET) : EMPTY_FILTER_SET);
-    setView(v.display.layout);
+    setView(v.display.layout === 'kanban' ? 'table' : v.display.layout);
     const { layout: _layout, ...s } = v.display;
     setSettings(s);
-  }
+  }, []);
 
   // Apply the selection's display whenever the routed view or the project changes,
   // or once the selected view's data arrives. loadedRef keys on project+view so an
   // unrelated views refetch (e.g. after Save) does not clobber the live edit.
-  // openEditNext lets beginNewView/beginEditView/beginDuplicate keep the edit bar open
-  // across the navigation that changes the selection; keepLiveNext lets beginNewView and
-  // beginDuplicate carry the drafted filters and display into the draft instead of
-  // reloading the selection.
+  // openEditNext lets beginNewView/beginEditView keep the edit bar open across the
+  // navigation that changes the selection; keepLiveNext lets beginNewView carry the
+  // live filters and display into the draft instead of reloading the selection.
   const loadedRef = useRef<string | null>(null);
   const openEditNext = useRef(false);
   const keepLiveNext = useRef(false);
@@ -148,188 +171,196 @@ export function useViewEditor(
     else loadSelection(activeViewId, openEditNext.current);
     setEditing(openEditNext.current);
     openEditNext.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectKey, activeViewId, views]);
+  }, [projectKey, activeViewId, views, loadSelection]);
 
   // Enters edit mode, seeding the name and icon inputs from the given view (or
   // blank for a new/All-tab draft).
-  function beginEdit(from: View | null) {
+  const beginEdit = useCallback((from: View | null) => {
     setEditing(true);
     setDraftName(from?.name ?? '');
     setDraftIcon(from?.icon ?? null);
-    setDraftPrivate(keepsPrivateViews);
-  }
+  }, []);
 
   // Enter edit mode for a new view, drafted from what is on screen: the active
   // view's conditions plus the ad-hoc ones, and the live display. Deselecting the
   // active view (navigating to the All tab) keeps that state, so saveEdits creates
   // (not updates).
-  function beginNewView() {
-    setFilters(mergeFilters(activeView?.filters, filters));
-    if (activeViewId != null) {
+  const beginNewView = useCallback(() => {
+    const cur = stateRef.current;
+    setFilters(mergeFilters(cur.activeView?.filters, cur.filters));
+    if (cur.activeViewId != null) {
       openEditNext.current = true;
       keepLiveNext.current = true;
-      onSelectView(null);
+      cur.onSelectView(null);
     }
     beginEdit(null);
-  }
+  }, [beginEdit]);
 
-  function changeView(next: WorkItemsView) {
+  const changeView = useCallback((next: WorkItemsView) => {
+    const cur = stateRef.current;
     setView(next);
-    if (activeViewId == null && !editing) {
+    if (cur.activeViewId == null && !cur.editing) {
       // On the All tab (not editing), layout + its settings are the ad-hoc
       // localStorage default.
       localStorage.setItem(VIEW_KEY, next);
-      if (projectKey) setSettings(getViewSettings(projectKey, next));
+      if (cur.projectKey) setSettings(getViewSettings(cur.projectKey, next));
     } else {
       // A saved view or a draft: the layout change is live only; start the new
       // layout from its defaults.
       setSettings(defaultViewSettings(next));
     }
-  }
+  }, []);
 
-  function changeSettings(next: ViewSettings) {
+  const changeSettings = useCallback((next: ViewSettings) => {
+    const cur = stateRef.current;
     setSettings(next);
     // On the All tab (not editing) the settings are the ad-hoc localStorage
     // default; everywhere else they stay live until an explicit Save.
-    if (activeViewId == null && !editing && projectKey) setViewSettings(projectKey, view, next);
-  }
+    if (cur.activeViewId == null && !cur.editing && cur.projectKey) {
+      setViewSettings(cur.projectKey, cur.view, next);
+    }
+  }, []);
 
-  function toggleFilters() {
+  const toggleFilters = useCallback(() => {
     setFiltersOpen((open) => !open);
-  }
+  }, []);
 
   // Reset the live filters/display back to the selected view and leave edit mode.
-  function cancelEdits() {
+  const cancelEdits = useCallback(() => {
     setEditing(false);
-    loadSelection(activeViewId);
-  }
+    loadSelection(stateRef.current.activeViewId);
+  }, [loadSelection]);
 
   // Update the current saved view (also applying any rename), or create a new
   // view from the draft when there is no active view and select it. The edited
   // conditions become the view's own, so the filter row is emptied: they now apply
   // through the view.
-  async function saveEdits() {
-    if (!projectKey) return;
-    const name = draftName.trim();
-    const display = toDisplay(view, settings);
-    if (activeView) {
-      await updateView.mutateAsync({
-        id: activeView.id,
-        input: { name: name || activeView.name, icon: draftIcon, filters, display },
+  const saveEdits = useCallback(async () => {
+    const cur = stateRef.current;
+    if (!cur.projectKey) return;
+    const name = cur.draftName.trim();
+    const display = toDisplay(cur.view, cur.settings);
+    if (cur.activeView) {
+      await cur.updateView.mutateAsync({
+        id: cur.activeView.id,
+        input: {
+          name: name || cur.activeView.name,
+          icon: cur.draftIcon,
+          filters: cur.filters,
+          display,
+        },
       });
       setFilters(EMPTY_FILTER_SET);
       setEditing(false);
     } else {
       if (!name) return; // Save is disabled without a name for a new view.
       const created = normalizeView(
-        await createView.mutateAsync({
-          input: { name, icon: draftIcon, filters, display, isPrivate: draftPrivate },
+        await cur.createView.mutateAsync({
+          input: { name, icon: cur.draftIcon, filters: cur.filters, display },
         }),
       );
       setFilters(EMPTY_FILTER_SET);
       setEditing(false);
-      onSelectView(created.id);
+      cur.onSelectView(created.id);
     }
-  }
+  }, []);
 
   // Edit from a tab's menu: select the view (keeping the edit bar open across the
   // navigation) and show its own conditions in the filter row, with any ad-hoc
   // ones folded in so Save keeps what is on screen.
-  function beginEditView(target: View) {
-    if (activeViewId !== target.id) {
-      openEditNext.current = true;
-      onSelectView(target.id); // the load effect fills the filter row for the edit
-    } else {
-      setFilters(mergeFilters(target.filters, filters));
-    }
-    beginEdit(target);
-  }
+  const beginEditView = useCallback(
+    (target: View) => {
+      const cur = stateRef.current;
+      if (cur.activeViewId !== target.id) {
+        openEditNext.current = true;
+        cur.onSelectView(target.id); // the load effect fills the filter row for the edit
+      } else {
+        setFilters(mergeFilters(target.filters, cur.filters));
+      }
+      beginEdit(target);
+    },
+    [beginEdit],
+  );
 
-  // A new-view draft seeded with the target as it is stored (its own conditions and
-  // display, not what is on screen beyond them), saved from the edit bar like any new view.
-  function beginDuplicate(target: View, name: string) {
-    setFilters(mergeFilters(target.filters, EMPTY_FILTER_SET));
-    setView(target.display.layout);
-    const { layout: _layout, ...s } = target.display;
-    setSettings(s);
-    if (activeViewId != null) {
-      openEditNext.current = true;
-      keepLiveNext.current = true;
-      onSelectView(null);
-    }
-    beginEdit(target);
-    setDraftName(name);
-  }
+  const deleteView = useCallback(async (target: View) => {
+    const cur = stateRef.current;
+    await cur.deleteViewMutation.mutateAsync(target.id);
+    if (cur.activeViewId === target.id) cur.onSelectView(null);
+  }, []);
 
-  async function deleteView(target: View) {
-    await deleteViewMutation.mutateAsync(target.id);
-    if (activeViewId === target.id) onSelectView(null);
-  }
+  // Moves the dragged view to the dropped-on view's slot and persists the full
+  // order; a null target means the front (the drop on the fixed All tab). The move
+  // applies to the stored order, not to the tab row — favorites are pinned to the
+  // front for the caller only, while position is shared by the project.
+  const reorderView = useCallback((draggedId: number, targetId: number | null) => {
+    if (draggedId === targetId) return;
+    const cur = stateRef.current;
+    const next = [...cur.views].sort((a, b) => a.position - b.position || a.id - b.id);
+    const from = next.findIndex((v) => v.id === draggedId);
+    const to = targetId == null ? 0 : next.findIndex((v) => v.id === targetId);
+    if (from < 0 || to < 0 || from === to) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    cur.reorderViewsMutation.mutate(next.map((v) => v.id));
+  }, []);
 
-  // Stores the caller's own tab row. Nobody else's row changes.
-  function arrangeTabRow(orderedIds: number[]) {
-    arrangeTabRowMutation.mutate(orderedIds);
-  }
+  const selectView = useCallback((id: number | null) => {
+    stateRef.current.onSelectView(id);
+  }, []);
 
-  async function hideView(target: View) {
-    await setViewHiddenMutation.mutateAsync({ id: target.id, hidden: true });
-    if (activeViewId === target.id) onSelectView(null);
-  }
+  const showFilters = filtersOpen || editing || isActiveFilterSet(filters);
 
-  function showView(target: View) {
-    setViewHiddenMutation.mutate({ id: target.id, hidden: false });
-  }
-
-  function resetTabRow() {
-    resetTabRowMutation.mutate();
-  }
-
-  // The project's views in the order of the caller's row become the project's order, which
-  // whoever has not placed them in their own row sees; the ones the caller hid go last.
-  function pinProjectOrder() {
-    const projectViews = views.filter((v) => !v.isPrivate);
-    reorderViewsMutation.mutate(
-      [...projectViews.filter((v) => !v.hidden), ...projectViews.filter((v) => v.hidden)].map(
-        (v) => v.id,
-      ),
-    );
-  }
-
-  return {
-    view,
-    settings,
-    filters,
-    effectiveFilters,
-    // The filter row is open on request, while editing, or while an ad-hoc filter
-    // applies, so an applied filter can never be hidden.
-    showFilters: filtersOpen || editing || isActiveFilterSet(filters),
-    activeViewId,
-    activeView,
-    editing,
-    draftName,
-    setDraftName,
-    draftIcon,
-    setDraftIcon,
-    draftPrivate,
-    setDraftPrivate,
-    beginNewView,
-    changeView,
-    changeSettings,
-    changeFilters: setFilters,
-    toggleFilters,
-    // Selecting a saved view (or the All tab when id is null) navigates; the load
-    // effect then applies its display and leaves edit mode.
-    selectView: onSelectView,
-    cancelEdits,
-    saveEdits,
-    beginEditView,
-    deleteView,
-    beginDuplicate,
-    arrangeTabRow,
-    hideView,
-    showView,
-    resetTabRow,
-    pinProjectOrder,
-  };
+  return useMemo(
+    () => ({
+      view,
+      settings,
+      filters,
+      effectiveFilters,
+      // The filter row is open on request, while editing, or while an ad-hoc filter
+      // applies, so an applied filter can never be hidden.
+      showFilters,
+      activeViewId,
+      activeView,
+      editing,
+      draftName,
+      setDraftName,
+      draftIcon,
+      setDraftIcon,
+      beginNewView,
+      changeView,
+      changeSettings,
+      changeFilters: setFilters,
+      toggleFilters,
+      // Selecting a saved view (or the All tab when id is null) navigates; the load
+      // effect then applies its display and leaves edit mode.
+      selectView,
+      cancelEdits,
+      saveEdits,
+      beginEditView,
+      deleteView,
+      reorderView,
+    }),
+    [
+      view,
+      settings,
+      filters,
+      effectiveFilters,
+      showFilters,
+      activeViewId,
+      activeView,
+      editing,
+      draftName,
+      draftIcon,
+      beginNewView,
+      changeView,
+      changeSettings,
+      toggleFilters,
+      selectView,
+      cancelEdits,
+      saveEdits,
+      beginEditView,
+      deleteView,
+      reorderView,
+    ],
+  );
 }

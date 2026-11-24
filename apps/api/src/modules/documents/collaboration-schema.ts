@@ -35,13 +35,6 @@ const nodes: Record<string, NodeSpec> = {
   taskItem: { content: 'paragraph block*', defining: true, attrs: { checked: { default: false } } },
   horizontalRule: { group: 'block', attrs: block },
   hardBreak: { group: 'inline', inline: true, selectable: false },
-  mention: {
-    group: 'inline',
-    inline: true,
-    atom: true,
-    selectable: false,
-    attrs: { username: { default: '' } },
-  },
   codeBlock: {
     group: 'block',
     content: 'text*',

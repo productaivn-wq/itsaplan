@@ -1,6 +1,6 @@
 import { db, userPreference } from '@repo/db';
-import { DEFAULT_LOCALE, type Locale } from '@repo/mailer';
 import { eq, sql } from 'drizzle-orm';
+import { DEFAULT_LOCALE, type Locale } from './locale';
 
 // A user's own interface preferences, held per account so the same choices apply on
 // every device. One row per user; absent means nothing was changed yet and the
@@ -12,7 +12,7 @@ export const DEFAULT_TIMEZONE = 'UTC';
 
 export const THEMES = ['light', 'dark', 'system'] as const;
 export const ISSUE_OPEN_MODES = ['panel', 'page'] as const;
-export const START_PAGES = ['inbox', 'dashboard', 'work-items', 'initiatives'] as const;
+export const START_PAGES = ['inbox', 'dashboard', 'work-items', 'initiatives', 'workspace'] as const;
 export const ISSUE_STATS_VIEWS = ['compact', 'timeline'] as const;
 export const ISSUE_ACTIVITY_VIEWS = ['flat', 'grouped'] as const;
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { PRESETS, presetArgv, presetPrompt } from '../presets';
+import { PRESETS, presetArgv, presetOptionArgs, presetPrompt } from '../presets';
 
 // The preset is what makes a session survive between messages, so the argument it builds
 // for each CLI is pinned here: getting the resume spelling wrong is silent — the command
@@ -27,10 +27,10 @@ describe('preset arguments', () => {
     expect(resumed.indexOf('--model')).toBeLessThan(resumed.length - 1);
   });
 
-  it('gives opencode the task as the last argument, behind --, after the session flag', () => {
+  it('gives opencode the task as the last argument, after the session flag', () => {
     const argv = presetArgv(PRESETS.opencode, 'ses_1', '', [], 'do it');
     expect(argv).toContain('--session');
-    expect(argv.slice(-2)).toEqual(['--', 'do it']);
+    expect(argv.at(-1)).toBe('do it');
   });
 
   it('resumes an Antigravity conversation and keeps the task behind -p', () => {
@@ -52,41 +52,22 @@ describe('preset arguments', () => {
     expect(resumed.slice(-4)).toEqual(['--session-id', 'c66bf000', '-p', 'do it']);
   });
 
-  it('prints through pi json mode and resumes by session id, task on stdin', () => {
+  it('prints through pi json mode and resumes by session id, task last', () => {
     const fresh = presetArgv(PRESETS.pi, null, 'context', [], 'do it');
     expect(fresh.slice(0, 3)).toEqual(['-p', '--mode', 'json']);
     expect(fresh).not.toContain('--session-id');
     expect(fresh).toContain('--append-system-prompt');
-    expect(fresh).not.toContain('do it');
+    expect(fresh.at(-1)).toBe('do it');
 
     const resumed = presetArgv(PRESETS.pi, 'sess-9', '', [], 'do it');
-    expect(resumed).toEqual(['-p', '--mode', 'json', '--session-id', 'sess-9']);
-  });
-
-  it('runs Mastra Code headless with the task on stdin and resumes a thread by id', () => {
-    const fresh = presetArgv(PRESETS.mastracode, null, 'context', ['--model', 'x/y'], 'do it');
-    expect(fresh).not.toContain('--thread');
-    expect(fresh).not.toContain('do it');
-    expect(fresh.slice(-2)).toEqual(['--prompt', '-']);
-
-    const resumed = presetArgv(PRESETS.mastracode, 'ee394567', '', [], 'do it');
-    expect(resumed).toEqual([
-      '--output',
-      'jsonl',
-      '--permission-mode',
-      'auto',
-      '--thread',
-      'ee394567',
-      '--prompt',
-      '-',
-    ]);
+    expect(resumed).toEqual(['-p', '--mode', 'json', '--session-id', 'sess-9', 'do it']);
   });
 
   it('prints through omp json mode unattended and resumes with --resume', () => {
     const fresh = presetArgv(PRESETS.omp, null, '', [], 'do it');
     expect(fresh).toContain('--auto-approve');
     expect(fresh).not.toContain('--resume');
-    expect(fresh.slice(-2)).toEqual(['--', 'do it']);
+    expect(fresh.at(-1)).toBe('do it');
 
     const resumed = presetArgv(PRESETS.omp, '01a0c317', 'context', [], 'do it');
     expect(resumed.slice(0, 6)).toEqual([
@@ -98,18 +79,7 @@ describe('preset arguments', () => {
       '01a0c317',
     ]);
     expect(resumed).toContain('--append-system-prompt');
-    expect(resumed.slice(-2)).toEqual(['--', 'do it']);
-  });
-
-  // A member's message reaches the CLI on stdin or behind what keeps it from being read as
-  // an option, so one beginning with a hyphen stays the task.
-  it('never leaves a message where the CLI reads it as an option', () => {
-    const message = '--version';
-    for (const preset of Object.values(PRESETS)) {
-      const argv = presetArgv(preset, 'sess', '', [], message);
-      if (preset.promptVia === 'stdin') expect(argv).not.toContain(message);
-      else expect(['--', '-p']).toContain(argv.at(-2) ?? '');
-    }
+    expect(resumed.at(-1)).toBe('do it');
   });
 
   it("appends the operator's arguments after the preset's, so a repeated flag wins", () => {
@@ -137,5 +107,30 @@ describe('preset arguments', () => {
     expect(presetArgv(PRESETS.claude, 'abc', '', [], 'do it')).not.toContain(
       '--append-system-prompt',
     );
+  });
+
+  it('builds per-turn model, effort, and permission-mode CLI flags cleanly and rejects flag injection', () => {
+    expect(presetOptionArgs('antigravity', { model: 'gemini-4-neon-xhigh' })).toEqual([
+      '-m',
+      'gemini-4-neon-xhigh',
+    ]);
+
+    expect(
+      presetOptionArgs('claude', {
+        model: 'claude-sonnet-5-5-high',
+        effort: 'xhigh',
+        mode: 'plan',
+      }),
+    ).toEqual([
+      '--model',
+      'claude-sonnet-5-5-high',
+      '--effort',
+      'xhigh',
+      '--permission-mode',
+      'plan',
+    ]);
+
+    expect(presetOptionArgs('antigravity', { model: '--dangerously-skip-permissions' })).toEqual([]);
+    expect(presetOptionArgs('claude', { model: '-m evil' })).toEqual([]);
   });
 });

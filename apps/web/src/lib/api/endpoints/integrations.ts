@@ -16,20 +16,60 @@ export interface ConfigField {
 // integration whose `tools` are configured on a credential.
 export type IntegrationKind = 'llm' | 'tool';
 
+export interface OAuth2CatalogMeta {
+  scopes: string[];
+  allowedDomains: string[];
+  pkce: boolean;
+  delivery: 'bearer' | 'env';
+  envVar?: string;
+  clientReviewNote?: string;
+}
+
 // An integration the team can store a credential for (server-side catalog).
 export interface IntegrationMeta {
   key: string;
   label: string;
   kind: IntegrationKind;
+  authModes?: ('api_key' | 'oauth2')[];
+  oauth2?: OAuth2CatalogMeta;
   credentialSchema: ConfigField[];
-  tools: {
-    key: string;
-    label: string;
-    description: string;
-    scopes?: string[];
-    // The section the tool is listed under in its integration.
-    group?: string;
-  }[];
+  tools: { key: string; label: string; description: string; scopes?: string[] }[];
+}
+
+export interface OAuthProviderConfigDto {
+  integrationKey: string;
+  mode: 'direct' | 'relay' | 'unconfigured';
+  configured: boolean;
+  source: 'db' | 'env' | 'none';
+  hasClientId: boolean;
+  hasClientSecret: boolean;
+  relayUrl: string | null;
+  hasRelaySecret: boolean;
+  callbackUrl: string;
+  scopes: string[];
+  allowedDomains: string[];
+  clientReviewNote: string | null;
+}
+
+export interface SaveOAuthProviderConfigInput {
+  mode: 'direct' | 'relay';
+  clientId?: string | null;
+  clientSecret?: string | null;
+  relayUrl?: string | null;
+  relaySecret?: string | null;
+}
+
+export interface StartOAuthInput {
+  label?: string | null;
+  credentialId?: number | null;
+  returnTo?: string;
+}
+
+export interface StartOAuthResponse {
+  authorizeUrl: string;
+  mode: 'direct' | 'relay';
+  integrationKey: string;
+  callbackUrl: string;
 }
 
 // A model an LLM provider offers, from the models.dev registry.
@@ -101,3 +141,34 @@ export const updateCredential = (teamId: number, credentialId: number, patch: Cr
 
 export const deleteCredential = (teamId: number, credentialId: number) =>
   request<void>(`/teams/${teamId}/integrations/${credentialId}`, { method: 'DELETE' });
+
+export const getOAuthProviderConfig = (teamId: number, integrationKey: string) =>
+  request<OAuthProviderConfigDto>(
+    `/teams/${teamId}/integrations/oauth/${encodeURIComponent(integrationKey)}/config`,
+  );
+
+export const saveOAuthProviderConfig = (
+  teamId: number,
+  integrationKey: string,
+  input: SaveOAuthProviderConfigInput,
+) =>
+  request<OAuthProviderConfigDto>(
+    `/teams/${teamId}/integrations/oauth/${encodeURIComponent(integrationKey)}/config`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    },
+  );
+
+export const startOAuthConnection = (
+  teamId: number,
+  integrationKey: string,
+  input: StartOAuthInput,
+) =>
+  request<StartOAuthResponse>(
+    `/teams/${teamId}/integrations/oauth/${encodeURIComponent(integrationKey)}/start`,
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );

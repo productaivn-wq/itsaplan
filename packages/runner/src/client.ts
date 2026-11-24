@@ -1,14 +1,13 @@
 import type { AgUiEvent, ContextUsage } from './agui';
 import type { RunnerConfig } from './config';
+import type { ChatTurnOptions } from './presets';
 
 // The agent's API key is the whole authorization: it identifies the agent, and the server
 // only ever hands back that agent's work.
 
 export interface Run {
-  attempts: number;
-  traceEvents?: boolean;
   id: number;
-  trigger: 'mention' | 'delegation' | 'field' | 'schedule' | 'manual' | 'status' | 'event';
+  trigger: 'mention' | 'delegation' | 'field' | 'schedule' | 'manual';
   prompt: string;
   systemPrompt: string;
   issueId: number | null;
@@ -24,6 +23,7 @@ export interface ChatMessage {
   prompt: string;
   systemPrompt: string;
   sessionId: string | null;
+  options?: ChatTurnOptions;
 }
 
 // None of these calls does real work on the server, so a request that hangs is a dead
@@ -77,8 +77,8 @@ export class Client {
     return body.run;
   }
 
-  async heartbeat(runId: number, attempt?: number): Promise<void> {
-    await this.post(`/agent-runs/${runId}/heartbeat`, attempt == null ? undefined : { attempt });
+  async heartbeat(runId: number): Promise<void> {
+    await this.post(`/agent-runs/${runId}/heartbeat`);
   }
 
   // `usage` is what the last model call of the run read and wrote. Left out where the
@@ -87,27 +87,12 @@ export class Client {
     runId: number,
     result: {
       status: 'success' | 'failed';
-      attempt?: number;
       output?: string;
       error?: string;
       usage?: ContextUsage | null;
     },
   ): Promise<void> {
     await this.post(`/agent-runs/${runId}/result`, result);
-  }
-
-  async runEvents(
-    run: Run,
-    offset: number,
-    events: AgUiEvent[],
-    sessionId?: string,
-  ): Promise<void> {
-    await this.post(`/agent-runs/${run.id}/events`, {
-      attempt: run.attempts,
-      offset,
-      events,
-      ...(sessionId && { sessionId }),
-    });
   }
 
   async claimChat(): Promise<ChatMessage | null> {

@@ -54,7 +54,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.875rem;
+  font-size: 14px;
   line-height: 1.5;
 }
 .title {
@@ -81,7 +81,7 @@
   flex-shrink: 0;
   border-radius: calc(var(--radius) * 0.8);
   color: var(--muted-foreground);
-  font-size: 0.875rem;
+  font-size: 14px;
   line-height: 1.5;
   cursor: pointer;
   user-select: none;

@@ -1,14 +1,4 @@
 {
-  "description": "A self-hosted, open-source issue tracker with AI agents built in. Assign work to people or agents, and drive it through the API, webhooks and MCP.",
-  "screens": {
-    "signIn": "Sign in",
-    "signUp": "Sign up",
-    "forgotPassword": "Forgot password",
-    "resetPassword": "Reset password",
-    "account": "Account",
-    "settings": "Settings",
-    "teamSettings": "Team settings",
-    "invitation": "Invitation",
-    "authorizeApp": "Authorize app"
-  }
+  "title": "ACCORD — Sovereign Agentic OS & Project Governance",
+  "description": "AI Speed. Deterministic Proof. Autonomous Operation. Three-Node Socio-Technical Project Management & Agentic OS."
 }

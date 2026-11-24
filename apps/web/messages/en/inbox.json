@@ -10,8 +10,7 @@
   "showSnoozed": "Show snoozed",
   "markAllRead": "Mark all as read",
   "deleteAllRead": "Delete all read",
-  "deleteAllCompleted": "Delete for completed issues",
-  "deleteAllCompletedDescription": "This deletes the notifications for completed or canceled issues that match the current filters, including unread ones. This cannot be undone.",
+  "deleteAllReadCompleted": "Delete all read for completed issues",
   "types": {
     "assigned": "Assigned",
     "mentioned": "Mentioned",

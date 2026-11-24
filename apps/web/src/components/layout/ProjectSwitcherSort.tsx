@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { ProjectSort } from '@/lib/api/endpoints/projects';
+import type { ProjectSort } from './utils/projectSwitcher';
 
 export default function ProjectSwitcherSort({
   sort,

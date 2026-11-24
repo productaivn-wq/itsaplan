@@ -1,5 +1,4 @@
 import account from '../../messages/en/account.json';
-import agentAnalytics from '../../messages/en/agentAnalytics.json';
 import aiChat from '../../messages/en/aiChat.json';
 import apiKeys from '../../messages/en/apiKeys.json';
 import auth from '../../messages/en/auth.json';
@@ -9,7 +8,7 @@ import dashboards from '../../messages/en/dashboards.json';
 import display from '../../messages/en/display.json';
 import documents from '../../messages/en/documents.json';
 import filters from '../../messages/en/filters.json';
-import god from '../../messages/en/god.json';
+import git from '../../messages/en/git.json';
 import inbox from '../../messages/en/inbox.json';
 import initiatives from '../../messages/en/initiatives.json';
 import invite from '../../messages/en/invite.json';
@@ -25,20 +24,29 @@ import palette from '../../messages/en/palette.json';
 import permissions from '../../messages/en/permissions.json';
 import projects from '../../messages/en/projects.json';
 import sections from '../../messages/en/sections.json';
-import settings from '../../messages/en/settings.json';
 import shell from '../../messages/en/shell.json';
 import teams from '../../messages/en/teams.json';
 import updates from '../../messages/en/updates.json';
 import views from '../../messages/en/views.json';
 import whatsNew from '../../messages/en/whatsNew.json';
 import workItems from '../../messages/en/workItems.json';
-import { cloudMessages, loadCloudMessages } from '@/cloud';
 import { DEFAULT_LOCALE, type Locale } from './locales';
 
-// English is static: it is the fallback for every other language and the shape the
-// `t('…')` keys are typed against. The hosted build's English is merged in, so its keys
-// are typed too.
-const coreMessages = {
+// SPEC-ITSAPLAN-CUT-GOD-MODE-283 & 53.ACT.592: Dead god.json & settings.json locales purged.
+// Git connection components use `settings.git`, backed by git.json across all 10 locales.
+// Notification preferences use `settings.notifications`, backed by account.json (`notificationPrefs`).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const god: Record<string, any> = {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const settings: Record<string, any> = {
+  git,
+  notifications: account.notificationPrefs,
+  schedules: account.schedulesPrefs,
+  agents: account.agentsPrefs,
+  webhooks: account.webhooksPrefs,
+};
+
+const defaultMessages = {
   meta,
   auth,
   common,
@@ -52,6 +60,7 @@ const coreMessages = {
   display,
   documents,
   filters,
+  git,
   workItems,
   apiKeys,
   invite,
@@ -70,39 +79,87 @@ const coreMessages = {
   god,
   newProject,
   teams,
-  agentAnalytics,
   updates,
   whatsNew,
 };
 
-const NAMESPACES = Object.keys(coreMessages) as (keyof typeof coreMessages)[];
-
-const defaultMessages = mergeMessages(coreMessages, cloudMessages) as typeof coreMessages &
-  typeof cloudMessages;
-
 export type Messages = typeof defaultMessages;
+
+const NAMESPACES: (keyof Messages)[] = [
+  'meta',
+  'auth',
+  'common',
+  'nav',
+  'palette',
+  'views',
+  'shell',
+  'sections',
+  'issueLinks',
+  'issue',
+  'display',
+  'documents',
+  'filters',
+  'git',
+  'workItems',
+  'apiKeys',
+  'invite',
+  'mcp',
+  'projects',
+  'aiChat',
+  'inbox',
+  'permissions',
+  'members',
+  'cycles',
+  'dashboards',
+  'initiatives',
+  'notes',
+  'account',
+  'newProject',
+  'teams',
+  'updates',
+  'whatsNew',
+];
+
+const messageCache = new Map<Locale, Promise<Messages>>();
 
 export async function loadMessages(locale: Locale): Promise<Messages> {
   if (locale === DEFAULT_LOCALE) return defaultMessages;
 
-  const [translated, cloud] = await Promise.all([
-    Promise.all(
-      NAMESPACES.map(async (ns) => [
-        ns,
-        (await import(`../../messages/${locale}/${ns}.json`)).default,
-      ]),
-    ),
-    loadCloudMessages(locale),
-  ]);
+  const cached = messageCache.get(locale);
+  if (cached) return cached;
 
-  // A key still untranslated renders its English text instead of the raw key path.
-  return mergeMessages(
-    defaultMessages,
-    mergeMessages(Object.fromEntries(translated), cloud),
-  ) as Messages;
+  const pending = Promise.all(
+    NAMESPACES.map(async (ns) => [
+      ns,
+      (await import(`../../messages/${locale}/${ns}.json`)).default,
+    ]),
+  )
+    .then((translated) => {
+      const merged = mergeMessages(
+        defaultMessages,
+        Object.fromEntries(translated),
+      ) as Messages;
+      return {
+        ...merged,
+        settings: {
+          git: merged.git,
+          notifications: merged.account.notificationPrefs,
+          schedules: merged.account.schedulesPrefs,
+          agents: merged.account.agentsPrefs,
+          webhooks: merged.account.webhooksPrefs,
+        },
+      } as Messages;
+    })
+    .catch((err) => {
+      messageCache.delete(locale);
+      throw err;
+    });
+
+  messageCache.set(locale, pending);
+  return pending;
 }
 
-export type MessageTree = { [key: string]: string | MessageTree };
+type MessageTree = { [key: string]: string | MessageTree };
 
 function mergeMessages(base: MessageTree, override: MessageTree): MessageTree {
   const result: MessageTree = { ...base };

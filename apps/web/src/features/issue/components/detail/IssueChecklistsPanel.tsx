@@ -7,7 +7,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { useDndSensors } from '@/lib/dnd';
 import { CHECKLIST_TITLE_MAX, checklistProgress, reorderIds } from '../../utils/checklists';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import { useCreateChecklist, useReorderChecklists } from '../../services/checklists.service';
 import IssueChecklistAddInput from './IssueChecklistAddInput';
 import IssueChecklistCard from './IssueChecklistCard';
@@ -23,12 +23,15 @@ export default function IssueChecklistsPanel({ issue }: { issue: IssueWithWatche
   const { can } = usePermissions();
   const canEdit = can('work_items', 'edit');
   const [adding, setAdding] = useState(false);
-  const { open, toggle } = usePersistedOpen('issue-checklists-open');
+  const checklists = issue.checklists;
+  const { open, setOpen, toggle } = useSmartSectionOpen(
+    'issue-checklists-open-v2',
+    checklists.length > 0 || adding,
+  );
   const sensors = useDndSensors();
   const createChecklist = useCreateChecklist();
   const reorderChecklists = useReorderChecklists();
 
-  const checklists = issue.checklists;
   const progress = checklistProgress(checklists);
   const tally = progress.total > 0 ? `${progress.done}/${progress.total}` : undefined;
 
@@ -42,8 +45,16 @@ export default function IssueChecklistsPanel({ issue }: { issue: IssueWithWatche
     <div className={`mt-6 border-t pt-5 ${open ? '' : '-mb-2'}`}>
       <div className={`flex h-7 items-center justify-between gap-3 ${open ? 'mb-3' : ''}`}>
         <IssueSectionHeading label={t('title')} open={open} onToggle={toggle} tally={tally} />
-        {open && canEdit && !adding && (
-          <Button variant="ghost" size="sm" className="h-7 gap-1.5" onClick={() => setAdding(true)}>
+        {canEdit && !adding && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5"
+            onClick={() => {
+              setOpen(true);
+              setAdding(true);
+            }}
+          >
             <Plus className="size-4" /> {tCommon('add')}
           </Button>
         )}

@@ -22,11 +22,7 @@ export const WebhookResponse = t.Object({
   id: t.Number(),
   projectId: t.Number(),
   url: t.String(),
-  secret: t.Nullable(
-    t.String({
-      description: 'Null in the list for a caller who may neither create nor edit webhooks.',
-    }),
-  ),
+  secret: t.String(),
   events: t.Array(eventType),
   isActive: t.Boolean(),
   createdAt: t.String(),

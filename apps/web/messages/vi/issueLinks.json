@@ -1,0 +1,16 @@
+{
+  "relations": {
+    "blocked_by": "Bị chặn bởi",
+    "blocks": "Đang chặn",
+    "duplicates": "Trùng lặp với",
+    "duplicated_by": "Bị trùng lặp bởi",
+    "relates": "Liên quan"
+  },
+  "phrases": {
+    "blocked_by": "bị chặn bởi",
+    "blocks": "đang chặn",
+    "duplicates": "trùng lặp với",
+    "duplicated_by": "bị trùng lặp bởi",
+    "relates": "liên quan đến"
+  }
+}

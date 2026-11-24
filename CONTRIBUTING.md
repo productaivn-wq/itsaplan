@@ -29,17 +29,14 @@ apps/bot        Telegram bot, long polling
 packages/db     Drizzle client, schema, migrations
 packages/auth   better-auth server instance
 packages/crypto AES-256-GCM encryption for secrets at rest
-packages/mailer SMTP and Resend transport, email templates
+packages/mailer SMTP and Resend transport
 ```
 
 Dependency direction is `api → @repo/auth → @repo/db`. The web app never imports the
 packages directly, it talks to the API over HTTP.
 
-Each app, plus `packages/auth` and `packages/db`, has an `AGENTS.md` with the rules that
-apply inside it. Read the one for the area you are changing.
-
-Do not add to an `AGENTS.md` to record a fix or a feature. `docs/dev/agents-md.md` says what
-belongs there.
+Each app and package has a `AGENTS.md` with the rules that apply inside it. Read the one
+for the area you are changing.
 
 ## Code conventions
 
@@ -89,17 +86,15 @@ run `bun run auth:generate` first, then generate the migration.
 
    The full list of accepted types is in `.github/workflows/pr-title.yml`.
 
-4. If you develop with an AI agent, run the project skills from `.agents/skills/` on
-   the new code, in this order: `tidy`, `code-review`, `security-audit`.
-5. Before pushing, make sure these pass:
+4. Before pushing, make sure these pass:
 
    ```bash
    bun run format:check && bun run lint && bun run typecheck
    ```
 
-6. Fill in the pull request template, link the issue (`Closes #123`), and add
+5. Fill in the pull request template, link the issue (`Closes #123`), and add
    screenshots for UI changes.
-7. CI must be green before review.
+6. CI must be green before review.
 
 ## Sign the Contributor License Agreement
 

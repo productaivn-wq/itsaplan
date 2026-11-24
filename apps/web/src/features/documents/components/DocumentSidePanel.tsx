@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
   Clipboard,
@@ -36,6 +36,8 @@ import {
   useUploadDocumentAsset,
 } from '../services/documents.service';
 
+type OutlineItem = { level: number; position: number; text: string };
+
 export default function DocumentSidePanel({
   projectKey,
   document,
@@ -59,6 +61,7 @@ export default function DocumentSidePanel({
 }) {
   const t = useTranslations('documents');
   const fileInput = useRef<HTMLInputElement>(null);
+  const [outlineRevision, setOutlineRevision] = useState(0);
   const [issuePickerOpen, setIssuePickerOpen] = useState(false);
   const assets = useDocumentAssetsQuery(projectKey, document.id);
   const issueLinks = useDocumentIssueLinksQuery(projectKey, document.id, canReadWorkItems);
@@ -67,6 +70,43 @@ export default function DocumentSidePanel({
   const linkIssue = useLinkDocumentIssue(projectKey);
   const unlinkIssue = useUnlinkDocumentIssue(projectKey);
   const linkedIssueIds = new Set((issueLinks.data ?? []).map((link) => link.issueId));
+
+  useEffect(() => {
+    if (!editor) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const refreshOutline = ({ transaction }: { transaction: { docChanged: boolean } }) => {
+      if (transaction.docChanged) {
+        clearTimeout(timer);
+        timer = setTimeout(() => setOutlineRevision((value) => value + 1), 300);
+      }
+    };
+    editor.on('transaction', refreshOutline);
+    return () => {
+      clearTimeout(timer);
+      editor.off('transaction', refreshOutline);
+    };
+  }, [editor]);
+
+  const outline = useMemo(() => {
+    void outlineRevision;
+    const items: OutlineItem[] = [];
+    editor?.state.doc.descendants((node, position) => {
+      if (node.type.name !== 'heading') return;
+      items.push({
+        level: Number(node.attrs.level) || 1,
+        position: position + 1,
+        text: node.textContent.trim(),
+      });
+    });
+    return items;
+  }, [editor, outlineRevision]);
+
+  const jumpToHeading = (position: number) => {
+    if (!editor || editor.isDestroyed) return;
+    const chain = editor.chain().setTextSelection(position).scrollIntoView();
+    if (editor.isEditable) chain.focus();
+    chain.run();
+  };
 
   const insertAsset = (asset: { contentType: string; filename: string; url: string }) => {
     if (!canUpload || !editor || editor.isDestroyed || !editor.isEditable) return;
@@ -85,14 +125,17 @@ export default function DocumentSidePanel({
       .run();
   };
 
+  const [armedAssetId, setArmedAssetId] = useState<string | null>(null);
+
   const copyAsset = async (url: string) => {
     const copied = await copyText(new URL(url, window.location.origin).toString());
     if (copied) toast.success(t('assetLinkCopied'));
   };
 
   return (
-    <Tabs defaultValue="info" className="min-h-0 flex-1 gap-0">
+    <Tabs defaultValue="outline" className="min-h-0 flex-1 gap-0">
       <TabsList variant="line" className="h-11 w-full shrink-0 justify-start overflow-x-auto px-3">
+        <TabsTrigger value="outline">{t('outline')}</TabsTrigger>
         <TabsTrigger value="info">{t('info')}</TabsTrigger>
         {canReadWorkItems && (
           <TabsTrigger value="workItems">
@@ -104,6 +147,32 @@ export default function DocumentSidePanel({
         )}
         <TabsTrigger value="assets">{t('assets')}</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="outline" className="min-h-0 overflow-y-auto p-3">
+        {outline.length === 0 ? (
+          <p className="px-4 py-10 text-center text-xs leading-5 text-muted-foreground">
+            {t('outlineEmpty')}
+          </p>
+        ) : (
+          <nav aria-label={t('outline')}>
+            <ol className="space-y-0.5">
+              {outline.map((item) => (
+                <li key={item.position}>
+                  <button
+                    type="button"
+                    className="w-full truncate rounded-md py-1.5 pe-2 text-start text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    style={{ paddingInlineStart: `${8 + (item.level - 1) * 12}px` }}
+                    dir="auto"
+                    onClick={() => jumpToHeading(item.position)}
+                  >
+                    {item.text || t('untitledHeading')}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+      </TabsContent>
 
       <TabsContent value="info" className="min-h-0 overflow-y-auto px-4 py-5">
         <dl className="divide-y text-xs">
@@ -204,7 +273,7 @@ export default function DocumentSidePanel({
                         <span className="block truncate text-xs font-medium" dir="auto">
                           {link.title}
                         </span>
-                        <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
+                        <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
                           {link.identifier}
                         </span>
                       </span>
@@ -311,7 +380,7 @@ export default function DocumentSidePanel({
                     <span className="block truncate text-xs font-medium" dir="auto">
                       {asset.filename}
                     </span>
-                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
                       {formatBytes(asset.sizeBytes)}
                     </span>
                   </span>
@@ -339,15 +408,19 @@ export default function DocumentSidePanel({
                     {canDeleteAssets && (
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant={armedAssetId === asset.id ? 'destructive' : 'ghost'}
                         size="icon-xs"
-                        className="text-destructive"
+                        className={armedAssetId === asset.id ? '' : 'text-destructive'}
                         disabled={remove.isPending}
                         aria-label={t('deleteAsset', { name: asset.filename })}
+                        title={armedAssetId === asset.id ? t('deleteAssetConfirm', { name: asset.filename }) : t('deleteAsset', { name: asset.filename })}
                         onClick={() => {
-                          if (window.confirm(t('deleteAssetConfirm', { name: asset.filename }))) {
-                            remove.mutate(asset.id);
+                          if (armedAssetId !== asset.id) {
+                            setArmedAssetId(asset.id);
+                            return;
                           }
+                          setArmedAssetId(null);
+                          remove.mutate(asset.id);
                         }}
                       >
                         {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}

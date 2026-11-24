@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import GridLayout, { useContainerWidth, verticalCompactor, type Layout } from 'react-grid-layout';
 import { Direction } from 'radix-ui';
 import { useTranslations } from 'next-intl';
@@ -7,13 +7,17 @@ import { cn } from '@/lib/utils';
 import {
   COL_GAP,
   GRID_COLS,
+  isFillHeightWidget,
   MIN_W,
   ROW_GAP,
   ROW_UNIT,
+  rowsForContentHeight,
   STACK_COLS,
   STACK_WIDTH,
   stackLayout,
   WIDGET_DEFAULTS,
+  type WidgetConfig,
+  type WidgetInstance,
 } from '@/utils/dashboardWidgets';
 import type { DashboardEditor } from '../hooks/useDashboardEditor';
 import WidgetFrame from './WidgetFrame';
@@ -28,6 +32,65 @@ import WidgetSettings, { hasWidgetSettings } from './WidgetSettings';
 // Below STACK_WIDTH the saved positions are replaced by a two-column layout
 // derived from them (stackLayout), and dragging and resizing are off: what is
 // stored is the desktop layout, and a drag on the derived one would overwrite it.
+const WidgetSlot = memo(function WidgetSlot({
+  widget,
+  projectKey,
+  project,
+  editing,
+  movable,
+  fillHeight,
+  catalogMinH,
+  onRenameWidget,
+  onRemoveWidget,
+  onUpdateConfig,
+  onContentHeight,
+}: {
+  widget: WidgetInstance;
+  projectKey: string;
+  project: ProjectDetail;
+  editing: boolean;
+  movable: boolean;
+  fillHeight: boolean;
+  catalogMinH: number;
+  onRenameWidget: (id: string, title: string) => void;
+  onRemoveWidget: (id: string) => void;
+  onUpdateConfig: (id: string, config: WidgetConfig) => void;
+  onContentHeight: (id: string, catalogMinH: number, heightPx: number) => void;
+}) {
+  const handleRename = useCallback(
+    (title: string) => onRenameWidget(widget.id, title),
+    [onRenameWidget, widget.id],
+  );
+  const handleRemove = useCallback(() => onRemoveWidget(widget.id), [onRemoveWidget, widget.id]);
+  const handleConfigChange = useCallback(
+    (config: WidgetConfig) => onUpdateConfig(widget.id, config),
+    [onUpdateConfig, widget.id],
+  );
+  const handleHeight = useCallback(
+    (heightPx: number) => onContentHeight(widget.id, catalogMinH, heightPx),
+    [onContentHeight, widget.id, catalogMinH],
+  );
+
+  return (
+    <WidgetFrame
+      widget={widget}
+      editing={editing}
+      movable={movable}
+      fillHeight={fillHeight}
+      settings={
+        editing && hasWidgetSettings(widget.type) ? (
+          <WidgetSettings widget={widget} onConfigChange={handleConfigChange} />
+        ) : undefined
+      }
+      onRename={handleRename}
+      onRemove={handleRemove}
+      onContentHeightChange={fillHeight ? undefined : handleHeight}
+    >
+      <WidgetBody widget={widget} projectKey={projectKey} project={project} />
+    </WidgetFrame>
+  );
+});
+
 export default function WidgetGrid({
   projectKey,
   project,
@@ -48,24 +111,55 @@ export default function WidgetGrid({
   const stacked = width < STACK_WIDTH;
   const movable = editing && !stacked;
 
+  const [measuredRows, setMeasuredRows] = useState<Record<string, number>>({});
+
+  const handleContentHeight = useCallback(
+    (widgetId: string, catalogMinH: number, heightPx: number) => {
+      const rows = rowsForContentHeight(heightPx, catalogMinH);
+      setMeasuredRows((prev) => (prev[widgetId] === rows ? prev : { ...prev, [widgetId]: rows }));
+    },
+    [],
+  );
+
   const layout = useMemo(
     () => (stacked ? stackLayout(editor.layout) : editor.layout),
     [stacked, editor.layout],
   );
 
+  const storedHeightById = useMemo(
+    () => new Map(layout.map((w) => [w.id, w.h])),
+    [layout],
+  );
+
   const rglLayout: Layout = useMemo(
     () =>
-      layout.map((w) => ({
-        i: w.id,
-        x: w.x,
-        y: w.y,
-        w: w.w,
-        h: w.h,
-        minW: stacked ? 1 : MIN_W,
-        minH: WIDGET_DEFAULTS[w.type]?.minH ?? 2,
-      })),
-    [layout, stacked],
+      layout.map((w) => {
+        const catalogMinH = WIDGET_DEFAULTS[w.type]?.minH ?? 2;
+        const autoRows = isFillHeightWidget(w.type) ? 0 : (measuredRows[w.id] ?? 0);
+        return {
+          i: w.id,
+          x: w.x,
+          y: w.y,
+          w: w.w,
+          h: Math.max(w.h, catalogMinH, autoRows),
+          minW: stacked ? 1 : MIN_W,
+          minH: Math.max(catalogMinH, autoRows),
+        };
+      }),
+    [layout, stacked, measuredRows],
   );
+
+  const editorUpdateWidget = editor.updateWidget;
+  const editorRemoveWidget = editor.removeWidget;
+  const handleRenameWidget = useCallback(
+    (id: string, title: string) => editorUpdateWidget(id, { title }),
+    [editorUpdateWidget],
+  );
+  const handleUpdateConfig = useCallback(
+    (id: string, config: WidgetConfig) => editorUpdateWidget(id, { config }),
+    [editorUpdateWidget],
+  );
+  const handleRemoveWidget = useCallback((id: string) => editorRemoveWidget(id), [editorRemoveWidget]);
 
   if (layout.length === 0) {
     return (
@@ -93,31 +187,42 @@ export default function WidgetGrid({
           dragConfig={{ enabled: movable, handle: '.widget-drag-handle', threshold: 4 }}
           resizeConfig={{ enabled: movable, handles: ['se'] }}
           compactor={verticalCompactor}
-          onDragStop={(l) => editor.applyGrid(l)}
-          onResizeStop={(l) => editor.applyGrid(l)}
+          onDragStop={(l) =>
+            editor.applyGrid(
+              l.map((it) => ({ ...it, h: storedHeightById.get(it.i) ?? it.h })),
+            )
+          }
+          onResizeStop={(l, _oldItem, newItem) =>
+            editor.applyGrid(
+              l.map((it) => ({
+                ...it,
+                h: it.i === newItem?.i ? it.h : (storedHeightById.get(it.i) ?? it.h),
+              })),
+            )
+          }
           className={cn(movable && 'rounded-lg outline-1 outline-border/50 outline-dashed')}
         >
-          {layout.map((widget) => (
-            <div key={widget.id} dir={direction} className="min-w-0 overflow-hidden">
-              <WidgetFrame
-                widget={widget}
-                editing={editing}
-                movable={movable}
-                settings={
-                  editing && hasWidgetSettings(widget.type) ? (
-                    <WidgetSettings
-                      widget={widget}
-                      onConfigChange={(config) => editor.updateWidget(widget.id, { config })}
-                    />
-                  ) : undefined
-                }
-                onRename={(title) => editor.updateWidget(widget.id, { title })}
-                onRemove={() => editor.removeWidget(widget.id)}
-              >
-                <WidgetBody widget={widget} projectKey={projectKey} project={project} />
-              </WidgetFrame>
-            </div>
-          ))}
+          {layout.map((widget) => {
+            const fillHeight = isFillHeightWidget(widget.type);
+            const catalogMinH = WIDGET_DEFAULTS[widget.type]?.minH ?? 2;
+            return (
+              <div key={widget.id} dir={direction} className="min-w-0 overflow-hidden">
+                <WidgetSlot
+                  widget={widget}
+                  projectKey={projectKey}
+                  project={project}
+                  editing={editing}
+                  movable={movable}
+                  fillHeight={fillHeight}
+                  catalogMinH={catalogMinH}
+                  onRenameWidget={handleRenameWidget}
+                  onRemoveWidget={handleRemoveWidget}
+                  onUpdateConfig={handleUpdateConfig}
+                  onContentHeight={handleContentHeight}
+                />
+              </div>
+            );
+          })}
         </GridLayout>
       )}
     </div>

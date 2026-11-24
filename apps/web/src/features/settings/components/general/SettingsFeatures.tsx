@@ -7,21 +7,17 @@ import SettingsRow from '@/components/common/page/SettingsRow';
 import { Switch } from '@/components/ui/switch';
 import type { FeatureTogglesForm } from '../../hooks/useFeatureToggles';
 
-// The navigation sections in the order the sidebar lists them, then the sections
-// of an issue.
+// Consolidated navigation sections: 'documents' governs the unified Docs, Notes & Vibe Canvas hub.
 const FEATURES = [
   'dashboards',
   'initiatives',
   'cycles',
   'documents',
-  'notes',
   'subtasks',
   'checklists',
   'issueStats',
 ] as const satisfies (keyof ProjectFeatures)[];
 
-// The Features block of the General page. Each switch saves on its own. Only an
-// owner may change them; others see the current state read-only.
 export default function SettingsFeatures({ form }: { form: FeatureTogglesForm }) {
   const t = useTranslations('settings.general');
   const featureLabel = useFeatureLabel();

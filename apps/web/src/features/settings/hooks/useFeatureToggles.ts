@@ -11,17 +11,12 @@ import { useUpdateProjectFeatures } from '../services/settings.service';
 
 export interface FeatureTogglesForm {
   features: ProjectFeatures;
-  // The sections this project may use at all. One the team cannot use is not offered.
   available: (keyof ProjectFeatures)[];
-  // Only an owner may toggle; others see the current state read-only.
   editable: boolean;
   saving: boolean;
   toggle: (feature: keyof ProjectFeatures, enabled: boolean) => Promise<void>;
 }
 
-// The optional sections of the project, read from the project payload the Shell
-// already loaded. Each switch saves on its own — there is nothing to draft, so the
-// General page's Save button does not cover it.
 export function useFeatureToggles(project: ProjectDetail): FeatureTogglesForm {
   const t = useTranslations('settings.general');
   const featureLabel = useFeatureLabel();
@@ -29,7 +24,11 @@ export function useFeatureToggles(project: ProjectDetail): FeatureTogglesForm {
   const update = useUpdateProjectFeatures(project.project.ref);
 
   async function toggle(feature: keyof ProjectFeatures, enabled: boolean) {
-    await update.mutateAsync({ [feature]: enabled });
+    const patch: Partial<ProjectFeatures> =
+      feature === 'documents' || feature === 'notes'
+        ? { documents: enabled, notes: enabled }
+        : { [feature]: enabled };
+    await update.mutateAsync(patch);
     toast.success(t(enabled ? 'featureOn' : 'featureOff', { feature: featureLabel(feature) }));
   }
 

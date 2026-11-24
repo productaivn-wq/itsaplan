@@ -2,37 +2,28 @@ import { Elysia, t } from 'elysia';
 import { noContent, sseFrame, sseResponse } from '#shared/http';
 import { guards } from '#shared/guards';
 import { authContext } from '#shared/auth-context';
-import { projectsWithPermission, requireUser, type TeamMembership } from '#shared/access';
+import { requireUser, type TeamMembership } from '#shared/access';
 import { HttpError } from '#shared/lib';
 import { accessErrors, commonErrors, errors } from '#shared/responses';
 import { mcpTool } from '#mcp/generate';
 import { teamParams } from '#modules/teams/model';
-import { workspaceParams } from '#modules/workspaces/model';
 import { runsTeam } from '#modules/teams/service';
-import { paginate } from '#shared/pagination';
 import {
   listAgents,
-  listProjectAgents,
   createAgent,
   updateAgent,
   deleteAgent,
   regenerateKey,
   getAgentById,
   getAgentInProject,
+  ensureDefaultProjectAgent,
   agentScopeOf,
   memberProjectIds,
-  assertFullAgentAccess,
-  withCanManage,
   type AgentKind,
 } from './service';
 import {
-  AgentAnalyticsResponse,
-  TeamAgentAnalyticsResponse,
   AgentRunPageResponse,
-  AgentTraceDetailResponse,
-  AgentTracePageResponse,
   AiAgentListResponse,
-  ProjectAgentListResponse,
   AiAgentResponse,
   ChatMessagesResponse,
   ChatThreadListResponse,
@@ -42,8 +33,6 @@ import {
   RunAgentResponse,
   agentListQuery,
   agentParams,
-  analyticsQuery,
-  workspaceAnalyticsQuery,
   createAgentBody,
   projectAgentParams,
   runBody,
@@ -52,22 +41,18 @@ import {
   threadListQuery,
   threadPageQuery,
   threadParams,
-  traceParams,
-  tracesQuery,
   updateAgentBody,
 } from './model';
 import { runAgent, streamAgent, type AgentRunEvent, type RunOpts } from './runtime';
 import { peoplePreamble } from './prompt/run-context';
 import { attachmentPreamble, chartPreamble } from './prompt/framing';
+import {
+  isSafeModelId,
+  normalizeChatTurnOptions,
+  type ChatTurnOptions,
+} from './prompt/run-options';
 import type { SessionUser } from '#shared/auth-context';
 import { listAgentRuns } from './run-queue';
-import { getAgentTrace, listAgentTraces } from './runtime/traces';
-import {
-  analyticsProjects,
-  getAgentAnalytics,
-  onlyProject,
-  workspaceScope,
-} from './runtime/analytics';
 import {
   listChatThreads,
   getChatThreadMessages,
@@ -89,14 +74,29 @@ import {
 // thread and is named to the agent as the requester. A supplied thread id must be one
 // issued to this caller for this agent — anyone else's chat, and the threads of the
 // autonomous runs, read as not found.
-function chatRunOpts(user: SessionUser | null, agentId: number, threadId?: string): RunOpts {
+function chatRunOpts(
+  user: SessionUser | null,
+  agentId: number,
+  threadId?: string,
+  attachmentIds?: string[],
+  options?: Partial<ChatTurnOptions>,
+): RunOpts {
   const caller = requireUser(user);
   if (threadId != null && !isOwnChatThread(threadId, agentId, caller.id)) {
     throw new HttpError(404, 'Thread not found');
   }
+  if (typeof options?.model === 'string') {
+    const trimmed = options.model.trim();
+    if (trimmed.length > 0 && !isSafeModelId(trimmed)) {
+      throw new HttpError(400, 'Invalid model identifier');
+    }
+  }
+  const turnOptions = normalizeChatTurnOptions(options);
   return {
     callerUserId: caller.id,
     threadId: threadId ?? null,
+    ...(attachmentIds && attachmentIds.length > 0 ? { attachmentIds } : {}),
+    ...(turnOptions ? { turnOptions } : {}),
     contextPreamble:
       chartPreamble() +
       attachmentPreamble() +
@@ -132,25 +132,6 @@ function threadStore(kind: AgentKind) {
         remove: deleteChatThread,
         owns: ownsChatThread,
       };
-}
-
-const DEFAULT_ANALYTICS_DAYS = 30;
-
-// Whether the caller may read the traces of that project: an owner or a manager of the
-// team reads every project the agent works in, anyone else only a project they belong to
-// themselves. The list names the project in the query and one trace carries it in its own
-// metadata, so a trace that names none is refused to everyone else.
-async function assertTraceScope(
-  membership: TeamMembership,
-  projectId: number | null,
-): Promise<void> {
-  if (runsTeam(membership.role)) return;
-  const mine =
-    projectId != null &&
-    (await memberProjectIds(membership.teamId, membership.userId)).includes(projectId);
-  if (!mine) {
-    throw new HttpError(403, 'You can only read the traces of a project you are a member of');
-  }
 }
 
 // The agent a :agentId path addresses, scoped by agentScopeOf — one of another team, and
@@ -199,11 +180,8 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
   .use(guards)
   .get(
     '/teams/:teamId/ai-agents',
-    async ({ membership, query }) =>
-      withCanManage(
-        membership,
-        await listAgents(membership.teamId, query.projectId, agentScopeOf(membership)),
-      ),
+    ({ membership, query }) =>
+      listAgents(membership.teamId, query.projectId, agentScopeOf(membership)),
     {
       params: teamParams,
       query: agentListQuery,
@@ -221,12 +199,7 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
 
   .get(
     '/teams/:teamId/ai-agents/:agentId',
-    async ({ params, membership }) => {
-      const [agent] = await withCanManage(membership, [
-        await requireVisibleAgent(params.agentId, membership),
-      ]);
-      return agent;
-    },
+    ({ params, membership }) => requireVisibleAgent(params.agentId, membership),
     {
       params: agentParams,
       teamPermission: ['ai_agents', 'read'],
@@ -247,13 +220,11 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
     async ({ membership, body, set, user }) => {
       const projectIds = await resolveAgentProjects(membership, body.projectIds, []);
       set.status = 201;
-      const created = await createAgent(membership.teamId, {
+      return createAgent(membership.teamId, {
         ...body,
         projectIds,
         ownerUserId: requireUser(user).id,
       });
-      const [agent] = await withCanManage(membership, [created.agent]);
-      return { ...created, agent };
     },
     {
       params: teamParams,
@@ -272,14 +243,17 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
 
   .patch(
     '/teams/:teamId/ai-agents/:agentId',
-    async ({ params, membership, body }) => {
+    async ({ params, membership, body, user }) => {
       const current = await requireVisibleAgent(params.agentId, membership);
-      await assertFullAgentAccess(membership, params.agentId);
       const projectIds = await resolveAgentProjects(membership, body.projectIds, current.projects);
-      const agent = await updateAgent(params.agentId, membership.teamId, { ...body, projectIds });
+      const agent = await updateAgent(
+        params.agentId,
+        membership.teamId,
+        { ...body, projectIds },
+        requireUser(user).id,
+      );
       if (!agent) throw new HttpError(404, 'Agent not found');
-      const [withAccess] = await withCanManage(membership, [agent]);
-      return withAccess;
+      return agent;
     },
     {
       body: updateAgentBody,
@@ -298,13 +272,17 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
   // a project, so this is both the attach and the detach: the set is replaced.
   .put(
     '/teams/:teamId/ai-agents/:agentId/projects',
-    async ({ params, membership, body }) => {
+    async ({ params, membership, body, user }) => {
       const current = await requireVisibleAgent(params.agentId, membership);
       const projectIds = await resolveAgentProjects(membership, body.projectIds, current.projects);
-      const agent = await updateAgent(params.agentId, membership.teamId, { projectIds });
+      const agent = await updateAgent(
+        params.agentId,
+        membership.teamId,
+        { projectIds },
+        requireUser(user).id,
+      );
       if (!agent) throw new HttpError(404, 'Agent not found');
-      const [withAccess] = await withCanManage(membership, [agent]);
-      return withAccess;
+      return agent;
     },
     {
       body: setAgentProjectsBody,
@@ -328,7 +306,6 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
     '/teams/:teamId/ai-agents/:agentId/regenerate-key',
     async ({ params, membership }) => {
       const agent = await requireVisibleAgent(params.agentId, membership);
-      await assertFullAgentAccess(membership, params.agentId);
       if (agent.kind !== 'external')
         throw new HttpError(400, 'Internal agents do not use an API key');
       const apiKey = await regenerateKey(params.agentId, membership.teamId);
@@ -379,116 +356,10 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
     },
   )
 
-  // The traces of the agent's runs: what the model and the tools were called with at
-  // every step, recorded by the runtime. A run of the queue carries its runId, so the
-  // run history and its trace name each other.
-  .get(
-    '/teams/:teamId/ai-agents/:agentId/traces',
-    async ({ params, membership, query }) => {
-      await requireVisibleAgent(params.agentId, membership);
-      await assertTraceScope(membership, query.projectId ?? null);
-      return paginate(query, (window) =>
-        listAgentTraces(params.agentId, membership.userId, {
-          ...window,
-          projectId: query.projectId,
-        }),
-      );
-    },
-    {
-      params: agentParams,
-      query: tracesQuery,
-      teamPermission: ['ai_agents', 'read'],
-      response: { 200: AgentTracePageResponse, ...commonErrors },
-      detail: {
-        summary: 'List agent traces',
-        description:
-          "One page of the traces of an agent's runs, newest first. An owner or a manager of " +
-          'the team reads them all; anyone else names a project they belong to. A chat ' +
-          'run is read only by the member who chatted.',
-      },
-    },
-  )
-
-  .get(
-    '/teams/:teamId/ai-agents/:agentId/traces/:traceId',
-    async ({ params, membership }) => {
-      await requireVisibleAgent(params.agentId, membership);
-      const trace = await getAgentTrace(params.agentId, params.traceId, membership.userId);
-      if (!trace) throw new HttpError(404, 'Trace not found');
-      await assertTraceScope(membership, trace.trace.projectId);
-      return trace;
-    },
-    {
-      params: traceParams,
-      teamPermission: ['ai_agents', 'read'],
-      response: { 200: AgentTraceDetailResponse, ...commonErrors },
-      detail: {
-        summary: 'Read an agent trace',
-        description:
-          'Every step of one trace, oldest first: the run, the model calls it made, and the ' +
-          'tools it used, each with what it was given and what it returned.',
-      },
-    },
-  )
-
-  .get(
-    '/teams/:teamId/agent-analytics',
-    async ({ membership, query }) => {
-      const scope = {
-        teamIds: [membership.teamId],
-        projectIds: await projectsWithPermission(membership, 'agent_usage', 'read'),
-      };
-      const [analytics, readableProjects] = await Promise.all([
-        getAgentAnalytics(
-          onlyProject(scope, query.projectId),
-          query.days ?? DEFAULT_ANALYTICS_DAYS,
-        ),
-        analyticsProjects(scope),
-      ]);
-      return { ...analytics, readableProjects };
-    },
-    {
-      params: teamParams,
-      query: analyticsQuery,
-      teamPermission: ['agent_usage', 'read'],
-      response: { 200: TeamAgentAnalyticsResponse, ...commonErrors },
-      detail: {
-        summary: 'Read the agent dashboard of a team',
-        description:
-          'Runs, tokens and model cost of the agents of the team, over the last `days` days ' +
-          'beside the same span before it. An owner or a manager of the team reads every ' +
-          'project; anyone else the projects where their role grants agent_usage read. ' +
-          '`projectId` narrows it to one of them.',
-      },
-    },
-  )
-
-  .get(
-    '/workspaces/:workspaceId/agent-analytics',
-    async ({ standing, query }) =>
-      getAgentAnalytics(
-        await workspaceScope(standing.workspaceId),
-        query.days ?? DEFAULT_ANALYTICS_DAYS,
-      ),
-    {
-      workspaceManager: true,
-      params: workspaceParams,
-      query: workspaceAnalyticsQuery,
-      response: { 200: AgentAnalyticsResponse, ...errors(400, 401, 404) },
-      detail: {
-        summary: 'Read the agent dashboard of a workspace',
-        description:
-          'The agent dashboard over every team of a workspace you manage, with the teams ' +
-          'compared in `teams`.',
-      },
-    },
-  )
-
   .delete(
     '/teams/:teamId/ai-agents/:agentId',
     async ({ params, membership }) => {
       await requireVisibleAgent(params.agentId, membership);
-      await assertFullAgentAccess(membership, params.agentId);
       const ok = await deleteAgent(params.agentId, membership.teamId);
       if (!ok) throw new HttpError(404, 'Agent not found');
       return noContent();
@@ -505,14 +376,24 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
     },
   )
 
-  .get('/projects/:projectKey/ai-agents/options', ({ project }) => listProjectAgents(project.id), {
-    projectMember: true,
-    response: { 200: ProjectAgentListResponse, ...accessErrors },
-    detail: {
-      summary: "List a project's agents",
-      description: 'Their id, name, kind and model, for any member of the project.',
+  // Ensures a project has at least one agent attached so AI Workspace opens directly
+  // into a ready-to-chat session without an empty-state creation gate.
+  .post(
+    '/projects/:projectKey/ai-agents/ensure-default',
+    ({ project, user }) =>
+      ensureDefaultProjectAgent(project.id, project.teamId, requireUser(user).id),
+    {
+      params: t.Object({ projectKey: t.String() }),
+      permission: ['ai_agents', 'read'],
+      response: { 200: AiAgentResponse, ...commonErrors },
+      detail: {
+        summary: 'Ensure default workspace assistant',
+        description:
+          'Idempotently attach or provision a built-in internal AI Workspace Assistant for this project so members can chat immediately without manual agent setup.',
+        ...mcpTool('ensure_default_workspace_agent', { idempotentHint: true }),
+      },
     },
-  })
+  )
 
   // The agent is built from its stored model configuration (Mastra) and works in the
   // project of this path, which it has to be a member of.
@@ -523,7 +404,7 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
         params.agentId,
         project.id,
         body.prompt,
-        chatRunOpts(user, params.agentId, body.threadId),
+        chatRunOpts(user, params.agentId, body.threadId, body.attachmentIds, body.options),
       ),
     {
       body: runBody,
@@ -534,8 +415,7 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
         summary: 'Run an AI agent',
         description:
           'Send a prompt to an internal AI agent and return its answer. Only an internal agent ' +
-          'runs here; an external one has no model config and returns 400. An agent with chat ' +
-          'turned off returns 403.',
+          'runs here; an external one has no model config and returns 400.',
         ...mcpTool('run_ai_agent'),
       },
     },
@@ -558,7 +438,7 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
             params.agentId,
             project.id,
             body.prompt,
-            chatRunOpts(user, params.agentId, body.threadId),
+            chatRunOpts(user, params.agentId, body.threadId, body.attachmentIds, body.options),
             request.signal,
           ),
         ),
@@ -575,9 +455,7 @@ export const aiAgentRoutes = new Elysia({ name: 'ai-agents', detail: { tags: ['A
       },
       detail: {
         summary: 'Run an AI agent (stream)',
-        description:
-          "Stream an internal AI agent's response as it is generated. An agent with chat " +
-          'turned off answers with an `error` event.',
+        description: "Stream an internal AI agent's response as it is generated.",
       },
     },
   )

@@ -4,11 +4,6 @@
   "copyKey": "Key",
   "description": "Description",
   "issueTypes": "Issue types",
-  "templates": "Templates",
-  "blank": "Blank project",
-  "blankHint": "Default states and the issue types you pick",
-  "startFrom": "Start from",
-  "continue": "Continue",
   "typesCreated": "{count, plural, one {# issue type} other {# issue types}} will be created",
   "defaultType": "New issues get {type} by default. Types are editable in settings.",
   "presets": {
@@ -38,7 +33,6 @@
     "issueTypes": "Issue types",
     "labels": "Labels",
     "customFields": "Custom fields",
-    "issueTemplates": "Issue templates",
     "views": "Views",
     "dashboards": "Dashboards",
     "documents": "Docs",
@@ -53,5 +47,16 @@
   "create": "Create project",
   "copyAction": "Copy project",
   "defaultAgents": "Agents joining this project: {names}",
-  "copyName": "{name} copy"
+  "copyName": "{name} copy",
+  "primaryLocation": "Primary storing location (optional)",
+  "primaryLocationPlaceholder": "~/workspace or https://drive.google.com/...",
+  "tabGeneral": "General",
+  "tabChannels": "Channels & Groups",
+  "tabContacts": "Contacts",
+  "tabLocations": "Locations",
+  "channelsHint": "Add Zalo, Telegram, Discord, Email, or Messenger channels and groups where agents collect context.",
+  "contactsHint": "Add project contacts, RACI roles, and messaging handles for agent coordination.",
+  "locationsHint": "Add local folders, Google Drive links, Git repos, or knowledge bases where project files live.",
+  "setupSummary": "{channels} channels/groups · {contacts} contacts · {locations} locations",
+  "nextStep": "Next →"
 }

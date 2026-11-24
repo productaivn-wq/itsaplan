@@ -223,8 +223,8 @@ export async function exportProject(projectId: number): Promise<ProjectExport> {
     labels: labelRows.map((l) => ({ name: l.name, color: l.color })),
     cycles: cycleRows.map((c) => ({
       name: c.name,
-      startDate: c.startDate,
-      endDate: c.endDate,
+      startDate: c.startDate instanceof Date ? c.startDate.toISOString() : c.startDate,
+      endDate: c.endDate instanceof Date ? c.endDate.toISOString() : c.endDate,
       goal: c.goal,
     })),
     issues,

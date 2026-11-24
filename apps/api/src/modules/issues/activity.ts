@@ -15,7 +15,8 @@ import { and, asc, desc, eq, gte, inArray, isNull, lt, ne, sql } from 'drizzle-o
 import { HttpError, iso } from '#shared/lib';
 import { emitCommentEvent } from './webhook-payload';
 import { addedMentionHandles, parseMentionHandles, resolveMentionHandles } from '#shared/mentions';
-import { mentionReach, queueMentionRuns } from '#modules/mentions/service';
+import { isAgentUser, listMentionTriggerAgents } from '#modules/agents/core/service';
+import { enqueueAgentRun } from '#modules/agents/core/run-queue';
 import {
   notifyComment,
   notifyEditedCommentMentions,
@@ -326,12 +327,9 @@ export async function createComment(input: {
   body: string;
   // The comment being replied to. It has to be a comment on the same issue.
   replyToId?: number | null;
-  // The name of an author without an account, such as someone writing in through a
-  // build's public page. Their mentions reach nobody: they are not in the team.
-  authorName?: string;
 }): Promise<FeedItemRow> {
   const actorUserId = input.actorUserId ?? null;
-  const actorName = input.authorName ?? (await userName(actorUserId));
+  const actorName = await userName(actorUserId);
   const replyToId = input.replyToId ?? null;
   if (replyToId != null) {
     const [parent] = await db
@@ -364,7 +362,7 @@ export async function createComment(input: {
     // Resolved once: the agent halves start runs, the member half is notified.
     const mentioned = await resolveMentionHandles(
       projectId,
-      input.authorName === undefined ? parseMentionHandles(comment.body ?? '') : [],
+      parseMentionHandles(comment.body ?? ''),
     );
     await enqueueMentionRuns(projectId, comment, mentioned.agentUserIds);
     await notifyComment(projectId, comment, mentioned);
@@ -458,13 +456,17 @@ export async function deleteComment(
 // so answering an agent in its own thread does not have to tag it again. Only quick
 // queries run here; the work happens later — in the poller for an internal agent, on
 // the operator's runner for an external one — so creating a comment is never blocked
-// on it.
+// on it. Comments authored by an agent's bot user never trigger runs, which stops
+// agents from setting each other (or themselves) off.
 async function enqueueMentionRuns(
   projectId: number,
   comment: FeedItemRow,
   mentionedAgentUserIds: string[],
 ): Promise<void> {
   if (mentionedAgentUserIds.length === 0 && comment.replyToId == null) return;
+  // A comment an agent wrote starts no run of its own, which stops agent-to-agent
+  // mention loops.
+  if (comment.actorUserId && (await isAgentUser(comment.actorUserId))) return;
   const reachedUserIds = new Set(mentionedAgentUserIds);
   if (comment.replyToId != null) {
     const [parent] = await db
@@ -473,19 +475,20 @@ async function enqueueMentionRuns(
       .where(eq(issueActivity.id, comment.replyToId));
     if (parent?.actorUserId) reachedUserIds.add(parent.actorUserId);
   }
-  const { agents } = await mentionReach(
+  const agents = await listMentionTriggerAgents(
     projectId,
+    [...reachedUserIds],
     comment.actorUserId,
-    { on: 'issue', place: 'comment' },
-    { memberIds: [], agentUserIds: [...reachedUserIds] },
   );
-  await queueMentionRuns({
-    projectId,
-    actorUserId: comment.actorUserId,
-    agents,
-    prompt: comment.body ?? '',
-    source: { issueId: comment.issueId, sourceActivityId: comment.id },
-  });
+  for (const agent of agents) {
+    await enqueueAgentRun({
+      agentId: agent.id,
+      projectId,
+      issueId: comment.issueId,
+      sourceActivityId: comment.id,
+      prompt: comment.body ?? '',
+    });
+  }
 }
 
 // --- Activity log ----------------------------------------------------------------

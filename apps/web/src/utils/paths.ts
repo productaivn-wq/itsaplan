@@ -24,11 +24,17 @@ export const viewPath = (ref: string, viewId: number | null) =>
 
 export const dashboardsPath = (ref: string) => `${projectPath(ref)}/dashboards`;
 
+export const watchedMetricsPath = (ref: string) => `${dashboardsPath(ref)}/watched`;
+
+export const vibePath = (ref: string) => `${projectPath(ref)}/vibe`;
+
+export const vaultPath = (ref: string) => `${projectPath(ref)}/vault`;
+
+export const onboardingPath = (ref: string) => `${projectPath(ref)}/onboarding`;
+
 // Public read-only share pages (no auth). The token is the unguessable share key.
 export const shareIssuePath = (token: string) => `/share/issue/${token}`;
 export const shareViewPath = (token: string) => `/share/view/${token}`;
-export const shareViewCalendarPath = (token: string) => `/share/view/${token}/calendar.ics`;
-export const shareDocumentPath = (token: string) => `/share/document/${token}`;
 
 // The absolute share URL to copy, built from the current origin at call time.
 export const shareUrl = (path: string) =>
@@ -49,10 +55,8 @@ export const documentPath = (ref: string, documentId: number) =>
 export const settingsPath = (ref: string, section: string) =>
   `${projectPath(ref)}/settings/${section}`;
 
-// The AI Team destinations listed in the main sidebar (see useAiTeamSections).
+// The AI Team destinations listed in the main sidebar (see AI_TEAM_SECTIONS).
 export const aiTeamPath = (ref: string, section: string) => `${projectPath(ref)}/agents/${section}`;
-
-export const runnerQueuePath = (ref: string) => aiTeamPath(ref, 'queue');
 
 export const inboxPath = (ref: string) => `${projectPath(ref)}/inbox`;
 
@@ -62,13 +66,15 @@ export const notificationsPath = (ref: string) => `${projectPath(ref)}/notificat
 
 export const aiAgentsPath = (ref: string) => `${projectPath(ref)}/agents`;
 
+export const openOfficePath = (ref: string) => `${projectPath(ref)}/open-office`;
+
 export const mcpServerPath = (ref: string) => `${projectPath(ref)}/mcp`;
 
 export const apiDocsPath = (ref: string) => `${projectPath(ref)}/api`;
 
 export const membersPath = (ref: string) => `${projectPath(ref)}/members`;
 
-export const publicSharesPath = (ref: string) => `${projectPath(ref)}/public`;
+export const directoryPath = (ref: string) => `${projectPath(ref)}/directory`;
 
 // An issue is addressed by its identifier under its team, not under its project:
 // /acme/issue/MKT-42.
@@ -76,9 +82,6 @@ export const issuePath = (ref: string, sequenceNumber: number) => {
   const { teamRef, key } = splitProjectRef(ref);
   return `/${encodeURIComponent(teamRef)}/issue/${encodeURIComponent(key)}-${sequenceNumber}`;
 };
-
-export const commentPath = (ref: string, sequenceNumber: number, commentId: number) =>
-  `${issuePath(ref, sequenceNumber)}#comment-${commentId}`;
 
 // "MKT-42" -> { key: 'MKT', sequenceNumber: 42 }, or null for anything else.
 export function parseIssueIdentifier(
@@ -144,6 +147,8 @@ export const startPagePath = (ref: string, startPage: StartPage) => {
       return dashboardsPath(ref);
     case 'initiatives':
       return initiativesPath(ref);
+    case 'workspace':
+      return aiTeamPath(ref, 'chat');
     default:
       return projectPath(ref);
   }
@@ -153,21 +158,24 @@ export const startPagePath = (ref: string, startPage: StartPage) => {
 // in the URL it opens the first team's settings.
 export const manageTeamsPath = () => '/account/teams';
 
+export const companySettingsPath = () => '/account/company';
+
 // Every section of a team is a route of its own, so each loads only what it shows.
 // The team itself is the index of the team, so it carries no section segment.
 export type TeamSection =
+  | 'capabilities'
   | 'info'
+  | 'org-chart'
   | 'projects'
   | 'members'
   | 'roles'
   | 'integrations'
   | 'git'
   | 'mcp'
+  | 'llm-router'
   | 'ai-agents'
-  | 'queue'
   | 'agent-skills'
   | 'agent-tools'
-  | 'analytics'
   | 'notifications';
 
 // A team's settings, under the team's ref (Team.ref): /acme/settings.
@@ -176,11 +184,8 @@ export const teamPath = (teamRef: string) => `/${encodeURIComponent(teamRef)}/se
 export const teamSectionPath = (teamRef: string, section: TeamSection) =>
   section === 'info' ? teamPath(teamRef) : `${teamPath(teamRef)}/${section}`;
 
-// A workspace's settings, which only its owner and admins open. `section` is one of the
-// settings pages ('info', 'managers') or an id a hosted build adds; without one, the path
-// opens the first entry of the workspace's settings menu.
-export const workspacePath = (workspaceId: number, section?: string) =>
-  section ? `/workspaces/${workspaceId}/${section}` : `/workspaces/${workspaceId}`;
+export const controlPlanePath = (teamRef?: string | null) =>
+  teamRef ? teamSectionPath(teamRef, 'capabilities') : manageTeamsPath();
 
 // The invitee-facing link an owner shares. Points at this web app's public
 // /invite/:token page, which reads the token and shows the accept screen.

@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
 // Symmetric encryption for secrets stored at rest (provider API keys). AES-256-GCM
 // with a per-value random IV; the auth tag is kept alongside so decryption is
@@ -13,12 +13,43 @@ const IV_BYTES = 12; // GCM standard nonce length.
 
 let cachedKey: Buffer | null = null;
 
+function resolveAppEncryptionKey(): string | undefined {
+  if (process.env.ITSAPLAN_RESOLVED_APP_ENCRYPTION_KEY) {
+    return process.env.ITSAPLAN_RESOLVED_APP_ENCRYPTION_KEY;
+  }
+  const raw = process.env.APP_ENCRYPTION_KEY;
+  if (!raw) return undefined;
+  if (raw.startsWith('vault://')) {
+    try {
+      const proc = Bun.spawnSync(
+        [
+          'python',
+          '-c',
+          'from scripts.agent_credential_vault import get_vault_secret; print(get_vault_secret("APP_ENCRYPTION_KEY") or "", end="")',
+        ],
+        { cwd: process.env.WORKSPACE_ROOT || process.cwd() },
+      );
+      const resolved = proc.stdout.toString().trim();
+      if (resolved && !resolved.startsWith('vault://')) {
+        return resolved;
+      }
+    } catch {
+      // Fallback below
+    }
+    throw new Error(
+      'APP_ENCRYPTION_KEY vault:// resolution failed; configure ITSAPLAN_RESOLVED_APP_ENCRYPTION_KEY or a direct APP_ENCRYPTION_KEY.',
+    );
+  }
+  return raw;
+}
+
 function getKey(): Buffer {
   if (cachedKey) return cachedKey;
-  const raw = process.env.APP_ENCRYPTION_KEY;
+  const raw = resolveAppEncryptionKey();
   if (!raw) {
     throw new Error('APP_ENCRYPTION_KEY is not set: generate one with `openssl rand -base64 32`.');
   }
+  process.env.APP_ENCRYPTION_KEY = raw;
   cachedKey = createHash('sha256').update(raw, 'utf8').digest();
   return cachedKey;
 }
@@ -52,14 +83,4 @@ export function decryptSecret(enc: EncryptedSecret): string {
     decipher.final(),
   ]);
   return plaintext.toString('utf8');
-}
-
-// HMAC-SHA256 over `${timestamp}.${body}`, formatted as the X-Itsaplan-Signature header
-// value (`t=<ts>,v1=<hex>`). It signs every request this instance sends to a URL someone
-// configured: a webhook delivery and an agent invocation. The timestamp lets the
-// receiver reject replays; the receiver recomputes the HMAC over the exact bytes it
-// received and compares in constant time.
-export function signPayload(secret: string, timestampSeconds: number, body: string): string {
-  const digest = createHmac('sha256', secret).update(`${timestampSeconds}.${body}`).digest('hex');
-  return `t=${timestampSeconds},v1=${digest}`;
 }

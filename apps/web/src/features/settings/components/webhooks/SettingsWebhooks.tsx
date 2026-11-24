@@ -6,11 +6,9 @@ import {
   useWebhooksQuery,
   useCreateWebhook,
   useUpdateWebhook,
-  useRotateWebhookSecret,
   useDeleteWebhook,
 } from '@/services/webhooks.service';
 import { EmptyState } from '@/components/common/page/EmptyState';
-import ConfirmDialog from '@/components/common/overlay/ConfirmDialog';
 import ListSkeleton from '@/components/common/skeleton/ListSkeleton';
 import SettingsConfirmDeleteDialog from '../crud/SettingsConfirmDeleteDialog';
 import { SettingsWebhookDialog, type WebhookFormValue } from './SettingsWebhookDialog';
@@ -35,10 +33,8 @@ export default function SettingsWebhooks({
   const webhooks = webhooksQuery.data ?? [];
   const createWebhook = useCreateWebhook(projectKey);
   const updateWebhook = useUpdateWebhook(projectKey);
-  const rotateSecret = useRotateWebhookSecret(projectKey);
   const deleteWebhook = useDeleteWebhook(projectKey);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
-  const [rotating, setRotating] = useState<Webhook | null>(null);
   const [deleting, setDeleting] = useState<Webhook | null>(null);
   const [deliveriesFor, setDeliveriesFor] = useState<Webhook | null>(null);
 
@@ -75,7 +71,6 @@ export default function SettingsWebhooks({
             webhooks={webhooks}
             onShowDeliveries={setDeliveriesFor}
             onEdit={setEditing}
-            onRotateSecret={setRotating}
             onDelete={setDeleting}
           />
         </div>
@@ -90,25 +85,6 @@ export default function SettingsWebhooks({
           onSave={saveWebhook}
           onClose={() => setEditing(null)}
         />
-      )}
-
-      {rotating && (
-        <ConfirmDialog
-          title={t('rotateSecretTitle')}
-          confirmLabel={t('rotateSecret')}
-          onClose={() => setRotating(null)}
-          onConfirm={async () => {
-            await rotateSecret.mutateAsync(rotating.id);
-            setRotating(null);
-          }}
-        >
-          <p className="text-sm text-muted-foreground">
-            {t.rich('rotateSecretMessage', {
-              url: rotating.url,
-              v: (chunks) => <span className="font-medium">{chunks}</span>,
-            })}
-          </p>
-        </ConfirmDialog>
       )}
 
       {deleting && (

@@ -19,13 +19,6 @@ export function getDisplayLocale(): string {
   return displayLocale;
 }
 
-// The locale tag handed to Intl. Persian defaults to the solar Hijri calendar, but the
-// calendar grids and the date picker are Gregorian, so a date written in one and
-// picked in the other would not match; pin Persian to the Gregorian calendar.
-export function getIntlLocale(): string {
-  return displayLocale === 'fa' ? 'fa-IR-u-ca-persian' : displayLocale;
-}
-
 // The zone timestamps are rendered in, from the user's account preferences. The API
 // stores and returns UTC; only the display side applies a zone. Held in a module
 // variable so the formatters stay plain functions callable outside React, and set
@@ -67,11 +60,19 @@ function zoneOption(): { timeZone?: string } {
 // "Jul 2" from an ISO datetime or a "YYYY-MM-DD" date; the raw string if it
 // does not parse (kept so a card never renders "Invalid Date"). A date-only value
 // is a calendar date, not a moment, so it is never shifted into another zone.
-export function formatShortDate(value: string): string {
+export function formatShortDate(value: string | Date): string {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    return value.toLocaleDateString(displayLocale, {
+      month: 'short',
+      day: 'numeric',
+      ...zoneOption(),
+    });
+  }
   const dateOnly = value.length <= 10;
   const date = new Date(dateOnly ? `${value}T00:00:00` : value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(getIntlLocale(), {
+  return date.toLocaleDateString(displayLocale, {
     month: 'short',
     day: 'numeric',
     ...(dateOnly ? {} : zoneOption()),
@@ -84,7 +85,7 @@ export function formatDate(value: string): string {
   const dateOnly = value.length <= 10;
   const date = new Date(dateOnly ? `${value}T00:00:00` : value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(getIntlLocale(), {
+  return date.toLocaleDateString(displayLocale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -105,19 +106,19 @@ export function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const thisYear = zonedYear(date) === zonedYear(new Date());
-  return date.toLocaleString(getIntlLocale(), {
+  return date.toLocaleString(displayLocale, {
     month: 'short',
     day: 'numeric',
     ...(thisYear ? {} : { year: 'numeric' }),
     hour: '2-digit',
     minute: '2-digit',
-    hour12: displayLocale === 'ko',
+    hour12: false,
     ...zoneOption(),
   });
 }
 
 // The display zone's offset at a given moment, in ms (zone time minus UTC).
-export function zoneOffsetMs(date: Date): number {
+function zoneOffsetMs(date: Date): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     hourCycle: 'h23',
     year: 'numeric',
@@ -160,28 +161,18 @@ export function fromZonedParts(day: string, time: string): string {
 
 // "Jul 2, 14:05 – 16:30" for a range, rendered in the user's zone; the day is
 // repeated on the end when it falls on another one. Without an end it is a
-// single moment. A same-day end is only the time, on the same clock as the start,
-// so a Korean range reads "오후 11:36 – 오후 11:46" rather than a picker "HH:mm".
+// single moment.
 export function formatDateTimeRange(start: string, end: string | null): string {
   if (!end) return formatDateTime(start);
   if (dayKey(start) !== dayKey(end)) return `${formatDateTime(start)} – ${formatDateTime(end)}`;
-  const endDate = new Date(end);
-  const endTime = Number.isNaN(endDate.getTime())
-    ? end
-    : endDate.toLocaleTimeString(getIntlLocale(), {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: displayLocale === 'ko',
-        ...zoneOption(),
-      });
-  return `${formatDateTime(start)} – ${endTime}`;
+  return `${formatDateTime(start)} – ${toZonedParts(end)?.time ?? end}`;
 }
 
 // "July 2, 2026" for a moment in time, rendered in the user's zone.
 export function formatLongDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(getIntlLocale(), {
+  return date.toLocaleDateString(displayLocale, {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -189,14 +180,13 @@ export function formatLongDate(value: string): string {
   });
 }
 
-// "2:05 PM" for a moment in time, rendered in the user's zone; "2:05:09 PM" with seconds.
-export function formatTime(value: string, { seconds = false } = {}): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleTimeString(getIntlLocale(), {
+// "2:05 PM" for a moment in time, rendered in the user's zone.
+export function formatTime(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '';
+  return date.toLocaleTimeString(displayLocale, {
     hour: 'numeric',
     minute: '2-digit',
-    ...(seconds && { second: '2-digit' }),
     ...zoneOption(),
   });
 }
@@ -204,7 +194,7 @@ export function formatTime(value: string, { seconds = false } = {}): string {
 // "July 2026" for a calendar date the caller already built in local time (the
 // timeline's month band), so no zone is applied.
 export function formatMonthYear(date: Date): string {
-  return date.toLocaleDateString(getIntlLocale(), { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(displayLocale, { month: 'long', year: 'numeric' });
 }
 
 // The calendar day a moment falls on in the user's zone, as "YYYY-MM-DD". Used to
@@ -215,11 +205,13 @@ export function dayKey(value: string): string {
   return date.toLocaleDateString('en-CA', zoneOption());
 }
 
-// Parses a "YYYY-MM-DD" date string at local midnight, so day math in the
-// calendar and timeline never shifts across a timezone boundary. Returns null
-// for a null/empty/unparseable value.
+// Parses a "YYYY-MM-DD" date string or full ISO datetime string.
 export function parseDate(value: string | null): Date | null {
   if (!value) return null;
+  if (value.includes('T') || value.includes(':') || value.includes(' ')) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
   const [y, m, d] = value.split('-').map(Number);
   if (!y || !m || !d) return null;
   const date = new Date(y, m - 1, d);

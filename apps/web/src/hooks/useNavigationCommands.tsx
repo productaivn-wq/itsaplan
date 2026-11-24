@@ -1,65 +1,69 @@
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell,
   BookOpenText,
-  Braces,
+  BookText,
+  Bot,
+  Building2,
+  CircleHelp,
+  Cpu,
+  GanttChart,
   Inbox,
+  KeyRound,
   LayoutDashboard,
-  Server,
-  Shield,
+  Plug,
+  RefreshCw,
+  Route,
+  SlidersHorizontal,
+  Sparkles,
   SquareKanban,
   Target,
   Users,
+  UsersRound,
+  Wrench,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useSession } from '@/lib/auth-client';
 import {
   aiAgentsPath,
   aiTeamPath,
-  apiDocsPath,
+  companySettingsPath,
+  controlPlanePath,
+  cyclesPath,
   dashboardsPath,
   documentsPath,
-  godPath,
   inboxPath,
   initiativesPath,
   manageTeamsPath,
-  mcpServerPath,
   membersPath,
-  notificationsPath,
+  openOfficePath,
   projectPath,
+  splitProjectRef,
+  teamPath,
+  teamSectionPath,
+  vaultPath,
 } from '@/utils/paths';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { openJtbdGuide } from '@/components/layout/JtbdWorkflowGuideDrawer';
 import { ACCOUNT_SECTIONS, accountPath } from '@/utils/accountSections';
-import { AI_AGENTS_SECTION } from '@/utils/settingsSections';
-import { useAiTeamSections } from '@/hooks/useSettingsNavGroups';
-import { GOD_SECTIONS } from '@/utils/godSections';
+import { AI_AGENTS_SECTION, AI_TEAM_SECTIONS } from '@/utils/settingsSections';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProjectFeatures } from '@/hooks/useProjectFeatures';
-import { useSettingsNavGroups } from '@/hooks/useSettingsNavGroups';
 import {
   useAccountSectionLabel,
-  useGodSectionText,
   useSettingsSectionText,
 } from '@/hooks/useSectionLabels';
 import type { Command, CommandSection } from '@/utils/commands';
 
-// Every place the palette can navigate to, filtered by what the viewer may read.
-// The destinations mirror the sidebars one-to-one: the main nav (SidebarMainNav),
-// the project settings nav (useSettingsNavGroups, which already applies the
-// permission gate), the sidebar footer, the account pages and god mode. Grouped
-// under one "Sections" heading so a search separates them from commands and
-// issues.
+// SPEC-ITSAPLAN-CUT-GOD-MODE-283 & SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284:
+// God Mode and Project Settings destinations are cut from the command palette.
 export function useNavigationCommands(projectKey: string | null): CommandSection | null {
   const t = useTranslations('nav');
+  const tTeams = useTranslations('teams.sections');
   const sectionText = useSettingsSectionText();
-  const godText = useGodSectionText();
   const accountLabel = useAccountSectionLabel();
   const router = useRouter();
-  const { can, isMember } = usePermissions();
-  const aiTeamSections = useAiTeamSections();
+  const { can } = usePermissions();
   const features = useProjectFeatures();
-  const { data: session } = useSession();
-  const { groups } = useSettingsNavGroups(projectKey);
-  const isGod = session?.user.role === 'god';
 
   const items: Command[] = [];
 
@@ -67,31 +71,69 @@ export function useNavigationCommands(projectKey: string | null): CommandSection
     items.push({ id, label, icon, keywords, run: () => router.push(href) });
   }
 
+  function addInstant(
+    id: string,
+    label: string,
+    icon: Command['icon'],
+    href: string,
+    keywords?: string,
+  ) {
+    items.push({ id, label, icon, keywords, run: () => navigateFeatureInstant(href) });
+  }
+
   if (projectKey) {
     const key = projectKey;
-    add('nav.inbox', t('inbox'), <Inbox />, inboxPath(key), 'notifications unread');
+    addInstant(
+      'nav.ai-workspace',
+      t('aiWorkspace'),
+      <Sparkles />,
+      aiTeamPath(key, 'chat'),
+      'ai workspace chat copilot agents',
+    );
+    addInstant('nav.inbox', t('inbox'), <Inbox />, inboxPath(key), 'notifications unread');
     if (features.dashboards && can('dashboards', 'read'))
-      add('nav.dashboards', t('dashboards'), <LayoutDashboard />, dashboardsPath(key), 'charts');
-    add(
+      addInstant(
+        'nav.dashboards',
+        t('dashboards'),
+        <LayoutDashboard />,
+        dashboardsPath(key),
+        'charts',
+      );
+    addInstant(
       'nav.work-items',
-      t('workItems'),
+      t('list'),
       <SquareKanban />,
       projectPath(key),
-      'board issues kanban',
+      'operations list queue issues table',
     );
+    addInstant(
+      'nav.timeline',
+      t('timeline'),
+      <GanttChart />,
+      `${projectPath(key)}/timeline`,
+      'gantt schedule roadmap',
+    );
+    addInstant('nav.cycles', t('cycles'), <RefreshCw />, cyclesPath(key), 'sprints iterations');
     if (features.initiatives && can('initiatives', 'read'))
-      add('nav.initiatives', t('initiatives'), <Target />, initiativesPath(key), 'epics');
+      addInstant('nav.initiatives', t('initiatives'), <Target />, initiativesPath(key), 'epics');
     if (features.documents && can('documents', 'read'))
-      add(
+      addInstant(
         'nav.documents',
         t('documents'),
         <BookOpenText />,
         documentsPath(key),
-        'docs pages documentation',
+        'docs pages documentation notes sticky canvas vibe spatial finder galaxy reader',
       );
-    for (const s of aiTeamSections) {
+    addInstant(
+      'nav.open-office',
+      `${t('operations')} · ${t('office')}`,
+      <Building2 />,
+      openOfficePath(key),
+      'operations open office spatial agents telemetry',
+    );
+    for (const s of AI_TEAM_SECTIONS) {
       if (can(s.resource, 'read'))
-        add(
+        addInstant(
           `nav.ai-team.${s.slug}`,
           sectionText(s.slug).label,
           <s.icon />,
@@ -100,41 +142,105 @@ export function useNavigationCommands(projectKey: string | null): CommandSection
         );
     }
     if (can(AI_AGENTS_SECTION.resource, 'read'))
-      add(
+      addInstant(
         `nav.ai.${AI_AGENTS_SECTION.slug}`,
         sectionText(AI_AGENTS_SECTION.slug).label,
         <AI_AGENTS_SECTION.icon />,
         aiAgentsPath(key),
         'ai team agents',
       );
-    add('nav.members', t('members'), <Users />, membersPath(key), 'team people invite');
-    if (isMember)
-      add(
-        'nav.notifications',
-        t('notificationPreferences'),
-        <Bell />,
-        notificationsPath(key),
-        'email telegram',
+    const teamRef = splitProjectRef(key).teamRef;
+    addInstant(
+      'nav.control-plane',
+      t('controlPlane'),
+      <SlidersHorizontal />,
+      controlPlanePath(teamRef),
+      'control plane capabilities company teams projects agents skills tools mcp integrations',
+    );
+    if (can('ai_agents', 'read'))
+      addInstant(
+        'nav.control-plane.ai-agents',
+        `${t('controlPlane')} · ${tTeams('agents.title')}`,
+        <Bot />,
+        teamSectionPath(teamRef, 'ai-agents'),
+        'control plane team ai agents roster',
       );
-    // The settings destinations, already permission-filtered by the hook the
-    // settings sidebar uses. The group label is a keyword so "workflow" or
-    // "automation" finds its sections.
-    for (const group of groups) {
-      for (const item of group.items) {
-        items.push({
-          id: `nav.settings.${item.key}`,
-          label: item.label,
-          icon: <item.icon />,
-          keywords: `settings ${group.label}`,
-          run: () => router.push(item.href),
-        });
-      }
+    if (can('agent_skills', 'read'))
+      addInstant(
+        'nav.control-plane.agent-skills',
+        `${t('controlPlane')} · ${tTeams('agentSkills.title')}`,
+        <BookText />,
+        teamSectionPath(teamRef, 'agent-skills'),
+        'control plane agent skills skill.md',
+      );
+    if (can('agent_tools', 'read'))
+      addInstant(
+        'nav.control-plane.agent-tools',
+        `${t('controlPlane')} · ${tTeams('agentTools.title')}`,
+        <Wrench />,
+        teamSectionPath(teamRef, 'agent-tools'),
+        'control plane agent tools connectors',
+      );
+    if (can('integrations', 'read')) {
+      addInstant(
+        'nav.control-plane.integrations',
+        `${t('controlPlane')} · ${tTeams('integrations.title')}`,
+        <Plug />,
+        teamSectionPath(teamRef, 'integrations'),
+        'control plane llm integrations credentials keys',
+      );
+      addInstant(
+        'nav.team.llm-router',
+        `${t('controlPlane')} · ${tTeams('llmRouter.title')}`,
+        <Route />,
+        teamSectionPath(teamRef, 'llm-router'),
+        'llm provider router fallback models cooldowns gateway',
+      );
     }
-    add('nav.api', t('apiDocs'), <Braces />, apiDocsPath(key), 'rest openapi');
-    add('nav.mcp', t('mcpServer'), <Server />, mcpServerPath(key), 'model context protocol');
+    if (can('members_manage', 'read') || can('ai_agents', 'read'))
+      addInstant(
+        'nav.control-plane.mcp',
+        `${t('controlPlane')} · ${tTeams('mcp.title')}`,
+        <Cpu />,
+        teamSectionPath(teamRef, 'mcp'),
+        'control plane mcp server outbound connectors',
+      );
+    if (can('members_manage', 'read')) {
+      addInstant(
+        'nav.team-settings',
+        t('teamManagement'),
+        <UsersRound />,
+        teamPath(teamRef),
+        'team management roles permissions authorization invites',
+      );
+      addInstant('nav.members', t('members'), <Users />, membersPath(key), 'team people invite');
+    }
+    addInstant(
+      'nav.vault',
+      t('vault'),
+      <KeyRound />,
+      vaultPath(key),
+      'secret vault keys credentials custody',
+    );
   }
 
-  add(
+  items.push({
+    id: 'nav.jtbd-guide',
+    label: t('jtbdGuide'),
+    icon: <CircleHelp />,
+    shortcut: '?',
+    keywords: 'jtbd workflow guide help map',
+    run: () => openJtbdGuide(),
+  });
+
+  addInstant(
+    'nav.company-settings',
+    t('companySettings'),
+    <Building2 />,
+    companySettingsPath(),
+    'company organization setup governance authorization sod',
+  );
+  addInstant(
     'nav.manage-teams',
     t('manageTeams'),
     <Users />,
@@ -145,20 +251,10 @@ export function useNavigationCommands(projectKey: string | null): CommandSection
     add(`nav.account.${s.slug}`, accountLabel(s.slug), <s.icon />, accountPath(s.slug), 'account');
   }
 
-  // Instance administration, owner account only. The API enforces the same, so
-  // hiding it here is about noise, not access.
-  if (isGod) {
-    for (const s of GOD_SECTIONS) {
-      add(
-        `nav.god.${s.slug}`,
-        t('godModeSection', { section: godText.section(s.slug).label }),
-        <Shield />,
-        godPath(s.slug),
-        'instance admin',
-      );
-    }
-  }
-
-  if (items.length === 0) return null;
-  return { id: 'sections', heading: t('sections'), items };
+  const sectionHeading = t('sections');
+  return useMemo(() => {
+    if (items.length === 0) return null;
+    return { id: 'sections', heading: sectionHeading, items };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectKey, sectionHeading, features, can]);
 }

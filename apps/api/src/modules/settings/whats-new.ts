@@ -1,5 +1,4 @@
 import { db, appSetting, userPreference } from '@repo/db';
-import type { Locale } from '@repo/mailer';
 import { eq, sql } from 'drizzle-orm';
 import type { AuthUser } from '#shared/access';
 import { getAppVersion, releasesSince, type Release } from './updates';
@@ -87,10 +86,10 @@ export async function getWhatsNew(user: AuthUser): Promise<WhatsNew> {
 
 // Closes the screen for this user, for the version they saw. A row is written even
 // when they have no preferences yet, so the screen does not come back.
-export async function markWhatsNewSeen(userId: string, locale: Locale): Promise<void> {
+export async function markWhatsNewSeen(userId: string): Promise<void> {
   await db
     .insert(userPreference)
-    .values({ userId, locale, seenVersion: getAppVersion() })
+    .values({ userId, seenVersion: getAppVersion() })
     .onConflictDoUpdate({
       target: userPreference.userId,
       set: { seenVersion: getAppVersion(), updatedAt: sql`now()` },

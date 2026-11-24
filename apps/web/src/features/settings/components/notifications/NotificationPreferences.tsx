@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
-import { Mail, Send } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Check, Mail, Send } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import SettingsSection from '@/components/common/page/SettingsSection';
 import NotificationTelegramAccount from './NotificationTelegramAccount';
 import { NOTIFICATION_EVENTS } from '../../utils/notificationEvents';
@@ -74,18 +74,48 @@ function ChannelRow({
     <div className={`${COLS} -mx-3 rounded-md px-3 py-2.5 transition-colors hover:bg-accent`}>
       <span className="text-sm">{label}</span>
       <div className="flex justify-center">
-        <Checkbox
-          checked={emailChecked}
-          onCheckedChange={(v) => onEmail(v === true)}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={emailChecked}
           aria-label={`${label} — email`}
-        />
+          onClick={() => onEmail(!emailChecked)}
+          className="inline-flex size-8 items-center justify-center rounded-md transition-colors hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              'inline-flex size-4 items-center justify-center rounded-[4px] border transition-colors',
+              emailChecked
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-input bg-background/60',
+            )}
+          >
+            {emailChecked && <Check className="size-3" />}
+          </span>
+        </button>
       </div>
       <div className="flex justify-center">
-        <Checkbox
-          checked={telegramChecked}
-          onCheckedChange={(v) => onTelegram(v === true)}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={telegramChecked}
           aria-label={`${label} — Telegram`}
-        />
+          onClick={() => onTelegram(!telegramChecked)}
+          className="inline-flex size-8 items-center justify-center rounded-md transition-colors hover:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              'inline-flex size-4 items-center justify-center rounded-[4px] border transition-colors',
+              telegramChecked
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-input bg-background/60',
+            )}
+          >
+            {telegramChecked && <Check className="size-3" />}
+          </span>
+        </button>
       </div>
     </div>
   );

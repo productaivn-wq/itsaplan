@@ -31,11 +31,11 @@ export default function AgentProjectsSection({
 }) {
   const t = useTranslations('teams.agents');
 
-  function toggle(ids: number[], on: boolean) {
+  function toggle(id: number, on: boolean) {
     onChange({
       projectIds: on
-        ? [...new Set([...value.projectIds, ...ids])]
-        : value.projectIds.filter((x) => !ids.includes(x)),
+        ? [...new Set([...value.projectIds, id])]
+        : value.projectIds.filter((x) => x !== id),
     });
   }
 
@@ -69,7 +69,7 @@ export default function AgentProjectsSection({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs"
+            className="h-8 px-2.5 text-xs"
             disabled={value.projectIds.length === projects.length}
             onClick={() => onChange({ projectIds: projects.map((project) => project.id) })}
           >
@@ -79,7 +79,7 @@ export default function AgentProjectsSection({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs"
+            className="h-8 px-2.5 text-xs"
             disabled={value.projectIds.length === 0}
             onClick={() => onChange({ projectIds: [] })}
           >

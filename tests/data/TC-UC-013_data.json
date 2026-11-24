@@ -1,0 +1,204 @@
+{
+  "uc_id": "UC-013",
+  "spec_id": "SPEC-53.ACT.500",
+  "department_id": "ai_dev",
+  "department_name": "AI-Dev",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-013",
+    "FR-063",
+    "UC-010"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC013-01",
+      "slice_id": "UC-013.S01",
+      "fr_ref": "FR-063",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state?project_key=PM",
+        "room_id": "ai_dev"
+      },
+      "expected": {
+        "department_id": "ai_dev",
+        "has_kpis": true,
+        "zero_fake_agents": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-02",
+      "slice_id": "UC-013.S02",
+      "fr_ref": "FR-063",
+      "category": "stateful",
+      "input": {
+        "department_id": "ai_dev",
+        "template_id": "code_tdd_delivery",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "target_room": "ai_dev",
+        "creates_real_issue": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-03",
+      "slice_id": "UC-013.S02",
+      "fr_ref": "FR-063",
+      "category": "negative",
+      "input": {
+        "department_id": "ai_dev",
+        "adversarial_guard": "Quick Steer on Non-Existent Agent/Contract"
+      },
+      "expected": {
+        "rejected_fail_closed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-04",
+      "slice_id": "UC-013.S03",
+      "fr_ref": "FR-063",
+      "category": "positive",
+      "input": {
+        "department_id": "ai_dev",
+        "project_ref": "owner.PM"
+      },
+      "expected": {
+        "module_links": [
+          "/{teamRef}/{projectKey}",
+          "/{teamRef}/{projectKey}/agents",
+          "/{teamRef}/{projectKey}/agents/schedules",
+          "/{teamRef}/{projectKey}/mcp"
+        ],
+        "dead_links": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC013-05",
+      "slice_id": "UC-013.S01",
+      "fr_ref": "FR-063",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "positive_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-06",
+      "slice_id": "UC-013.S02",
+      "fr_ref": "FR-063",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "boundary_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC013-07",
+      "slice_id": "UC-013.S03",
+      "fr_ref": "FR-063",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "negative_07",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC013-08",
+      "slice_id": "UC-013.S04",
+      "fr_ref": "FR-063",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "stateful_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-09",
+      "slice_id": "UC-013.S01",
+      "fr_ref": "FR-063",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "positive_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC013-10",
+      "slice_id": "UC-013.S02",
+      "fr_ref": "FR-063",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "boundary_10",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC013-11",
+      "slice_id": "UC-013.S03",
+      "fr_ref": "FR-063",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC013-12",
+      "slice_id": "UC-013.S04",
+      "fr_ref": "FR-063",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — AI-Dev Autonomous TDD & Schedule Dispatch",
+      "input": {
+        "uc_id": "UC-013",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

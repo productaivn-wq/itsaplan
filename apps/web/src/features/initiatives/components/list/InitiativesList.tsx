@@ -58,7 +58,11 @@ export default function InitiativesList({
     return (
       <EmptyState title={t('emptyTitle')} description={t('emptyDescription')}>
         {canCreate && (
-          <Button size="sm" onClick={onCreate}>
+          <Button
+            size="sm"
+            className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-4"
+            onClick={onCreate}
+          >
             <Plus className="size-3.5" />
             {t('newInitiative')}
           </Button>
@@ -68,25 +72,25 @@ export default function InitiativesList({
   }
 
   return (
-    <div className="min-w-0 px-4 pb-2">
-      <Table className="min-w-[880px] table-fixed">
+    <div className="mx-4 mb-6 min-w-0 overflow-hidden rounded-2xl border border-border/85 bg-card shadow-[var(--studio-card-shadow)] sm:mx-6">
+      <Table className="min-w-[960px] table-fixed">
         <colgroup>
-          <col className="w-[34%]" />
+          <col className="w-[29%]" />
           <col className="w-[10%]" />
-          <col className="w-[22%]" />
-          <col className="w-[12%]" />
-          <col className="w-[12%]" />
-          <col className="w-[10%]" />
+          <col className="w-[18%]" />
+          <col className="w-[11%]" />
+          <col className="w-[14%]" />
+          <col className="w-[18%]" />
         </colgroup>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
+          <TableRow className="bg-muted/35 hover:bg-muted/35">
             {COLUMNS.map((col) => (
               <TableHead key={col.key} className="px-3 text-xs font-medium text-muted-foreground">
                 {col.sort ? (
                   <button
                     type="button"
                     onClick={() => onSort(col.sort!)}
-                    className="inline-flex items-center gap-1 hover:text-foreground"
+                    className="inline-flex min-h-8 items-center gap-1 hover:text-foreground"
                   >
                     {t(`columns.${col.key}`)}
                     {sort === col.sort &&

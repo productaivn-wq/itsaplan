@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { DndContext } from '@dnd-kit/core';
 import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -64,8 +64,7 @@ export default function SwimlaneBoard({
   const selection = useSelection();
   const collapsed = usePersistedSet(collapsedSwimlanesKey(project.project.id, settings.subgroup));
 
-  // Memoized: every card takes the maps, and a new object renders every card again.
-  const maps = useMemo(() => buildMaps(project), [project]);
+  const maps = buildMaps(project);
   const columnGroups = buildGroups(project, settings.group, groupLabels, filters);
   const swimlaneGroups = buildGroups(project, settings.subgroup, groupLabels, filters);
   const sorted = sortIssues(project.issues, settings.sort, project);
@@ -120,9 +119,6 @@ export default function SwimlaneBoard({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 260,
     overscan: 3,
-    // A scroll step renders in a normal React update, not in flushSync inside the
-    // scroll event, which blocks every scroll event on a slow CPU.
-    useFlushSync: false,
     getItemKey: (index) => rows[index].swimlane.key,
   });
 

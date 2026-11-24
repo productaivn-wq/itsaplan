@@ -1,4 +1,5 @@
-import { useParams, usePathname } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { parseIssueIdentifier, projectRefOf } from '@/utils/paths';
 
 export type ShellRoute = {
@@ -19,8 +20,30 @@ export type ShellRoute = {
   onBoard: boolean;
 };
 
+const NON_PROJECT_PREFIXES = new Set([
+  'account',
+  'api',
+  '_next',
+  'share',
+  'invite',
+  'god',
+  'login',
+  'register',
+  'forgot-password',
+  'reset-password',
+  'onboarding',
+]);
+
 const numericSegment = (value: string | undefined) =>
   value && /^\d+$/.test(value) ? Number(value) : null;
+
+const safeDecodeSegment = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
 
 // The parts of the current route the Shell renders from. The open view, settings
 // section and issue live in deeper segments than this layout, so they are read
@@ -28,16 +51,38 @@ const numericSegment = (value: string | undefined) =>
 // (/acme/issue/MKT-42), so its project comes from the identifier.
 export function useShellRoute(): ShellRoute {
   const params = useParams<{ teamRef?: string; projectKey?: string; identifier?: string }>();
-  const pathname = usePathname();
-  const teamRef = params.teamRef ? decodeURIComponent(params.teamRef) : null;
+  const pathname = useInstantPathname();
+  const segs = pathname.split('/').filter(Boolean); // [team, key, sub?, id?, tab?]
 
-  const issue = params.identifier
-    ? parseIssueIdentifier(decodeURIComponent(params.identifier))
-    : null;
-  const key = issue?.key ?? (params.projectKey ? decodeURIComponent(params.projectKey) : null);
+  const hasSegProject =
+    segs.length >= 2 &&
+    segs[1] !== 'issue' &&
+    segs[1] !== 'settings' &&
+    !NON_PROJECT_PREFIXES.has(segs[0]!);
+
+  const isSegIssue =
+    segs.length >= 3 &&
+    segs[1] === 'issue' &&
+    !NON_PROJECT_PREFIXES.has(segs[0]!);
+
+  const teamRef = hasSegProject || isSegIssue
+    ? safeDecodeSegment(segs[0]!)
+    : params.teamRef
+      ? safeDecodeSegment(params.teamRef)
+      : null;
+
+  const issueIdentifier = isSegIssue
+    ? safeDecodeSegment(segs[2]!)
+    : !hasSegProject && params.identifier
+      ? safeDecodeSegment(params.identifier)
+      : null;
+
+  const issue = issueIdentifier ? parseIssueIdentifier(issueIdentifier) : null;
+  const key = hasSegProject
+    ? safeDecodeSegment(segs[1]!)
+    : (issue?.key ?? (params.projectKey ? safeDecodeSegment(params.projectKey) : null));
   const projectKey = teamRef && key ? projectRefOf(teamRef, key) : null;
 
-  const segs = pathname.split('/').filter(Boolean); // [team, key, sub?, id?, tab?]
   const sub = issue ? 'issue' : (segs[2] ?? null);
 
   return {

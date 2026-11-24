@@ -1,6 +1,6 @@
 import type { CustomField } from '@/lib/api/endpoints/customFields';
 import type { Assignee } from '@/lib/api/endpoints/projects';
-import type { IssueFieldValueEntry, IssueFieldValueInput } from '@/lib/api/endpoints/issues';
+import type { IssueFieldValue, IssueFieldValueInput } from '@/lib/api/endpoints/issues';
 import { formatDate, formatDateTimeRange } from '@/utils/dates';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -36,7 +36,7 @@ export default function IssueCustomFieldControl({
   readOnly,
 }: {
   def: CustomField;
-  current: IssueFieldValueEntry | undefined;
+  current: IssueFieldValue | undefined;
   assignees: Assignee[];
   saveKey: string;
   onChange: (value: IssueFieldValueInput) => void;
@@ -70,7 +70,7 @@ export default function IssueCustomFieldControl({
       if (!member) return <span className="text-sm text-muted-foreground">—</span>;
       return (
         <span className="flex items-center gap-1.5 text-sm">
-          <Avatar name={member.name} image={member.image} className="size-4 text-[8px]" />
+          <Avatar name={member.name} image={member.image} className="size-4 text-xs" />
           {member.name}
         </span>
       );

@@ -10,6 +10,7 @@ import {
 import { iso, HttpError } from '#shared/lib';
 import { encryptSecret, decryptSecret } from '@repo/crypto';
 import { credentialSchemaFor } from './catalog';
+import { ensureFreshOAuthCredential } from './oauth-service';
 
 // Data access for integration credentials. They belong to the team, so a
 // project-scoped caller resolves its team id first. The full credential object is
@@ -136,9 +137,6 @@ export async function createCredential(
 ): Promise<CredentialRow> {
   const schema = credentialSchemaFor(input.integrationKey);
   if (!schema) throw new HttpError(400, `Unknown integration: ${input.integrationKey}`);
-  if (schema.length === 0) {
-    throw new HttpError(400, `The ${input.integrationKey} integration needs no credential.`);
-  }
   const config = coerce(schema, input.credential);
   const enc = encryptSecret(JSON.stringify(config));
   const [row] = await db
@@ -162,30 +160,6 @@ export interface CredentialPatch {
   credential?: Record<string, unknown>;
 }
 
-// The tools send a credential's secrets to the address in its url fields. A new address
-// has to come with the secrets, or someone who may edit them but never read them could
-// send them to a host of their own.
-function assertSecretsResent(
-  fields: ConfigField[],
-  current: ToolConfig,
-  patch: Record<string, unknown>,
-): void {
-  const moved = fields.some(
-    (f) =>
-      f.type === 'url' &&
-      f.key in patch &&
-      String(patch[f.key] ?? '') !== String(current[f.key] ?? ''),
-  );
-  if (!moved) return;
-  const missing = fields.filter((f) => f.type === 'secret' && f.key in current && !patch[f.key]);
-  if (missing.length > 0) {
-    throw new HttpError(
-      400,
-      `Enter ${missing.map((f) => f.label).join(', ')} again to change the address`,
-    );
-  }
-}
-
 export async function updateCredential(
   id: number,
   teamId: number,
@@ -203,7 +177,6 @@ export async function updateCredential(
     // Merge the submitted fields over the stored credential so unchanged secrets (left
     // out by the form) are preserved, then re-validate the whole credential.
     const current = (await decrypt(id, teamId)) ?? {};
-    assertSecretsResent(schema, current, patch.credential);
     const merged = coerce(schema, { ...current, ...patch.credential });
     const enc = encryptSecret(JSON.stringify(merged));
     set.ciphertext = enc.ciphertext;
@@ -238,6 +211,7 @@ export async function getCredentialSecret(
 ): Promise<{ integrationKey: string; config: ToolConfig } | null> {
   const existing = await getCredentialById(id, teamId);
   if (!existing) return null;
-  const config = (await decrypt(id, teamId)) ?? {};
+  const raw = (await decrypt(id, teamId)) ?? {};
+  const config = await ensureFreshOAuthCredential(id, teamId, existing.integrationKey, raw);
   return { integrationKey: existing.integrationKey, config };
 }

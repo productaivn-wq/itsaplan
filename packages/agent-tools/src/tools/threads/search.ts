@@ -7,7 +7,6 @@ import { timeFilter, toUnixSeconds } from '../time';
 // threads_keyword_search permission.
 export const threadsKeywordSearch: CustomToolEntry = {
   key: 'threads_keyword_search',
-  group: 'Search',
   label: 'Threads Keyword Search',
   scopes: ['threads_basic', 'threads_keyword_search'],
   description:
@@ -68,7 +67,6 @@ export const threadsKeywordSearch: CustomToolEntry = {
 // location id is passed as locationId to threads_publish.
 export const threadsLocationSearch: CustomToolEntry = {
   key: 'threads_location_search',
-  group: 'Search',
   label: 'Threads Location Search',
   scopes: ['threads_basic', 'threads_location_tagging'],
   description:

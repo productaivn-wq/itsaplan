@@ -1,6 +1,6 @@
 import { t } from 'elysia';
 
-export const stateType = t.Union([
+const stateType = t.Union([
   t.Literal('backlog'),
   t.Literal('unstarted'),
   t.Literal('started'),

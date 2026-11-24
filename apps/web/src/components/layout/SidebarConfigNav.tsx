@@ -1,9 +1,9 @@
-import { usePathname } from 'next/navigation';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { useTranslations } from 'next-intl';
-import { Bell, Globe, Settings, Users } from 'lucide-react';
-import { membersPath, notificationsPath, publicSharesPath } from '@/utils/paths';
-import { useSettingsNavGroups } from '@/hooks/useSettingsNavGroups';
+import { Users, UsersRound } from 'lucide-react';
+import { manageTeamsPath, membersPath, splitProjectRef, teamPath } from '@/utils/paths';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useParams } from 'next/navigation';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -12,55 +12,38 @@ import {
 } from '@/components/ui/sidebar';
 import SidebarNavItem from '@/components/layout/SidebarNavItem';
 
-// The Configuration sidebar group: Members, Notifications, Public (the project's
-// public links) and the "Project settings" entry. That entry links to the first settings section the viewer may
-// read and switches the sidebar into settings mode (see AppSidebar).
+// SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284: Project settings entry is cut entirely to speed up UI/UX.
 export default function SidebarConfigNav({ projectKey }: { projectKey: string | null }) {
   const t = useTranslations('nav');
-  const pathname = usePathname();
+  const pathname = useInstantPathname();
   const disabled = !projectKey;
-  const { firstHref } = useSettingsNavGroups(projectKey);
-  const { can, isMember } = usePermissions();
+  const { can } = usePermissions();
+  const params = useParams<{ teamRef?: string }>();
+
+  if (!can('members_manage', 'read')) return null;
+
+  const teamRef = params?.teamRef || (projectKey ? splitProjectRef(projectKey).teamRef : null);
+  const teamHref = teamRef ? teamPath(teamRef) : manageTeamsPath();
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{t('configuration')}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {can('members_manage', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? membersPath(projectKey) : '#'}
-              icon={Users}
-              label={t('members')}
-              active={pathname.includes('/members')}
-              disabled={disabled}
-            />
-          )}
-          {isMember && (
-            <SidebarNavItem
-              href={projectKey ? notificationsPath(projectKey) : '#'}
-              icon={Bell}
-              label={t('notifications')}
-              active={!!projectKey && pathname === notificationsPath(projectKey)}
-              disabled={disabled}
-            />
-          )}
           <SidebarNavItem
-            href={projectKey ? publicSharesPath(projectKey) : '#'}
-            icon={Globe}
-            label={t('public')}
-            active={!!projectKey && pathname === publicSharesPath(projectKey)}
+            href={teamHref}
+            icon={UsersRound}
+            label={t('teamManagement')}
+            active={teamRef ? pathname.startsWith(`/${teamRef}/settings`) : pathname === '/account/teams'}
+            disabled={false}
+          />
+          <SidebarNavItem
+            href={projectKey ? membersPath(projectKey) : '#'}
+            icon={Users}
+            label={t('members')}
+            active={pathname.includes('/members')}
             disabled={disabled}
           />
-          {firstHref && (
-            <SidebarNavItem
-              href={firstHref}
-              icon={Settings}
-              label={t('projectSettings')}
-              active={false}
-              disabled={disabled}
-            />
-          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

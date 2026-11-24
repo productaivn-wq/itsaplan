@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "skill": "58_ITSAPLAN",
+    "uc_reference": "UC-004",
+    "fr_source": "docs/function_rules.md",
+    "generated": "2026-09-21",
+    "generator": "TestDataCraft v1.0"
+  },
+  "test_cases": [
+    {
+      "id": "UC-004-FR-022-POSITIVE",
+      "fr_ref": "FR-022",
+      "fr_text": "Mutations to project entities must bump the corresponding revision rev bigint counter via PostgreSQL database triggers.",
+      "description": "Happy path for FR-022",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "mutations"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-FR-023-POSITIVE",
+      "fr_ref": "FR-023",
+      "fr_text": "Outgoing webhook HTTP POST dispatches must compute and include an HMAC-SHA256 signature in the request headers using the webhook secret.",
+      "description": "Happy path for FR-023",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "outgoing"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-FR-024-POSITIVE",
+      "fr_ref": "FR-024",
+      "fr_text": "Webhooks failing repeatedly must back off exponentially and auto-disable isActive = false upon exceeding consecutive failure limits.",
+      "description": "Happy path for FR-024",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "webhooks"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-NFR-002-POSITIVE",
+      "fr_ref": "NFR-002",
+      "fr_text": "Realtime streaming: log updates and AG-UI events must stream unbuffered in real time.",
+      "description": "Happy path for NFR-002",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scenario": "valid_usage",
+        "params": {
+          "valid": true,
+          "feature": "realtime"
+        }
+      },
+      "expected": {
+        "status": "success"
+      }
+    },
+    {
+      "id": "UC-004-FR-031-POSITIVE",
+      "fr_ref": "FR-031",
+      "fr_text": "Direct database insertions/updates to itsaplan.issue from external bridge daemons must satisfy project integrity, column assignment, and chk_done_proof_and_review constraints.",
+      "description": "External bridge CDC upsert satisfies constraints",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "project_key": "PM",
+        "status": "completed",
+        "title": "Bridge Ingestion Validation Task"
+      },
+      "expected": {
+        "upsert_status": "success",
+        "constraint_valid": true
+      }
+    },
+    {
+      "id": "UC-004-FR-032-POSITIVE",
+      "fr_ref": "FR-032",
+      "fr_text": "External or internal mutations to issue rows must atomically fire trigger bump_revision(), incrementing revision.rev for scope board:<projectId> to notify frontend SyncProvider.",
+      "description": "Database issue mutation bumps revision counter atomically",
+      "type": "positive",
+      "scenario_ref": "UC-004",
+      "input": {
+        "scope": "board:1",
+        "mutation": "UPDATE issue SET priority = 'high' WHERE id = 1"
+      },
+      "expected": {
+        "revision_incremented": true,
+        "rev_delta": 1
+      }
+    },
+    {
+      "id": "UC-004-FR-031-ADVERSARIAL",
+      "fr_ref": "FR-031",
+      "fr_text": "Bridge insertion with invalid column ID or non-existent project key must be rejected cleanly.",
+      "description": "Adversarial invalid project or column rejection",
+      "type": "adversarial",
+      "scenario_ref": "UC-004",
+      "input": {
+        "project_key": "NON_EXISTENT_KEY",
+        "column_id": -999
+      },
+      "expected": {
+        "status": "rejected",
+        "database_corrupted": false
+      }
+    },
+    {
+      "tc_id": "TC-UC004-08",
+      "category": "boundary",
+      "title": "Realtime revision monotonic guard & reconnect delta replay verification #8",
+      "input": {
+        "revision_seq": 108,
+        "concurrent_clients": 4
+      },
+      "expected": {
+        "monotonic_order": true,
+        "dropped_events": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC004-09",
+      "category": "negative",
+      "title": "Realtime revision monotonic guard & reconnect delta replay verification #9",
+      "input": {
+        "revision_seq": 109,
+        "concurrent_clients": 4
+      },
+      "expected": {
+        "monotonic_order": true,
+        "dropped_events": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC004-10",
+      "category": "boundary",
+      "title": "Realtime revision monotonic guard & reconnect delta replay verification #10",
+      "input": {
+        "revision_seq": 110,
+        "concurrent_clients": 4
+      },
+      "expected": {
+        "monotonic_order": true,
+        "dropped_events": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC004-11",
+      "category": "negative",
+      "title": "Realtime revision monotonic guard & reconnect delta replay verification #11",
+      "input": {
+        "revision_seq": 111,
+        "concurrent_clients": 4
+      },
+      "expected": {
+        "monotonic_order": true,
+        "dropped_events": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC004-12",
+      "category": "boundary",
+      "title": "Realtime revision monotonic guard & reconnect delta replay verification #12",
+      "input": {
+        "revision_seq": 112,
+        "concurrent_clients": 4
+      },
+      "expected": {
+        "monotonic_order": true,
+        "dropped_events": 0
+      }
+    }
+  ]
+}

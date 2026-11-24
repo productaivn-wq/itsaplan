@@ -13,7 +13,6 @@ import { RelativeTimeProvider } from '@/context/relativeTimeContext';
 import { Toaster } from '@/components/ui/sonner';
 import PreferencesSync from '@/components/preferences-sync';
 import SessionScope from '@/components/session-scope';
-import SigningOutGate from '@/components/signing-out-gate';
 
 // The message shown for a failed mutation: the API's `{ error }` text (carried by
 // ApiError) when present, otherwise a generic fallback.
@@ -48,11 +47,11 @@ export function Providers({ children }: { children: ReactNode }) {
           },
         }),
         defaultOptions: {
-          // Mutations invalidate what they change. Changes made by other clients
-          // arrive through the sync poll (SyncProvider): it refetches on window focus
-          // and invalidates only the scopes that moved, so nothing else does.
+          // Cache read queries for 60s (and keep inactive cache entries 10m) to avoid
+          // redundant refetches across tab/project switches while mutations invalidate directly.
           queries: {
-            staleTime: 15_000,
+            staleTime: 60_000,
+            gcTime: 10 * 60_000,
             refetchOnWindowFocus: false,
             retry: 1,
           },
@@ -67,9 +66,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <PreferencesSync />
         <SyncProvider>
           <RelativeTimeProvider>
-            <HotkeysProvider>
-              <SigningOutGate>{children}</SigningOutGate>
-            </HotkeysProvider>
+            <HotkeysProvider>{children}</HotkeysProvider>
           </RelativeTimeProvider>
         </SyncProvider>
         <Toaster position={dir === 'rtl' ? 'bottom-left' : 'bottom-right'} dir={dir} richColors />

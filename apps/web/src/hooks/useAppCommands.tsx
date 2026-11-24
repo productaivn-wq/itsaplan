@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { LayoutGrid, ListChecks, MessagesSquare, Plus, SquarePlus, Target } from 'lucide-react';
 import type { Project } from '@/lib/api/endpoints/projects';
 import { useTranslations } from 'next-intl';
@@ -51,94 +52,125 @@ export function useAppCommands({
   const { can } = usePermissions();
   const hotkey = useHotkeyFormatter();
 
-  const boardItems: Command[] = [];
-  if (hasProject && onBoard) {
-    for (const { value, icon: Icon, hotkey: id } of VIEWS) {
-      boardItems.push({
-        id: `board.view.${value}`,
-        label: t('layoutCommand', { layout: layout(value) }),
-        icon: <Icon />,
-        keywords: 'view layout switch',
-        shortcut: hotkey(id) ?? undefined,
-        checked: value === view,
-        run: () => onViewChange(value),
+  const canCreateWorkItem = hasProject && can('work_items', 'create');
+  const canCreateInitiative = hasProject && initiativesEnabled && can('initiatives', 'create');
+  const canReadAgents = hasProject && can('ai_agents', 'read');
+  const boardHeading = tPalette('board');
+  const generalHeading = tPalette('commands');
+  const projectsHeading = tPalette('switchProject');
+
+  return useMemo(() => {
+    const boardItems: Command[] = [];
+    if (hasProject && onBoard) {
+      for (const { value, icon: Icon, hotkey: id } of VIEWS) {
+        boardItems.push({
+          id: `board.view.${value}`,
+          label: t('layoutCommand', { layout: layout(value) }),
+          icon: <Icon />,
+          keywords: 'view layout switch',
+          shortcut: hotkey(id) ?? undefined,
+          checked: value === view,
+          run: () => onViewChange(value),
+        });
+      }
+      if (view === 'kanban') {
+        boardItems.push({
+          id: 'board.select-all',
+          label: tPalette('selectAllIssues'),
+          icon: <ListChecks />,
+          keywords: 'selection multi',
+          shortcut: hotkey('board.select-all') ?? undefined,
+          run: onSelectAll,
+        });
+      }
+    }
+
+    const generalItems: Command[] = [];
+    if (canCreateWorkItem) {
+      generalItems.push({
+        id: 'general.new-issue',
+        label: tPalette('newIssue'),
+        icon: <Plus />,
+        keywords: 'create add task',
+        shortcut: hotkey('issue.new') ?? undefined,
+        run: onNewIssue,
       });
     }
-    if (view === 'kanban') {
-      boardItems.push({
-        id: 'board.select-all',
-        label: tPalette('selectAllIssues'),
-        icon: <ListChecks />,
-        keywords: 'selection multi',
-        shortcut: hotkey('board.select-all') ?? undefined,
-        run: onSelectAll,
+    if (canCreateInitiative) {
+      generalItems.push({
+        id: 'general.new-initiative',
+        label: tPalette('newInitiative'),
+        icon: <Target />,
+        keywords: 'create add goal',
+        shortcut: hotkey('initiative.new') ?? undefined,
+        run: onNewInitiative,
       });
     }
-  }
+    if (canReadAgents) {
+      generalItems.push({
+        id: 'general.ai-chat',
+        label: tPalette('toggleChat'),
+        icon: <MessagesSquare />,
+        keywords: 'ai agents chat panel',
+        shortcut: hotkey('chat.toggle') ?? undefined,
+        run: onToggleChat,
+      });
+    }
+    if (onNewProject) {
+      generalItems.push({
+        id: 'general.new-project',
+        label: tPalette('newProject'),
+        icon: <SquarePlus />,
+        keywords: 'create add',
+        shortcut: hotkey('project.new') ?? undefined,
+        run: onNewProject,
+      });
+    }
 
-  const generalItems: Command[] = [];
-  if (hasProject && can('work_items', 'create')) {
-    generalItems.push({
-      id: 'general.new-issue',
-      label: tPalette('newIssue'),
-      icon: <Plus />,
-      keywords: 'create add task',
-      shortcut: hotkey('issue.new') ?? undefined,
-      run: onNewIssue,
-    });
-  }
-  if (hasProject && initiativesEnabled && can('initiatives', 'create')) {
-    generalItems.push({
-      id: 'general.new-initiative',
-      label: tPalette('newInitiative'),
-      icon: <Target />,
-      keywords: 'create add goal',
-      shortcut: hotkey('initiative.new') ?? undefined,
-      run: onNewInitiative,
-    });
-  }
-  if (hasProject && can('ai_agents', 'read')) {
-    generalItems.push({
-      id: 'general.ai-chat',
-      label: tPalette('toggleChat'),
-      icon: <MessagesSquare />,
-      keywords: 'ai agents chat panel',
-      shortcut: hotkey('chat.toggle') ?? undefined,
-      run: onToggleChat,
-    });
-  }
-  if (onNewProject) {
-    generalItems.push({
-      id: 'general.new-project',
-      label: tPalette('newProject'),
-      icon: <SquarePlus />,
-      keywords: 'create add',
-      shortcut: hotkey('project.new') ?? undefined,
-      run: onNewProject,
-    });
-  }
+    const projectItems: Command[] = projects
+      .filter((p) => !p.isHidden)
+      .map((p) => ({
+        id: `project.switch.${p.ref}`,
+        label: p.name,
+        icon: <LayoutGrid />,
+        keywords: `switch project ${p.key}`,
+        checked: p.ref === currentProjectKey,
+        run: () => onSelectProject(p.ref),
+      }));
 
-  const projectItems: Command[] = projects
-    .filter((p) => !p.isHidden)
-    .map((p) => ({
-      id: `project.switch.${p.ref}`,
-      label: p.name,
-      icon: <LayoutGrid />,
-      keywords: `switch project ${p.key}`,
-      checked: p.ref === currentProjectKey,
-      run: () => onSelectProject(p.ref),
-    }));
-
-  return {
-    board:
-      boardItems.length > 0 ? { id: 'board', heading: tPalette('board'), items: boardItems } : null,
-    general:
-      generalItems.length > 0
-        ? { id: 'general', heading: tPalette('commands'), items: generalItems }
-        : null,
-    projects:
-      projectItems.length > 0
-        ? { id: 'projects', heading: tPalette('switchProject'), items: projectItems }
-        : null,
-  };
+    return {
+      board: boardItems.length > 0 ? { id: 'board', heading: boardHeading, items: boardItems } : null,
+      general:
+        generalItems.length > 0
+          ? { id: 'general', heading: generalHeading, items: generalItems }
+          : null,
+      projects:
+        projectItems.length > 0
+          ? { id: 'projects', heading: projectsHeading, items: projectItems }
+          : null,
+    };
+  }, [
+    hasProject,
+    onBoard,
+    view,
+    projects,
+    currentProjectKey,
+    canCreateWorkItem,
+    canCreateInitiative,
+    canReadAgents,
+    boardHeading,
+    generalHeading,
+    projectsHeading,
+    onViewChange,
+    onNewIssue,
+    onSelectAll,
+    onNewInitiative,
+    onNewProject,
+    onSelectProject,
+    onToggleChat,
+    t,
+    tPalette,
+    layout,
+    hotkey,
+  ]);
 }

@@ -17,14 +17,12 @@ import DocumentCopyLinkButton from './DocumentCopyLinkButton';
 import DocumentFavoriteButton from './DocumentFavoriteButton';
 import DocumentLockButton from './DocumentLockButton';
 import DocumentOptionsMenu from './DocumentOptionsMenu';
-import DocumentShareButton from './DocumentShareButton';
 
 export default function DocumentEditorHeader({
   projectKey,
   projectName,
   document,
   ancestors,
-  documents,
   title,
   content,
   richHtml,
@@ -36,13 +34,12 @@ export default function DocumentEditorHeader({
   canManage,
   canManageLifecycle,
   canDelete,
-  canShare,
   busy,
   onBack,
   onRetrySave,
   onFullWidthChange,
   onStickyToolbarChange,
-  onCreate,
+  onCreateChild,
   onDuplicate,
   onFavoriteChange,
   onLockChange,
@@ -60,7 +57,6 @@ export default function DocumentEditorHeader({
   projectName: string;
   document: ProjectDocument;
   ancestors: ProjectDocumentSummary[];
-  documents: ProjectDocumentSummary[];
   title: string;
   content: () => string;
   richHtml: () => string;
@@ -72,13 +68,12 @@ export default function DocumentEditorHeader({
   canManage: boolean;
   canManageLifecycle: boolean;
   canDelete: boolean;
-  canShare: boolean;
   busy: boolean;
-  onBack?: () => void;
+  onBack: () => void;
   onRetrySave: () => void;
   onFullWidthChange: (value: boolean) => void;
   onStickyToolbarChange: (value: boolean) => void;
-  onCreate: (parentId: number | null, isPrivate: boolean) => void;
+  onCreateChild: () => void;
   onDuplicate: () => void;
   onFavoriteChange: (favorite: boolean) => void;
   onLockChange: (locked: boolean) => void;
@@ -117,33 +112,28 @@ export default function DocumentEditorHeader({
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-background/90 px-2.5 backdrop-blur-md md:px-4">
-      {onBack && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0 md:hidden"
-          aria-label={t('backToDocuments')}
-          onClick={onBack}
-        >
-          <ArrowLeft className="rtl:rotate-180" />
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0 md:hidden"
+        aria-label={t('backToDocuments')}
+        onClick={onBack}
+      >
+        <ArrowLeft className="rtl:rotate-180" />
+      </Button>
 
       <DocumentBreadcrumbs
         projectKey={projectKey}
         projectName={projectName}
         ancestors={ancestors}
         document={document}
-        documents={documents}
-        canCreate={canCreate}
-        onCreate={onCreate}
       />
 
       <div className="ms-auto flex shrink-0 items-center gap-0.5">
         <div
           className={cn(
-            'me-1 flex h-7 items-center gap-1.5 px-1 text-[11px] tabular-nums',
+            'me-1 flex h-7 items-center gap-1.5 px-1 text-xs tabular-nums',
             statusTone,
           )}
           role="status"
@@ -192,7 +182,6 @@ export default function DocumentEditorHeader({
           disabled={!canManage || document.archivedAt !== null || busy}
           onChange={onLockChange}
         />
-        {canShare && <DocumentShareButton projectKey={projectKey} document={document} />}
         <DocumentCopyLinkButton />
         <div className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
         <Button
@@ -221,7 +210,7 @@ export default function DocumentEditorHeader({
           onFullWidthChange={onFullWidthChange}
           onStickyToolbarChange={onStickyToolbarChange}
           onPrivacyChange={onPrivacyChange}
-          onCreateChild={() => onCreate(document.id, document.isPrivate)}
+          onCreateChild={onCreateChild}
           onDuplicate={onDuplicate}
           onArchive={onArchive}
           onRestore={onRestore}

@@ -16,6 +16,7 @@ const cloudUiEntry = process.env.CLOUD_UI_ENTRY;
 // unaffected and one behind TLS gets it without a second setting.
 const SECURITY_HEADERS = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   // Passkeys are the one powerful feature the app uses; the rest is switched off for
@@ -29,18 +30,11 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   // standalone build for a lean docker image.
   output: 'standalone',
   poweredByHeader: false,
-  // No page may be framed, except the public ones (/share, /p) on the sites the instance
-  // owner trusts: src/proxy.ts decides those per request.
-  headers: async () => [
-    { source: '/(.*)', headers: SECURITY_HEADERS },
-    {
-      source: '/:path((?!(?:share|p)(?:/|$)).*)',
-      headers: [{ key: 'X-Frame-Options', value: 'DENY' }],
-    },
-  ],
+  headers: async () => [{ source: '/(.*)', headers: SECURITY_HEADERS }],
   // Monorepo: include the repo root in file tracing for standalone.
   outputFileTracingRoot: tracingRoot,
   // isomorphic-dompurify loads jsdom on the server, and jsdom reads its own data
@@ -54,6 +48,19 @@ const nextConfig: NextConfig = {
   // a local image unless its path is listed here; the attachments panel stamps a
   // replaced attachment's URL with one so the optimizer refetches it.
   images: { localPatterns: [{ pathname: '/media/**' }] },
+  redirects: async () => [
+    {
+      source: '/projects/:path*',
+      destination: '/project/:path*',
+      permanent: true,
+    },
+  ],
+  rewrites: async () => [
+    {
+      source: '/api/vibe/:path*',
+      destination: 'http://127.0.0.1:8765/api/vibe/:path*',
+    },
+  ],
   ...(cloudUiEntry ? { turbopack: { resolveAlias: { '@/cloud': cloudUiEntry } } } : {}),
 };
 

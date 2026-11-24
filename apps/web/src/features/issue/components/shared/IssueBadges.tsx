@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 // table cells (TableView) so both render the same pill/icon/avatar.
 
 // Outline pill styling shared by the label and date badges.
-const PILL = 'text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px]';
+const PILL = 'text-muted-foreground rounded-full px-1.5 py-0.5 text-xs';
 
 // Priority glyph with a "<priority> priority" tooltip.
 export function PriorityBadge({
@@ -47,8 +47,7 @@ export function LabelBadge({ color, name }: { color: string; name: string }) {
 }
 
 // A date pill: a calendar icon (passed in, since start vs due use different
-// glyphs) plus the short date. `overdue` fills it red (used for a past due date): an
-// outline alone is lost on the rose surface of a blocked card.
+// glyphs) plus the short date. `overdue` renders it red (used for a past due date).
 // `label` names which date it is, in a tooltip; the table column heading already
 // says it, so its cells pass none.
 export function DateBadge({
@@ -65,10 +64,7 @@ export function DateBadge({
   const badge = (
     <Badge
       variant="outline"
-      className={cn(
-        PILL,
-        overdue && 'border-transparent bg-overdue font-medium text-destructive-text',
-      )}
+      className={cn(PILL, overdue && 'border-destructive/40 text-destructive')}
     >
       {icon}
       {formatShortDate(date)}

@@ -4,72 +4,49 @@ import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { teamPath } from '@/utils/paths';
+import { useInstantPathname } from '@/hooks/useInstantPathname';
 import { useTeamsQuery } from '@/services/teams.service';
-import { useWorkspacesQuery } from '@/services/workspaces.service';
-import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import NewTeamModal from './components/NewTeamModal';
 import TeamsPageView from './components/TeamsPageView';
 import TeamsRail from './components/TeamsRail';
-import WorkspaceSectionNav from './components/workspace/WorkspaceSectionNav';
-import WorkspacesRail from './components/workspace/WorkspacesRail';
+import OrgTeamsBody, { parseOrgTeamRoute } from './OrgTeamsBody';
 import { useRouteTeam } from './hooks/useRouteTeam';
-import { useRouteWorkspaceId } from './hooks/useRouteWorkspaceId';
 
-// The rails every team and workspace route is opened from: the workspaces the account
-// sees, then the open one — its settings for an owner or admin, and the account's teams
-// in it. The open workspace is the one the path names, directly or through its team.
-// The team list carries each team's counters, so the section rail beside it shows them
+// The teams the account belongs to, as the rail every team route is opened from.
+// The list carries each team's counters, so the section rail beside it shows them
 // without a request of its own.
 export default function ManageTeamsLayout({ children }: { children: ReactNode }) {
   const t = useTranslations('teams.manage');
-  const tw = useTranslations('teams.workspace');
   const { data, isPending } = useTeamsQuery();
-  const workspaces = useWorkspacesQuery().data ?? [];
   const router = useRouter();
   const routeTeam = useRouteTeam();
-  const routeWorkspaceId = useRouteWorkspaceId() ?? routeTeam?.workspaceId;
-  const workspace = workspaces.find((entry) => entry.id === routeWorkspaceId) ?? workspaces[0];
-  const teams = data ?? [];
+  const instantPathname = useInstantPathname();
+  const parsed = parseOrgTeamRoute(instantPathname);
+  const instantTeam =
+    parsed.kind === 'team-section' && parsed.teamRef
+      ? (data?.find(
+          (item) => item.ref === parsed.teamRef || String(item.id) === parsed.teamRef,
+        ) ?? null)
+      : null;
+  const activeId = (parsed.kind === 'company' ? null : (instantTeam?.id ?? routeTeam?.id)) ?? null;
   const [creating, setCreating] = useState(false);
-  useDocumentTitle(t('label'), 'section');
 
   return (
     <TeamsPageView
-      label={t('label')}
-      rail={
-        <WorkspacesRail workspaces={workspaces} teams={teams} activeId={workspace?.id ?? null} />
-      }
+      label={t('controlPlane')}
       list={
-        <div className="space-y-6">
-          {/* Only its owner and its admins have anything of the workspace to open. */}
-          {workspace?.role && (
-            <>
-              <div className="flex items-baseline gap-2 px-2 pt-1">
-                <h2 dir="auto" className="min-w-0 truncate text-[15px] font-semibold">
-                  {workspace.name}
-                </h2>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {tw(`roles.${workspace.role}`)}
-                </span>
-              </div>
-              <WorkspaceSectionNav workspace={workspace} />
-            </>
-          )}
-          <TeamsRail
-            teams={workspace ? teams.filter((team) => team.workspaceId === workspace.id) : teams}
-            isPending={isPending}
-            activeId={routeTeam?.id ?? null}
-            onCreate={workspace?.canCreateTeam ? () => setCreating(true) : undefined}
-            workspaceRole={workspace?.role ?? null}
-          />
-        </div>
+        <TeamsRail
+          teams={data ?? []}
+          isPending={isPending}
+          activeId={activeId}
+          onCreate={() => setCreating(true)}
+        />
       }
     >
-      {children}
+      <OrgTeamsBody>{children}</OrgTeamsBody>
 
-      {creating && workspace && (
+      {creating && (
         <NewTeamModal
-          workspaceId={workspace.id}
           onClose={() => setCreating(false)}
           onCreated={(team) => router.push(teamPath(team.ref))}
         />

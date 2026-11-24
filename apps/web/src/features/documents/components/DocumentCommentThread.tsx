@@ -2,13 +2,10 @@ import { useState } from 'react';
 import { Check, CornerDownRight, Pencil, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { DocumentComment } from '@/lib/api/endpoints/documents';
-import MarkdownEditor from '@/components/common/editor/MarkdownEditor';
 import { Button } from '@/components/ui/button';
-import DocumentCommentInput from './DocumentCommentInput';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function DocumentCommentThread({
-  projectKey,
-  documentId,
   comment,
   replies,
   userId,
@@ -18,8 +15,6 @@ export default function DocumentCommentThread({
   onUpdate,
   onJump,
 }: {
-  projectKey: string;
-  documentId: number;
   comment: DocumentComment;
   replies: DocumentComment[];
   userId: string | null;
@@ -72,11 +67,10 @@ export default function DocumentCommentThread({
               }}
               className="space-y-2"
             >
-              <DocumentCommentInput
-                projectKey={projectKey}
-                documentId={documentId}
+              <Textarea
                 value={edit.body}
-                onValueChange={(body) => setEdit({ id: item.id, body })}
+                maxLength={10000}
+                onChange={(event) => setEdit({ id: item.id, body: event.target.value })}
                 aria-label={t('edit')}
               />
               <Button size="sm" disabled={busy || !edit.body.trim()}>
@@ -87,12 +81,9 @@ export default function DocumentCommentThread({
               </Button>
             </form>
           ) : (
-            <MarkdownEditor
-              key={item.body}
-              className="text-sm leading-6 break-words"
-              defaultValue={item.body}
-              editable={false}
-            />
+            <p className="text-sm leading-6 break-words whitespace-pre-wrap" dir="auto">
+              {item.body}
+            </p>
           )}
         </div>
       ))}
@@ -132,11 +123,10 @@ export default function DocumentCommentThread({
               .catch(() => undefined);
           }}
         >
-          <DocumentCommentInput
-            projectKey={projectKey}
-            documentId={documentId}
+          <Textarea
             value={reply}
-            onValueChange={setReply}
+            onChange={(event) => setReply(event.target.value)}
+            maxLength={10000}
             aria-label={t('reply')}
             placeholder={t('replyPlaceholder')}
           />

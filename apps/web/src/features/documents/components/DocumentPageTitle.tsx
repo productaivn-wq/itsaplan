@@ -27,7 +27,7 @@ const DocumentPageTitle = forwardRef<
         placeholder={t('titlePlaceholder')}
         aria-label={t('pageTitle')}
         dir="auto"
-        className="[field-sizing:content] min-h-11 min-w-0 flex-1 resize-none overflow-hidden bg-transparent pt-0.5 text-[2rem] leading-[1.12] font-semibold tracking-[-0.035em] text-balance outline-none placeholder:text-muted-foreground/35 md:text-[2.5rem]"
+        className="[field-sizing:content] min-h-11 min-w-0 flex-1 resize-none overflow-hidden bg-transparent pt-0.5 text-3xl leading-[1.12] font-semibold tracking-[-0.035em] text-balance outline-none placeholder:text-muted-foreground/35 md:text-4xl"
         onChange={(event) => onChange(event.target.value.replace(/[\r\n]+/g, ''))}
         onBlur={onSave}
         onKeyDown={(event) => {

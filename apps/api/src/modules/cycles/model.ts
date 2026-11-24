@@ -1,8 +1,9 @@
 import { t } from 'elysia';
 import { pageQueryFields, pageResponse } from '#shared/pagination';
-import { isoDate } from '#shared/schemas';
 
-const IsoDate = isoDate("Date 'YYYY-MM-DD'.");
+const IsoDateTimeOrDate = t.String({
+  description: "Date 'YYYY-MM-DD' or ISO timestamp.",
+});
 
 export const cycleParams = t.Object({ cycleId: t.Numeric() });
 
@@ -35,18 +36,6 @@ export const CycleResponse = t.Object({
 
 export const CycleListResponse = t.Array(CycleResponse);
 
-export const CrossProjectCycleListResponse = t.Array(
-  t.Composite([
-    CycleResponse,
-    t.Object({
-      projectRef: t.String(),
-      projectKey: t.String(),
-      projectName: t.String(),
-      teamName: t.String(),
-    }),
-  ]),
-);
-
 export const CyclePageResponse = pageResponse(CycleResponse);
 
 export const CycleOptionListResponse = t.Array(
@@ -56,8 +45,8 @@ export const CycleOptionListResponse = t.Array(
 export const createCycleBody = t.Object({
   name: t.String({ minLength: 1, description: 'Cycle name.' }),
   goal: t.Optional(t.String({ description: 'What the team commits to in this cycle.' })),
-  startDate: IsoDate,
-  endDate: IsoDate,
+  startDate: IsoDateTimeOrDate,
+  endDate: IsoDateTimeOrDate,
 });
 
 export const updateCycleBody = t.Partial(createCycleBody);

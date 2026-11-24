@@ -20,7 +20,8 @@ export function CalendarDayChip({
   color: string;
   onOpen: (id: number) => void;
 }) {
-  // Drag is disabled on phones, and without work_items edit (rescheduling an
+  // Drag is disabled on phones so a touch scrolls instead of picking up the issue
+  // (see the `sm:touch-none` below), and without work_items edit (rescheduling a
   // issue is an issue edit).
   const { can } = usePermissions();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -41,7 +42,7 @@ export function CalendarDayChip({
               onOpen(issue.id);
             }}
             className={cn(
-              'flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors hover:bg-accent',
+              'flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors hover:bg-accent sm:touch-none',
               isDragging && 'opacity-40',
             )}
           >

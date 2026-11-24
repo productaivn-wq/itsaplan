@@ -1,7 +1,5 @@
 import {
-  KeyRound,
   Link2,
-  Mail,
   ShieldCheck,
   SlidersHorizontal,
   UserRound,
@@ -18,9 +16,7 @@ export const ACCOUNT_SECTIONS: AccountSection[] = [
   { slug: 'profile', icon: UserRound },
   { slug: 'preferences', icon: SlidersHorizontal },
   { slug: 'accounts', icon: Link2 },
-  { slug: 'invitations', icon: Mail },
   { slug: 'security', icon: ShieldCheck },
-  { slug: 'api-keys', icon: KeyRound },
 ];
 
 export const accountPath = (slug: string) => `/account/${slug}`;

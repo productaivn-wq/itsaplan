@@ -1,2 +1,0 @@
-ALTER TABLE "ai_agent" ADD COLUMN "reasoning_effort" text;--> statement-breakpoint
-ALTER TABLE "ai_agent" ADD CONSTRAINT "ai_agent_reasoning_effort_check" CHECK ("ai_agent"."reasoning_effort" IN ('low', 'medium', 'high'));

@@ -3,7 +3,7 @@ import { startBackgroundJobs } from './background';
 
 // Bind the port. The app itself is assembled in ./app.ts (without `.listen()`)
 // so tests can import it and drive routes in memory.
-app.listen(Number(process.env.API_PORT ?? 3000));
+app.listen({ port: Number(process.env.API_PORT ?? 3000), hostname: process.env.API_HOST ?? '127.0.0.1' });
 
 startBackgroundJobs();
 

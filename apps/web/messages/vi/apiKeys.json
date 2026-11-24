@@ -1,0 +1,37 @@
+{
+  "label": "Khóa API",
+  "title": "Khóa API",
+  "description": "Khóa API cá nhân dùng để xác thực các yêu cầu gọi API dưới danh nghĩa tài khoản của bạn ({email}). Giá trị khóa chỉ hiển thị một lần duy nhất khi tạo.",
+  "sectionTitle": "Khóa API của bạn",
+  "create": "Tạo khóa API",
+  "empty": "Chưa có khóa API nào. Hãy tạo khóa mới để xác thực yêu cầu gọi API.",
+  "fallbackName": "Khóa API",
+  "createdAt": "Đã tạo {date}",
+  "expiresAt": "Hết hạn {date}",
+  "noExpiry": "Không hết hạn",
+  "deleteAction": "Xóa khóa API",
+  "createDialog": {
+    "title": "Tạo khóa API",
+    "nameLabel": "Tên khóa",
+    "namePlaceholder": "VD: CI pipeline",
+    "nameHint": "Nhãn giúp nhận diện khóa này về sau.",
+    "expiryLabel": "Thời hạn",
+    "expiresInDays": "{days} ngày",
+    "expiryHint": "Khóa sẽ ngừng hoạt động vào ngày hết hạn. Hãy tạo khóa mới để tiếp tục sử dụng.",
+    "submit": "Tạo khóa",
+    "submitPending": "Đang tạo…",
+    "error": "Không thể tạo khóa API."
+  },
+  "createdDialog": {
+    "title": "Đã tạo khóa API",
+    "description": "Hãy sao chép khóa ngay bây giờ. Vì lý do bảo mật, khóa chỉ hiển thị một lần và không thể xem lại sau này.",
+    "copy": "Sao chép khóa"
+  },
+  "deleteDialog": {
+    "title": "Xóa khóa API?",
+    "confirm": "Xóa khóa",
+    "description": "Mọi yêu cầu sử dụng khóa này sẽ ngừng hoạt động ngay lập tức. Không thể hoàn tác.",
+    "error": "Không thể xóa khóa API."
+  },
+  "loadFailed": "Không thể tải danh sách khóa API."
+}

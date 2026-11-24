@@ -24,12 +24,12 @@ export default function CyclesViewTabs({
 
   return (
     <Tabs value={view}>
-      <TabsList variant="line" className="overflow-x-auto">
+      <TabsList className="inline-flex h-auto items-center gap-1 overflow-x-auto rounded-full border border-border/85 bg-muted/65 p-1">
         {TABS.map(({ value, icon: Icon }) => (
           <TabsTrigger
             key={value}
             value={value}
-            className="shrink-0 gap-1.5"
+            className="shrink-0 gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-foreground data-[state=active]:text-background dark:data-[state=active]:bg-foreground dark:data-[state=active]:text-background data-[state=active]:hover:bg-foreground data-[state=active]:shadow-xs"
             onClick={() => onSelect(value)}
           >
             <Icon className="size-3.5" />

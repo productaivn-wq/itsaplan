@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { TeamBillingSection } from '@/cloud';
 import type { Team } from '@/lib/api/endpoints/teams';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/dates';
 import { teamPath } from '@/utils/paths';
-import { useUpdateTeam, useTeam } from '@/services/teams.service';
+import { useTeam, useUpdateTeam } from '@/services/teams.service';
 import SectionPageView from '@/components/common/page/SectionPageView';
 import SettingsCard from '@/components/common/page/SettingsCard';
 import SettingsSection from '@/components/common/page/SettingsSection';
@@ -17,53 +18,66 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import TeamDeleteSection from './TeamDeleteSection';
+import { TEAM_SLUG_PATTERN, suggestTeamSlug } from '../../utils/teamSlug';
 import TeamLeadsSection from './TeamLeadsSection';
 import TeamLeaveDialog from './TeamLeaveDialog';
-import { TEAM_SLUG_PATTERN } from '../../utils/teamSlug';
 
 // Leaving is offered only where the API allows it: the last owner has nobody to hand
 // the team over to, and a membership a provisioned group granted ends at the identity
 // provider.
 function canLeave(team: Team): boolean {
-  if (team.via === 'workspace') return false;
   if (team.role === 'owner' && team.ownerCount === 1) return false;
   return !(team.source === 'scim' && team.role === 'member');
 }
 
-// The team itself: the name and the URL slug its owner edits here, the caller's rank
-// in it, and leaving or deleting it. Everything it shows comes with the team list.
+// The team itself: the name and URL slug its owner edits here, the caller's rank in it,
+// and the way out of it. Everything it shows comes with the team list.
 export default function TeamInfoSection({ teamId }: { teamId: number }) {
   const t = useTranslations('teams.info');
   const tSection = useTranslations('teams.sections.info');
   const tManage = useTranslations('teams.manage');
   const tCommon = useTranslations('common');
-  const team = useTeam(teamId);
   const router = useRouter();
+  const team = useTeam(teamId);
   const updateTeam = useUpdateTeam();
-  const [draft, setDraft] = useState<string | null>(null);
-  const [slugDraft, setSlugDraft] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const [draftSlug, setDraftSlug] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
 
   if (!team) return <SectionPageSkeleton rows={3} />;
 
-  const name = draft ?? team.name;
-  const slug = slugDraft ?? team.slug ?? '';
+  const name = draftName ?? team.name;
+  const currentSlug = team.slug ?? '';
+  const slug = draftSlug ?? currentSlug;
   const isOwner = team.role === 'owner';
   const trimmed = name.trim();
-  const slugValue = slug.trim();
-  const slugValid = TEAM_SLUG_PATTERN.test(slugValue);
-  const slugError = slugValue !== '' && !slugValid;
-  const changed = trimmed !== team.name || slugValue !== team.slug;
-  const canSave = trimmed !== '' && slugValid && changed && !updateTeam.isPending;
+  const nameChanged = trimmed !== team.name;
+  const slugChanged = slug !== currentSlug;
+  const slugValid = TEAM_SLUG_PATTERN.test(slug);
+  const slugError = slug !== '' && !slugValid;
+  const canSave =
+    trimmed !== '' && slugValid && (nameChanged || slugChanged) && !updateTeam.isPending;
 
-  async function save() {
-    const updated = await updateTeam.mutateAsync({ teamId, name: trimmed, slug: slugValue });
-    setDraft(null);
-    setSlugDraft(null);
-    toast.success(t('saved'));
-    // The path names the team by its old slug, which no longer finds it.
-    if (updated.ref !== team?.ref) router.replace(teamPath(updated.ref));
+  function save() {
+    if (!canSave || !team) return;
+    const prevRef = team.ref;
+    updateTeam.mutate(
+      {
+        teamId,
+        ...(nameChanged ? { name: trimmed } : {}),
+        ...(slugChanged ? { slug } : {}),
+      },
+      {
+        onSuccess: (updated) => {
+          setDraftName(null);
+          setDraftSlug(null);
+          toast.success(t('saved'));
+          if (updated.ref !== prevRef) {
+            router.replace(teamPath(updated.ref));
+          }
+        },
+      },
+    );
   }
 
   return (
@@ -72,7 +86,7 @@ export default function TeamInfoSection({ teamId }: { teamId: number }) {
       description={tSection('description')}
       actions={
         isOwner ? (
-          <Button size="sm" className="h-8" disabled={!canSave} onClick={() => void save()}>
+          <Button size="sm" className="h-8" disabled={!canSave} onClick={save}>
             {tCommon('save')}
           </Button>
         ) : undefined
@@ -85,18 +99,22 @@ export default function TeamInfoSection({ teamId }: { teamId: number }) {
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="team-name">{tCommon('name')}</Label>
-                  <Input id="team-name" value={name} onChange={(e) => setDraft(e.target.value)} />
+                  <Input
+                    id="team-name"
+                    value={name}
+                    onChange={(e) => setDraftName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="team-slug">{t('slug')}</Label>
                   <Input
                     id="team-slug"
                     value={slug}
-                    placeholder="acme"
+                    placeholder={suggestTeamSlug(name) || 'acme'}
                     dir="ltr"
                     aria-invalid={slugError}
                     aria-describedby="team-slug-hint"
-                    onChange={(e) => setSlugDraft(e.target.value.toLowerCase())}
+                    onChange={(e) => setDraftSlug(e.target.value.toLowerCase().trim())}
                   />
                   <p
                     id="team-slug-hint"
@@ -118,7 +136,7 @@ export default function TeamInfoSection({ teamId }: { teamId: number }) {
                 {team.slug && (
                   <div className="flex items-center justify-between gap-4">
                     <Label>{t('slug')}</Label>
-                    <span className="text-sm text-muted-foreground">{team.slug}</span>
+                    <span className="font-mono text-sm text-muted-foreground">/{team.slug}</span>
                   </div>
                 )}
               </>
@@ -138,6 +156,8 @@ export default function TeamInfoSection({ teamId }: { teamId: number }) {
 
         <TeamLeadsSection teamId={teamId} />
 
+        <TeamBillingSection teamId={teamId} />
+
         {canLeave(team) && (
           <SettingsSection
             title={tManage('leaveAction')}
@@ -149,8 +169,6 @@ export default function TeamInfoSection({ teamId }: { teamId: number }) {
             }
           />
         )}
-
-        {isOwner && <TeamDeleteSection team={team} />}
       </div>
 
       {leaving && <TeamLeaveDialog team={team} onClose={() => setLeaving(false)} />}

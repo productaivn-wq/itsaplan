@@ -1,5 +1,6 @@
 import type { BreakdownBy } from '@/utils/dashboardWidgets';
-import type { AgentRunStatus, AgentRunTrigger } from '@/lib/api/endpoints/agents';
+import type { FilterSet } from '@/utils/filters';
+import type { AgentRunStatus } from '@/lib/api/endpoints/agents';
 import { request } from '@/lib/api/core/client';
 import type { ActivityPage, FeedCursor } from '@/lib/api/endpoints/activity';
 
@@ -26,6 +27,8 @@ export type PulseUnit = 'hour' | 'day' | 'week';
 export interface PulseBucket {
   label: string;
   count: number;
+  date?: string;
+  isFuture?: boolean;
 }
 
 export interface ThroughputWeek {
@@ -75,7 +78,7 @@ export interface BurnupParams {
 export interface AgentRunFeedItem {
   id: number;
   status: AgentRunStatus;
-  trigger: AgentRunTrigger;
+  trigger: 'mention' | 'delegation' | 'field' | 'schedule' | 'manual';
   agentId: number;
   agentName: string;
   issueId: number | null;
@@ -114,6 +117,15 @@ export interface AgentWorkloadItem {
 }
 
 // Analytics — read-only project metrics behind the dashboard widgets.
+export const getStats = (projectKey: string) =>
+  request<AnalyticsStats>(`/projects/${projectKey}/analytics/stats`);
+
+export const getStatCount = (projectKey: string, filters: FilterSet) =>
+  request<{ count: number }>(`/projects/${projectKey}/analytics/stat-count`, {
+    method: 'POST',
+    body: JSON.stringify({ filters }),
+  });
+
 export const getBreakdown = (projectKey: string, by: BreakdownBy) =>
   request<BreakdownItem[]>(`/projects/${projectKey}/analytics/breakdown?by=${by}`);
 

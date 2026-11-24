@@ -8,15 +8,15 @@ import { useLiveRefresh } from './useLiveRefresh';
 // header. Refetched by the inbox scope of the sync provider, so it needs no
 // interval of its own. Lives in the shared layer so both the sidebar and the inbox
 // feature can use it.
-export function useInboxUnread(projectKey: string | null, projectId: number | null) {
+export function useInboxUnread(scopeKey: string | null, projectId: number | null) {
   useLiveRefresh({
     scope: projectId != null ? revScope.inbox(projectId) : null,
-    targets: [qk.notificationsUnread(projectKey ?? '')],
+    targets: [qk.notificationsUnread(scopeKey ?? '')],
   });
   return useQuery({
-    queryKey: qk.notificationsUnread(projectKey ?? ''),
-    queryFn: () => getUnreadCount(projectId as number),
-    enabled: projectKey != null && projectId != null,
+    queryKey: qk.notificationsUnread(scopeKey ?? ''),
+    queryFn: () => getUnreadCount(projectId),
+    enabled: scopeKey != null && (projectId != null || scopeKey === '__all__'),
     select: (d) => d.unread,
   });
 }

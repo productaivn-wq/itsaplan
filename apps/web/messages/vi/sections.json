@@ -1,0 +1,113 @@
+{
+  "account": {
+    "profile": "Hồ sơ",
+    "preferences": "Tùy chọn",
+    "accounts": "Tài khoản liên kết",
+    "security": "Bảo mật",
+    "api-keys": "Khóa API"
+  },
+  "godGroups": {
+    "management": "Quản lý",
+    "instance": "Hệ thống"
+  },
+  "god": {
+    "users": {
+      "label": "Người dùng",
+      "description": "Mọi tài khoản trên hệ thống: vai trò toàn cục, trạng thái xác nhận địa chỉ email và các dự án người dùng có thể truy cập."
+    },
+    "teams": {
+      "label": "Nhóm",
+      "description": "Mọi nhóm trên hệ thống: các dự án nhóm sở hữu và thành viên thuộc nhóm."
+    },
+    "projects": {
+      "label": "Dự án",
+      "description": "Mọi dự án trên hệ thống: nội dung chứa trong từng dự án, thời điểm hoạt động gần nhất và những ai có thể truy cập."
+    },
+    "general": {
+      "label": "Chung",
+      "description": "Giá trị mặc định cho các dự án mới."
+    },
+    "authentication": {
+      "label": "Xác thực",
+      "description": "Ai có thể đăng ký trên hệ thống, cách xác nhận tài khoản và các nhà cung cấp đăng nhập."
+    },
+    "hotkeys": {
+      "label": "Phím tắt",
+      "description": "Phím tắt gán cho từng lệnh dành cho mọi người trên hệ thống. Mỗi người có thể gán lại phím tắt cho tài khoản của mình trong phần Tùy chọn."
+    },
+    "storage": {
+      "label": "Lưu trữ",
+      "description": "Dung lượng tải lên cho phép: kích thước tệp đơn lẻ, các định dạng tệp đính kèm được chấp nhận và dung lượng lưu trữ của từng dự án."
+    },
+    "telegram": {
+      "label": "Telegram",
+      "description": "Bot để người dùng liên kết tài khoản Telegram và phân phối thông báo Telegram cho các dự án chưa cài đặt bot riêng."
+    },
+    "email": {
+      "label": "Nhà cung cấp Email",
+      "description": "Nhà cung cấp dịch vụ thư mà hệ thống gửi qua: đặt lại mật khẩu, xác nhận địa chỉ email và liên kết đăng nhập."
+    },
+    "auth-provider": {
+      "label": "Nhà cung cấp xác thực",
+      "description": "Các tài khoản bên ngoài người dùng có thể dùng để đăng nhập."
+    },
+    "scim": {
+      "label": "SCIM",
+      "description": "Cho phép nhà cung cấp danh tính tạo, cập nhật và vô hiệu hóa tài khoản trên hệ thống, đồng thời cấp quyền truy cập dự án thông qua các nhóm."
+    }
+  },
+  "settings": {
+    "general": {
+      "label": "Chung",
+      "description": "Tên dự án, mô tả và các phân mục hiển thị."
+    },
+    "states": {
+      "label": "Trạng thái",
+      "description": "Các trạng thái quy trình mà công việc chuyển qua, mỗi trạng thái hiển thị dưới dạng một cột."
+    },
+    "issue-types": {
+      "label": "Loại công việc",
+      "description": "Các loại công việc dự án này có thể chứa, mỗi loại có các trường thông tin riêng."
+    },
+    "labels": {
+      "label": "Nhãn",
+      "description": "Thẻ để sắp xếp và lọc công việc trong toàn bộ dự án."
+    },
+    "custom-fields": {
+      "label": "Trường tùy chỉnh",
+      "description": "Các trường bổ sung hiển thị trên công việc, áp dụng toàn bộ hoặc theo từng loại công việc."
+    },
+    "issue-templates": {
+      "label": "Mẫu công việc",
+      "description": "Mẫu định sẵn để tạo công việc mới: tiêu đề, mô tả và các thuộc tính."
+    },
+    "configuration": {
+      "label": "Cấu hình",
+      "description": "Quy tắc đóng công việc con cùng công việc cha và thời điểm lưu trữ các công việc tồn đọng lâu ngày."
+    },
+    "actions": {
+      "label": "Tác vụ nhanh",
+      "description": "Các nút trên công việc giúp thiết lập các trường chỉ với một lần nhấp."
+    },
+    "schedules": {
+      "label": "Lịch biểu",
+      "description": "Chạy các tác vụ tác nhân AI theo lịch định kỳ."
+    },
+    "webhooks": {
+      "label": "Webhook",
+      "description": "Gửi các sự kiện của dự án tới URL bên ngoài, được ký bằng khóa bí mật riêng của từng webhook."
+    },
+    "git": {
+      "label": "Kho mã nguồn",
+      "description": "Đóng công việc khi pull request tương ứng được hợp nhất trên GitHub, GitLab, Gitea, Forgejo hoặc Bitbucket."
+    },
+    "import-export": {
+      "label": "Nhập / Xuất",
+      "description": "Nhập công việc, bình luận và nhãn từ hệ thống Plane tự lưu trữ, hoặc xuất dữ liệu của dự án này dưới dạng JSON."
+    },
+    "ai-agents": {
+      "label": "Tác nhân AI",
+      "description": "Các tác nhân AI làm việc trong dự án này."
+    }
+  }
+}

@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Copy, Mail, RefreshCw, X } from 'lucide-react';
+import { Check, Copy, Mail, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { InviteRow as Invite } from '@/lib/api/endpoints/invites';
-import { isInviteExpired } from '@/utils/invites';
 import { inviteLink } from '@/utils/paths';
 import { formatShortDate } from '@/utils/dates';
 import { Badge } from '@/components/ui/badge';
@@ -14,47 +13,33 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 const STATUS_VARIANT = { pending: 'secondary', accepted: 'default', rejected: 'outline' } as const;
 
 // One invite row: the invited email and role, its status, who sent it, and — for
-// a pending invite — email, copy-link (when the API sent its token), and revoke
-// actions. Copy reads the link from the current web origin so it works in any
-// deployment. An expired invite offers no link to copy or mail, only a renewal,
-// which sends a new one.
+// a pending invite — email, copy-link, and revoke actions. Copy reads the link from
+// the current web origin so it works in any deployment.
 export default function InviteRow({
   invite,
   onResend,
-  onRenew,
   onRevoke,
   resending,
-  renewing,
 }: {
   invite: Invite;
   onResend?: (invite: Invite) => void;
-  onRenew?: (invite: Invite) => void;
   onRevoke?: (invite: Invite) => void;
   resending: boolean;
-  renewing: boolean;
 }) {
   const t = useTranslations('members.invites');
   const tCommon = useTranslations('common');
   const [copied, setCopied] = useState(false);
-  const expired = invite.status === 'pending' && isInviteExpired(invite);
-  const pending = invite.status === 'pending' && !expired;
+  const pending = invite.status === 'pending';
 
-  let timestamp: string;
-  if (expired) {
-    timestamp = t('expiredAt', { date: formatShortDate(invite.expiresAt!) });
-  } else if (pending) {
-    timestamp = t('createdAt', { date: formatShortDate(invite.createdAt) });
-  } else if (invite.respondedAt) {
-    timestamp = t('respondedAt', {
-      status: invite.status,
-      date: formatShortDate(invite.respondedAt),
-    });
-  } else {
-    timestamp = formatShortDate(invite.createdAt);
-  }
+  // When the invite last changed: its creation for a pending one, otherwise the
+  // moment it was accepted or rejected.
+  const timestamp = pending
+    ? t('createdAt', { date: formatShortDate(invite.createdAt) })
+    : invite.respondedAt
+      ? t('respondedAt', { status: invite.status, date: formatShortDate(invite.respondedAt) })
+      : formatShortDate(invite.createdAt);
 
   async function copy() {
-    if (!invite.token) return;
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
     try {
       await navigator.clipboard.writeText(inviteLink(origin, invite.token));
@@ -87,14 +72,14 @@ export default function InviteRow({
       <ItemContent className="min-w-0 gap-0.5">
         <ItemTitle className="max-w-full flex-wrap">
           <span className="break-all">{invite.email}</span>
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-normal">
+          <Badge variant="outline" className="px-1.5 py-0 text-xs font-normal">
             {roleLabel}
           </Badge>
           <Badge
-            variant={expired ? 'destructive' : STATUS_VARIANT[invite.status]}
-            className="px-1.5 py-0 text-[10px] font-normal"
+            variant={STATUS_VARIANT[invite.status]}
+            className="px-1.5 py-0 text-xs font-normal"
           >
-            {expired ? t('status.expired') : t(`status.${invite.status}`)}
+            {t(`status.${invite.status}`)}
           </Badge>
         </ItemTitle>
         <span className="text-xs text-muted-foreground">
@@ -103,18 +88,6 @@ export default function InviteRow({
         </span>
       </ItemContent>
       <ItemActions className="ms-auto w-full justify-end sm:w-auto">
-        {expired && onRenew && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            disabled={renewing}
-            onClick={() => onRenew(invite)}
-          >
-            <RefreshCw className="size-3.5" />
-            {renewing ? t('renewing') : t('renew')}
-          </Button>
-        )}
         {pending && onResend && (
           <Button
             variant="ghost"
@@ -127,7 +100,7 @@ export default function InviteRow({
             {resending ? t('resendingEmail') : t('resendEmail')}
           </Button>
         )}
-        {pending && invite.token && (
+        {pending && (
           <Button
             variant="ghost"
             size="sm"
@@ -143,7 +116,7 @@ export default function InviteRow({
             variant="ghost"
             size="icon"
             className="size-7 text-muted-foreground hover:text-destructive"
-            title={pending || expired ? t('revokeAction') : t('removeAction')}
+            title={pending ? t('revokeAction') : t('removeAction')}
             onClick={revoke}
           >
             <X className="size-4" />

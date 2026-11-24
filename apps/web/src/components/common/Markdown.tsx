@@ -42,6 +42,46 @@ export default function Markdown({
         if (segment.kind === 'issue-import') {
           return <AgentChatImportCard key={index} importId={segment.importId} />;
         }
+        if (segment.kind === 'diff') {
+          return (
+            <pre
+              key={index}
+              data-testid="markdown-diff-block"
+              className="my-3 overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-xs leading-relaxed"
+            >
+              {segment.content.split('\n').map((line, li) => (
+                <div
+                  key={li}
+                  className={
+                    line.startsWith('+') && !line.startsWith('+++')
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      : line.startsWith('-') && !line.startsWith('---')
+                        ? 'bg-destructive/15 text-destructive'
+                        : 'text-foreground'
+                  }
+                >
+                  {line || ' '}
+                </div>
+              ))}
+            </pre>
+          );
+        }
+        if (segment.kind === 'mermaid') {
+          return (
+            <div
+              key={index}
+              data-testid="markdown-mermaid-block"
+              className="my-3 rounded-lg border border-border bg-card p-3"
+            >
+              <div className="mb-1.5 flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <span>Mermaid Diagram</span>
+              </div>
+              <pre className="overflow-x-auto font-mono text-xs text-foreground">
+                {segment.content}
+              </pre>
+            </div>
+          );
+        }
         // The fence is still streaming in: hold its place rather than showing the
         // half-written JSON that would turn into the chart a moment later.
         if (segment.kind === 'pending') {

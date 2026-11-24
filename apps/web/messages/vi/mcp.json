@@ -1,0 +1,46 @@
+{
+  "title": "MCP Server",
+  "description": "Kết nối các tác nhân AI với dự án này qua giao thức Model Context Protocol (MCP). Tác nhân chỉ truy cập được những gì khóa API cho phép.",
+  "disabled": "Đã tắt",
+  "offForTeam": "MCP đang tắt đối với nhóm {team}.",
+  "offForProject": "Nhóm {team} đã bật MCP, nhưng dự án này đang tắt.",
+  "openTeamSettings": "Mở cài đặt MCP của nhóm",
+  "askManager": "Nhờ chủ sở hữu hoặc quản lý nhóm bật tính năng này:",
+  "keyHint": "Tạo khóa tại trang <link>Khóa API</link>, sau đó thay thế <code>{apiKey}</code> trong đoạn cấu hình.",
+  "endpoint": "Điểm cuối MCP",
+  "clientTabsAria": "Ứng dụng khách",
+  "addToFile": "Thêm vào <code>{file}</code>",
+  "notes": {
+    "claudeCode": "Chạy lệnh này trong cửa sổ dòng lệnh (terminal).",
+    "vscode": "Yêu cầu có GitHub Copilot.",
+    "claudeDesktop": "Claude Desktop kết nối tới máy chủ từ xa thông qua cầu nối mcp-remote. Yêu cầu cài đặt Node.js.",
+    "other": "Mọi ứng dụng khách hỗ trợ MCP qua Streamable HTTP đều tương thích. Hãy trỏ tới điểm cuối này và gửi tiêu đề Authorization: Bearer {apiKey}."
+  },
+  "clients": {
+    "other": "Khác"
+  },
+  "oauth": {
+    "configuration": "Cách kết nối",
+    "methodTabsAria": "Phương thức kết nối",
+    "method": "OAuth",
+    "personalKey": "Khóa API",
+    "description": "Sử dụng phương thức này cho mọi ứng dụng khách MCP hỗ trợ OAuth như ChatGPT hoặc Claude. Bạn đăng nhập bằng tài khoản ACCORD của mình và ứng dụng khách không bao giờ nhận trực tiếp khóa API.",
+    "discovery": "Khám phá OAuth",
+    "steps": {
+      "add": "Thêm ứng dụng MCP trong trình khách của bạn.",
+      "paste": "Dán địa chỉ điểm cuối MCP.",
+      "choose": "Chọn OAuth khi trình khách hỏi phương thức đăng nhập.",
+      "signIn": "Đăng nhập vào ACCORD và phê duyệt quyền truy cập."
+    },
+    "security": "OAuth sử dụng PKCE (S256), đăng ký ứng dụng khách động và mã truy cập giới hạn theo phạm vi tài khoản của bạn.",
+    "consent": {
+      "title": "Ủy quyền truy cập ACCORD",
+      "description": "Cho phép ứng dụng khách MCP này thao tác với các quyền thuộc tài khoản ACCORD của bạn.",
+      "missingCode": "Yêu cầu ủy quyền này thiếu mã xác nhận đồng thuận.",
+      "cancel": "Hủy",
+      "pending": "Đang ủy quyền…",
+      "authorize": "Ủy quyền",
+      "failed": "Không thể hoàn tất ủy quyền OAuth."
+    }
+  }
+}

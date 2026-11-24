@@ -3,7 +3,7 @@
 import { memo, useRef } from 'react';
 import {
   Area,
-  Bar,
+  Bar as RechartsBar,
   CartesianGrid,
   Cell,
   ComposedChart,
@@ -247,7 +247,7 @@ function cartesian(spec: ChartSpec) {
     tickMargin: 8,
   };
   const value = { type: 'number' as const, tickFormatter: percent ? percentTick : undefined };
-  const axis = { tickLine: false, axisLine: false, fontSize: 11 };
+  const axis = { tickLine: false, axisLine: false, fontSize: 12 };
 
   return (
     <ComposedChart
@@ -301,9 +301,9 @@ function mark(spec: ChartSpec, series: ChartSeries, color: string) {
       return <Scatter key={key} dataKey={key} fill={color} />;
     default:
       return (
-        <Bar key={key} dataKey={key} stackId={stackId} fill={color} radius={3}>
+        <RechartsBar key={key} dataKey={key} stackId={stackId} fill={color} radius={3}>
           {valueLabels(spec, spec.horizontal ? 'right' : 'top')}
-        </Bar>
+        </RechartsBar>
       );
   }
 }

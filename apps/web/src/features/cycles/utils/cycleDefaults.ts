@@ -1,12 +1,10 @@
 import type { Cycle } from '@/lib/api/endpoints/cycles';
-import { addDays, daysBetween, toDateStr } from '@/utils/dates';
-import { occupiedUntil } from './cycleRanges';
 
-// The lengths offered as one click each, in days. Two weeks is what a new cycle
-// opens with.
-export const CYCLE_LENGTHS = [7, 14, 21, 28];
+// The lengths offered as one click each, in minutes. 15 minutes is what a new cycle
+// opens with (53.REF.01 Pomodoro Sprint Agile Playbook).
+export const CYCLE_LENGTHS = [15, 30, 45, 60];
 
-const DEFAULT_LENGTH = 14;
+export const DEFAULT_LENGTH = 15;
 
 // What a new cycle opens with, so it can be created without filling anything in: it
 // picks up where the last one ended and continues its numbering.
@@ -27,29 +25,28 @@ function nextName(cycles: Cycle[], fallbackName: (n: number) => string): string 
   return fallbackName(cycles.length + 1);
 }
 
-// The next Monday after `from`, never `from` itself — cycles are planned ahead, so
-// a new one starts on a week boundary that has not passed yet.
-function nextMonday(from: Date): Date {
-  const untilMonday = (8 - from.getDay()) % 7;
-  return addDays(from, untilMonday === 0 ? 7 : untilMonday);
+// Next 15-minute slot boundary (e.g. 18:00, 18:15, 18:30, 18:45).
+function next15MinuteSlot(from: Date): Date {
+  const d = new Date(from);
+  const minutes = d.getMinutes();
+  const remainder = minutes % 15;
+  const add = remainder === 0 ? 15 : 15 - remainder;
+  d.setMinutes(minutes + add, 0, 0);
+  return d;
 }
 
-// `cycles` comes oldest first, so the last one is the one to continue from. A cycle
-// still running or still ahead is followed the day after it ends — back to back, and
-// never overlapping, which the API rejects. With nothing ahead (the last cycle is
-// over, or there is none) the new cycle starts on the coming Monday rather than
-// mid-week.
 export function cycleDefaults(cycles: Cycle[], fallbackName: (n: number) => string): CycleDefaults {
-  const today = new Date();
+  const now = new Date();
   const last = cycles[cycles.length - 1];
-  const previousEnd = last ? occupiedUntil(last) : null;
+  const previousEnd = last ? new Date(last.endDate) : null;
   const start =
-    previousEnd && daysBetween(today, previousEnd) >= 0
-      ? addDays(previousEnd, 1)
-      : nextMonday(today);
+    previousEnd && previousEnd > now
+      ? new Date(previousEnd.getTime() + 1000)
+      : next15MinuteSlot(now);
+  const end = new Date(start.getTime() + DEFAULT_LENGTH * 60 * 1000);
   return {
     name: nextName(cycles, fallbackName),
-    startDate: toDateStr(start),
-    endDate: toDateStr(addDays(start, DEFAULT_LENGTH - 1)),
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
   };
 }

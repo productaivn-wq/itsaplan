@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronsRightLeft, EyeOff, Pin, PinOff, Plus } from 'lucide-react';
@@ -8,6 +8,7 @@ import type { BoardIssue } from '@/lib/api/endpoints/issues';
 import { type Maps, type IssueGroup } from '@/utils/project';
 import { cn } from '@/lib/utils';
 import type { PropertyKey } from '@/utils/viewSettings';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { GroupDot } from '../shared/GroupDot';
@@ -31,8 +32,6 @@ const ADD_BUTTON_HEIGHT = 36;
 // list of its cards. The DOM holds only the cards in the viewport and near it, so
 // a column with a large backlog stays fast. Card heights vary, so the virtualizer
 // measures each rendered card instead of assuming a fixed size.
-// Memoized: the board renders again whenever the page does, as when the issue panel
-// opens or closes, and a column whose props did not change is skipped.
 export const BoardColumn = memo(function BoardColumn({
   project,
   group,
@@ -50,8 +49,6 @@ export const BoardColumn = memo(function BoardColumn({
   wip,
   filtered,
   boardIssues,
-  canCreate,
-  canEdit,
   readOnly,
 }: {
   project: ProjectDetail;
@@ -66,11 +63,11 @@ export const BoardColumn = memo(function BoardColumn({
   // into a position for each issue the drag carries.
   onMoveIssue: (issueIds: number[], group: IssueGroup, index: number) => void;
   onOpenIssue: (id: number) => void;
-  onAddIssue: (group: IssueGroup) => void;
-  onHide: (group: IssueGroup) => void;
-  onCollapse: (group: IssueGroup) => void;
+  onAddIssue: () => void;
+  onHide: () => void;
+  onCollapse: () => void;
   pinned: boolean;
-  onTogglePin: (group: IssueGroup) => void;
+  onTogglePin: () => void;
   // The column's WIP limit. It is null when the column has no limit, and null when
   // the board is not grouped by status. `filtered` says whether the cards shown are
   // only part of the column.
@@ -79,14 +76,11 @@ export const BoardColumn = memo(function BoardColumn({
   // Every issue that the board holds. It tells which of a drag's cards are already
   // in this column when only some of them are on screen.
   boardIssues: BoardIssue[];
-  // Passed in rather than read with usePermissions: that reads the Shell context,
-  // which changes on every Shell render, and the column would render with it.
-  canCreate: boolean;
-  canEdit: boolean;
   readOnly?: boolean;
 }) {
   const t = useTranslations('workItems');
-  const canCreateIssue = canCreate && !readOnly;
+  const { can } = usePermissions();
+  const canCreateIssue = can('work_items', 'create') && !readOnly;
   const scrollRef = useRef<HTMLDivElement>(null);
   // A column with a full hard limit accepts no card from another column. It is not
   // a drop target during such a drag. Cards already in the column still reorder
@@ -109,15 +103,13 @@ export const BoardColumn = memo(function BoardColumn({
     [dropRef],
   );
   const isOverColumn = useIsOverContainer(columnId, issues);
+  const issueIds = useMemo(() => issues.map((i) => i.id), [issues]);
 
   const virtualizer = useVirtualizer({
     count: issues.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 130,
     overscan: 8,
-    // A scroll step renders in a normal React update, not in flushSync inside the
-    // scroll event, which blocks every scroll event on a slow CPU.
-    useFlushSync: false,
     getItemKey: (index) => issues[index].id,
   });
   const cardsHeight = virtualizer.getTotalSize();
@@ -140,14 +132,14 @@ export const BoardColumn = memo(function BoardColumn({
         <div className="flex items-center gap-1">
           {!readOnly && (
             <>
-              <SelectAllToggle ids={issues.map((i) => i.id)} />
+              <SelectAllToggle ids={issueIds} />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="hidden size-6 text-muted-foreground md:inline-flex"
-                    onClick={() => onTogglePin(group)}
+                    onClick={onTogglePin}
                     aria-label={pinned ? t('unpin') : t('pin')}
                   >
                     {pinned ? <PinOff /> : <Pin />}
@@ -161,7 +153,7 @@ export const BoardColumn = memo(function BoardColumn({
                     variant="ghost"
                     size="icon"
                     className="size-6 text-muted-foreground"
-                    onClick={() => onCollapse(group)}
+                    onClick={onCollapse}
                     aria-label={t('collapse')}
                   >
                     <ChevronsRightLeft />
@@ -175,7 +167,7 @@ export const BoardColumn = memo(function BoardColumn({
                     variant="ghost"
                     size="icon"
                     className="size-6 text-muted-foreground"
-                    onClick={() => onHide(group)}
+                    onClick={onHide}
                     aria-label={t('hide')}
                   >
                     <EyeOff />
@@ -192,7 +184,7 @@ export const BoardColumn = memo(function BoardColumn({
                   variant="ghost"
                   size="icon"
                   className="size-6 text-muted-foreground"
-                  onClick={() => onAddIssue(group)}
+                  onClick={onAddIssue}
                   aria-label={t('newIssue')}
                 >
                   <Plus />
@@ -244,7 +236,6 @@ export const BoardColumn = memo(function BoardColumn({
                     maps={maps}
                     properties={properties}
                     onOpen={onOpenIssue}
-                    canEdit={canEdit}
                     readOnly={readOnly}
                   />
                 </CardDropSlot>
@@ -261,7 +252,7 @@ export const BoardColumn = memo(function BoardColumn({
                   variant="outline"
                   className="invisible absolute left-0 w-full text-muted-foreground opacity-0 group-focus-within/column:visible group-focus-within/column:opacity-100 group-hover/column:visible group-hover/column:opacity-100"
                   style={{ top: cardsHeight + ADD_BUTTON_GAP }}
-                  onClick={() => onAddIssue(group)}
+                  onClick={onAddIssue}
                   aria-label={t('newIssue')}
                 >
                   <Plus />

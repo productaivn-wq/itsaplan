@@ -1,35 +1,26 @@
 import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ProjectDocumentSummary } from '@/lib/api/endpoints/documents';
 import { cn } from '@/lib/utils';
 import { documentPath, documentsPath } from '@/utils/paths';
-import { documentChildren } from '../utils/documentTree';
-import DocumentBreadcrumbMenu from './DocumentBreadcrumbMenu';
 
 export default function DocumentBreadcrumbs({
   projectKey,
   projectName,
   ancestors,
   document,
-  documents,
-  canCreate,
-  onCreate,
 }: {
   projectKey: string;
   projectName: string;
   ancestors: ProjectDocumentSummary[];
   document: ProjectDocumentSummary;
-  documents: ProjectDocumentSummary[];
-  canCreate: boolean;
-  onCreate: (parentId: number | null, isPrivate: boolean) => void;
 }) {
   const t = useTranslations('documents');
-  const title = document.title.trim() || t('untitled');
-  const children = documentChildren(document.id, documents);
 
   return (
     <nav
-      className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-[12px] text-muted-foreground"
+      className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden text-xs text-muted-foreground"
       aria-label={t('treeLabel')}
     >
       <span
@@ -40,19 +31,16 @@ export default function DocumentBreadcrumbs({
         {projectName}
       </span>
       <ChevronRight className="hidden size-3 shrink-0 lg:block rtl:rotate-180" />
-      <DocumentBreadcrumbMenu
-        projectKey={projectKey}
-        label={t('title')}
+      <Link
         href={documentsPath(projectKey)}
-        pages={documentChildren(null, documents)}
-        currentId={document.id}
-        createLabel={t('newDocument')}
-        onCreate={canCreate ? () => onCreate(null, false) : undefined}
-        className="shrink-0 font-medium"
-      />
+        className="shrink-0 rounded-sm px-1 py-0.5 font-medium transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        {t('title')}
+      </Link>
 
       {ancestors.map((ancestor, index) => {
         const nearest = index === ancestors.length - 1;
+        const ancestorTitle = ancestor.title.trim() || t('untitled');
         return (
           <span
             key={ancestor.id}
@@ -62,50 +50,27 @@ export default function DocumentBreadcrumbs({
             )}
           >
             <ChevronRight className="size-3 shrink-0 rtl:rotate-180" />
-            <DocumentBreadcrumbMenu
-              projectKey={projectKey}
-              label={ancestor.title.trim() || t('untitled')}
+            <Link
               href={documentPath(projectKey, ancestor.id)}
-              pages={documentChildren(ancestor.id, documents)}
-              currentId={document.id}
-              createLabel={t('addSubpage')}
-              onCreate={
-                canCreate && ancestor.archivedAt === null
-                  ? () => onCreate(ancestor.id, ancestor.isPrivate)
-                  : undefined
-              }
-              className="max-w-32"
-            />
+              className="max-w-32 truncate rounded-sm px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              dir="auto"
+              title={ancestorTitle}
+            >
+              {ancestorTitle}
+            </Link>
           </span>
         );
       })}
 
       <ChevronRight className="size-3 shrink-0 rtl:rotate-180" />
-      {children.length > 0 ? (
-        <DocumentBreadcrumbMenu
-          projectKey={projectKey}
-          label={title}
-          pages={children}
-          currentId={document.id}
-          createLabel={t('addSubpage')}
-          onCreate={
-            canCreate && document.archivedAt === null
-              ? () => onCreate(document.id, document.isPrivate)
-              : undefined
-          }
-          current
-          className="min-w-8"
-        />
-      ) : (
-        <span
-          className="min-w-8 truncate rounded-sm px-1 py-0.5 font-medium text-foreground"
-          dir="auto"
-          title={title}
-          aria-current="page"
-        >
-          {title}
-        </span>
-      )}
+      <span
+        className="min-w-8 truncate rounded-sm px-1 py-0.5 font-medium text-foreground"
+        dir="auto"
+        title={document.title.trim() || t('untitled')}
+        aria-current="page"
+      >
+        {document.title.trim() || t('untitled')}
+      </span>
     </nav>
   );
 }

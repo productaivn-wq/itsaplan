@@ -1,10 +1,10 @@
 import RequireFeature from '@/components/common/permissions/RequireFeature';
-import NotesPage from '@/features/notes/NotesPage';
+import VibeCanvasPage from '@/features/vibe-canvas/VibeCanvasPage';
 
 export default function Page() {
   return (
     <RequireFeature feature="notes">
-      <NotesPage />
+      <VibeCanvasPage initialMode="notes" />
     </RequireFeature>
   );
 }

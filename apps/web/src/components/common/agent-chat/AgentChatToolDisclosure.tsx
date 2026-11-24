@@ -10,14 +10,16 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 export default function AgentChatToolDisclosure({
   label,
   withIcon = false,
+  defaultOpen = false,
   children,
 }: {
   label: string;
   withIcon?: boolean;
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
   return (
-    <Collapsible>
+    <Collapsible defaultOpen={defaultOpen}>
       <CollapsibleTrigger className="group flex min-h-8 w-fit max-w-full items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
         <ChevronRight className="size-3.5 shrink-0 transition-transform duration-150 group-data-[state=open]:rotate-90 rtl:group-data-[state=closed]:rotate-180" />
         {withIcon && <Wrench className="size-3.5 shrink-0" />}

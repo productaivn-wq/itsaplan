@@ -2,16 +2,25 @@ import { Elysia } from 'elysia';
 import { requireUser } from '#shared/access';
 import { authContext } from '#shared/auth-context';
 import { errors } from '#shared/responses';
+import { HttpError } from '#shared/lib';
+import { mcpTool } from '#mcp/generate';
 import { getStorageSettings } from '@repo/db';
-import { getAuthSettings } from '@repo/auth';
-import { localeFromAcceptLanguage } from '@repo/mailer';
-import { getHotkeySettings } from './service';
+import {
+  canManageCompany,
+  getCompanySettings,
+  getHotkeySettings,
+  getProjectDefaults,
+  setCompanySettings,
+  setProjectDefaults,
+} from './service';
 import { getAppVersion } from './updates';
 import { getWhatsNew, markWhatsNewSeen } from './whats-new';
 import {
+  CompanySettingsSchema,
   HotkeyCombosSchema,
-  InviteSearchSchema,
+  ProjectDefaultsSchema,
   StorageSettingsSchema,
+  UpdateCompanySettingsBody,
   VersionResponse,
   WhatsNewSchema,
 } from './model';
@@ -26,6 +35,73 @@ export const settingsRoutes = new Elysia({
   detail: { tags: ['Settings'] },
 })
   .use(authContext)
+  .get(
+    '/settings/company',
+    ({ user }) => {
+      requireUser(user);
+      return getCompanySettings();
+    },
+    {
+      response: { 200: CompanySettingsSchema, ...errors(401) },
+      detail: {
+        summary: 'Get company settings',
+        description: 'Read organization identity and agentic governance guardrails.',
+        ...mcpTool('get_company_settings'),
+      },
+    },
+  )
+  .put(
+    '/settings/company',
+    async ({ body, user }) => {
+      const current = requireUser(user);
+      if (!(await canManageCompany(current))) {
+        throw new HttpError(403, 'Only a company or team owner can update company settings');
+      }
+      return setCompanySettings(body, current.id);
+    },
+    {
+      body: UpdateCompanySettingsBody,
+      response: { 200: CompanySettingsSchema, ...errors(400, 401, 403) },
+      detail: {
+        summary: 'Configure company settings',
+        description:
+          'Initialize or update company profile, domain, locale, autonomy tier, and SoD guardrails.',
+        ...mcpTool('setup_company'),
+      },
+    },
+  )
+  .get(
+    '/settings/project-defaults',
+    ({ user }) => {
+      requireUser(user);
+      return getProjectDefaults();
+    },
+    {
+      response: { 200: ProjectDefaultsSchema, ...errors(401) },
+      detail: {
+        summary: 'Get instance project defaults',
+        description: 'Read default MCP reachability applied to newly created projects.',
+      },
+    },
+  )
+  .put(
+    '/settings/project-defaults',
+    async ({ body, user }) => {
+      const current = requireUser(user);
+      if (!(await canManageCompany(current))) {
+        throw new HttpError(403, 'Only a company or team owner can update project defaults');
+      }
+      return setProjectDefaults(body);
+    },
+    {
+      body: ProjectDefaultsSchema,
+      response: { 200: ProjectDefaultsSchema, ...errors(400, 401, 403) },
+      detail: {
+        summary: 'Update instance project defaults',
+        description: 'Set default MCP reachability for newly created projects.',
+      },
+    },
+  )
   .get('/settings/storage', () => getStorageSettings(), {
     response: { 200: StorageSettingsSchema, ...errors(401) },
     detail: {
@@ -42,19 +118,6 @@ export const settingsRoutes = new Elysia({
         'Get the keyboard shortcut overrides that apply to everyone on this instance. Every signed-in user reads them; changing them is god mode.',
     },
   })
-
-  .get(
-    '/settings/invite-search',
-    async () => ({ enabled: (await getAuthSettings()).inviteSearch }),
-    {
-      response: { 200: InviteSearchSchema, ...errors(401) },
-      detail: {
-        summary: 'Get whether people can be searched when inviting',
-        description:
-          'Get whether the invite dialog of a team may look up accounts of this instance by name or address. Changing it is god mode.',
-      },
-    },
-  )
 
   // The running version, shown in the sidebar to everyone. Whether a newer one
   // exists is god mode (/god/updates), and so is the release history. A session is
@@ -83,11 +146,8 @@ export const settingsRoutes = new Elysia({
 
   .post(
     '/settings/whats-new/seen',
-    async ({ user, request }) => {
-      await markWhatsNewSeen(
-        requireUser(user).id,
-        localeFromAcceptLanguage(request.headers.get('accept-language')),
-      );
+    async ({ user }) => {
+      await markWhatsNewSeen(requireUser(user).id);
       return { version: getAppVersion() };
     },
     {

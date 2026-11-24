@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { teamPath } from '@/utils/paths';
+import { teamSectionPath } from '@/utils/paths';
 import { useTeamsQuery } from '@/services/teams.service';
 
 // The page with no team in the URL. It opens the first team of the list; an account
@@ -15,7 +15,7 @@ export default function ManageTeamsIndex() {
   const first = data?.[0];
 
   useEffect(() => {
-    if (first) router.replace(teamPath(first.ref));
+    if (first) router.replace(teamSectionPath(first.ref, 'capabilities'));
   }, [first, router]);
 
   return (

@@ -1,10 +1,167 @@
 import { t } from 'elysia';
 
-import { contextUsageBody, AgUiEvent } from '../model';
+import { chatTurnOptionsBody, contextUsageBody } from '../model';
 
 export { projectAgentParams } from '../model';
 
-export { AgUiEvent, type AgUiEventBody } from '../model';
+// A chat with an external agent is carried by AG-UI events (https://docs.ag-ui.com):
+// the runner reports what its coding agent produces as this event stream, and the
+// browser is served the same events. The schemas below are the subset the chat needs,
+// with the field names the protocol defines, so a runner that already speaks AG-UI
+// needs no translation. Lifecycle ids are optional here because the server knows the
+// thread and the answer they belong to; everything else is required as specified.
+
+// The longest text delta accepted in one event. A runner buffers its output rather
+// than sending a request per token, and this bounds how much one event may carry.
+const DELTA_LIMIT = 12_000;
+
+// The longest arguments or result accepted for one tool call. A runner reports each of
+// them whole, and cutting one breaks the JSON the chat indents and highlights.
+const TOOL_TEXT_LIMIT = 32_000;
+
+const RunStartedEvent = t.Object({
+  type: t.Literal('RUN_STARTED'),
+  threadId: t.Optional(t.String()),
+  runId: t.Optional(t.String()),
+});
+
+const RunFinishedEvent = t.Object({
+  type: t.Literal('RUN_FINISHED'),
+  threadId: t.Optional(t.String()),
+  runId: t.Optional(t.String()),
+});
+
+const RunErrorEvent = t.Object({
+  type: t.Literal('RUN_ERROR'),
+  message: t.String({ maxLength: 2000 }),
+  code: t.Optional(t.String({ maxLength: 200 })),
+});
+
+const TextMessageStartEvent = t.Object({
+  type: t.Literal('TEXT_MESSAGE_START'),
+  messageId: t.String({ maxLength: 200 }),
+  role: t.Literal('assistant'),
+});
+
+const TextMessageContentEvent = t.Object({
+  type: t.Literal('TEXT_MESSAGE_CONTENT'),
+  messageId: t.String({ maxLength: 200 }),
+  delta: t.String({ maxLength: DELTA_LIMIT }),
+});
+
+const TextMessageEndEvent = t.Object({
+  type: t.Literal('TEXT_MESSAGE_END'),
+  messageId: t.String({ maxLength: 200 }),
+});
+
+const ToolCallStartEvent = t.Object({
+  type: t.Literal('TOOL_CALL_START'),
+  toolCallId: t.String({ maxLength: 200 }),
+  toolCallName: t.String({ maxLength: 200 }),
+  parentMessageId: t.Optional(t.String({ maxLength: 200 })),
+});
+
+const ToolCallArgsEvent = t.Object({
+  type: t.Literal('TOOL_CALL_ARGS'),
+  toolCallId: t.String({ maxLength: 200 }),
+  delta: t.String({ maxLength: TOOL_TEXT_LIMIT }),
+});
+
+const ToolCallEndEvent = t.Object({
+  type: t.Literal('TOOL_CALL_END'),
+  toolCallId: t.String({ maxLength: 200 }),
+});
+
+const ToolCallResultEvent = t.Object({
+  type: t.Literal('TOOL_CALL_RESULT'),
+  messageId: t.String({ maxLength: 200 }),
+  toolCallId: t.String({ maxLength: 200 }),
+  content: t.String({ maxLength: TOOL_TEXT_LIMIT }),
+  role: t.Optional(t.Literal('tool')),
+});
+
+const ThinkingDeltaEvent = t.Object({
+  type: t.Literal('THINKING_DELTA'),
+  delta: t.String(),
+  messageId: t.Optional(t.String()),
+});
+
+const ApprovalRequiredEvent = t.Object({
+  type: t.Literal('APPROVAL_REQUIRED'),
+  approvalId: t.String(),
+  toolCallId: t.String(),
+  toolName: t.String(),
+  args: t.Optional(t.String()),
+  requireSod: t.Optional(t.Boolean()),
+});
+
+const ApprovalDecisionEvent = t.Object({
+  type: t.Literal('APPROVAL_DECISION'),
+  approvalId: t.String(),
+  decision: t.Union([t.Literal('approved'), t.Literal('rejected')]),
+  deciderUserId: t.Optional(t.String()),
+  note: t.Optional(t.String()),
+});
+
+const AskUserEvent = t.Object({
+  type: t.Literal('ASK_USER'),
+  approvalId: t.String(),
+  question: t.String(),
+  options: t.Optional(t.Array(t.String())),
+});
+
+const PlanProposalEvent = t.Object({
+  type: t.Literal('PLAN_PROPOSAL'),
+  approvalId: t.String(),
+  title: t.String(),
+  steps: t.Array(t.String()),
+});
+
+const ArtifactEmitEvent = t.Object({
+  type: t.Literal('ARTIFACT_EMIT'),
+  artifactId: t.String(),
+  kind: t.Union([t.Literal('diff'), t.Literal('code'), t.Literal('mermaid'), t.Literal('markdown')]),
+  title: t.String(),
+  content: t.String(),
+  language: t.Optional(t.String()),
+});
+
+const SubagentSpawnEvent = t.Object({
+  type: t.Literal('SUBAGENT_SPAWN'),
+  subagentId: t.String(),
+  role: t.String(),
+  task: t.String(),
+});
+
+const SubagentDoneEvent = t.Object({
+  type: t.Literal('SUBAGENT_DONE'),
+  subagentId: t.String(),
+  status: t.Union([t.Literal('completed'), t.Literal('failed')]),
+  summary: t.Optional(t.String()),
+});
+
+export const AgUiEvent = t.Union([
+  RunStartedEvent,
+  RunFinishedEvent,
+  RunErrorEvent,
+  TextMessageStartEvent,
+  TextMessageContentEvent,
+  TextMessageEndEvent,
+  ToolCallStartEvent,
+  ToolCallArgsEvent,
+  ToolCallEndEvent,
+  ToolCallResultEvent,
+  ThinkingDeltaEvent,
+  ApprovalRequiredEvent,
+  ApprovalDecisionEvent,
+  AskUserEvent,
+  PlanProposalEvent,
+  ArtifactEmitEvent,
+  SubagentSpawnEvent,
+  SubagentDoneEvent,
+]);
+
+export type AgUiEventBody = typeof AgUiEvent.static;
 
 export const chatMessageParams = t.Object({
   projectKey: t.String(),
@@ -19,6 +176,7 @@ export const sendChatBody = t.Object({
   threadId: t.Optional(
     t.String({ description: 'Thread id of an earlier message, to continue that conversation.' }),
   ),
+  options: chatTurnOptionsBody,
 });
 
 // What the caller needs to follow the answer: the thread it belongs to and the id of
@@ -69,6 +227,7 @@ export const ClaimChatResponse = t.Object({
             'Null when there is none yet: start a fresh one and report the id it got.',
         }),
       ),
+      options: chatTurnOptionsBody,
     }),
   ),
 });

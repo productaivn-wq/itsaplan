@@ -1,0 +1,53 @@
+{
+  "add": "Thêm bộ lọc",
+  "remove": "Xóa bộ lọc",
+  "valuePlaceholder": "giá trị",
+  "noOptions": "Không có tùy chọn",
+  "selected": "Đã chọn {count}",
+  "operators": {
+    "is": "là",
+    "is_not": "không phải là",
+    "before": "trước",
+    "after": "sau",
+    "is_set": "đã đặt",
+    "is_not_set": "chưa đặt",
+    "contains": "chứa",
+    "not_contains": "không chứa"
+  },
+  "boolean": {
+    "true": "Đúng",
+    "false": "Sai"
+  },
+  "cycleStatus": {
+    "active": "Chu kỳ đang diễn ra",
+    "upcoming": "Chu kỳ sắp tới"
+  },
+  "initiativeStatus": {
+    "active": "Sáng kiến đang triển khai",
+    "planned": "Sáng kiến đã lên kế hoạch",
+    "proposed": "Sáng kiến đề xuất"
+  },
+  "fields": {
+    "status": "Trạng thái",
+    "statusType": "Nhóm trạng thái",
+    "assignee": "Người phụ trách",
+    "delegate": "Tác nhân được ủy quyền",
+    "priority": "Độ ưu tiên",
+    "type": "Loại",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "dueDate": "Hạn hoàn thành",
+    "startDate": "Ngày bắt đầu",
+    "created": "Ngày tạo",
+    "updated": "Ngày cập nhật"
+  },
+  "unset": {
+    "assignee": "Chưa giao",
+    "delegate": "Chưa ủy quyền",
+    "type": "Chưa phân loại",
+    "initiative": "Chưa thuộc sáng kiến",
+    "cycle": "Chưa thuộc chu kỳ",
+    "member": "Chưa có giá trị"
+  }
+}

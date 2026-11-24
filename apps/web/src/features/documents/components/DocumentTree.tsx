@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef, type RefObject } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDocumentNavigation } from '@/hooks/useDocumentNavigation';
 import {
   closestCenter,
@@ -27,9 +28,18 @@ export type DocumentSort = 'position' | 'title' | 'created' | 'updated';
 
 const treeDefaults: { collapsed: number[] } = { collapsed: [] };
 
-export default function DocumentTree({
+type FlatDocumentItem = {
+  document: ProjectDocumentSummary;
+  depth: number;
+  hasChildren: boolean;
+  isCollapsed: boolean;
+  nested: boolean;
+};
+
+function DocumentTree({
   projectKey,
   documents,
+  scrollContainerRef,
   activeId,
   searching,
   sortBy,
@@ -43,6 +53,7 @@ export default function DocumentTree({
 }: {
   projectKey: string;
   documents: ProjectDocumentSummary[];
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
   activeId: number | null;
   searching: boolean;
   sortBy: DocumentSort;
@@ -64,8 +75,7 @@ export default function DocumentTree({
   const t = useTranslations('documents');
   const [treeState, setTreeState] = useDocumentNavigation(projectKey, 'tree', treeDefaults);
   const collapsed = useMemo(() => new Set(treeState.collapsed), [treeState.collapsed]);
-  const setCollapsed = (update: (previous: Set<number>) => Set<number>) =>
-    setTreeState((previous) => ({ collapsed: [...update(new Set(previous.collapsed))] }));
+  const localScrollRef = useRef<HTMLDivElement>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -112,60 +122,61 @@ export default function DocumentTree({
     }
     return result;
   }, [byParent, documents]);
-  const visibleIds = useMemo(() => {
-    if (searching) return ordered.map((item) => item.id);
-    const result: number[] = [];
-    const visit = (parentId: number | null) => {
+  const flatItems = useMemo<FlatDocumentItem[]>(() => {
+    if (searching) {
+      return ordered.map((item) => ({
+        document: item,
+        depth: 0,
+        hasChildren: (byParent.get(item.id)?.length ?? 0) > 0,
+        isCollapsed: collapsed.has(item.id),
+        nested: false,
+      }));
+    }
+    const result: FlatDocumentItem[] = [];
+    const visited = new Set<number>();
+    const visit = (parentId: number | null, depth: number) => {
       for (const item of byParent.get(parentId) ?? []) {
-        result.push(item.id);
-        if (!collapsed.has(item.id)) visit(item.id);
+        if (visited.has(item.id)) continue;
+        visited.add(item.id);
+        const children = byParent.get(item.id) ?? [];
+        const isCollapsed = collapsed.has(item.id);
+        result.push({
+          document: item,
+          depth,
+          hasChildren: children.length > 0,
+          isCollapsed,
+          nested: true,
+        });
+        if (!isCollapsed && children.length > 0) {
+          visit(item.id, depth + 1);
+        }
       }
     };
-    visit(null);
+    visit(null, 0);
     return result;
   }, [byParent, collapsed, ordered, searching]);
+  const visibleIds = useMemo(() => flatItems.map((item) => item.document.id), [flatItems]);
 
-  const toggle = (documentId: number) => {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(documentId)) next.delete(documentId);
-      else next.add(documentId);
-      return next;
-    });
-  };
+  const virtualizer = useVirtualizer({
+    count: flatItems.length,
+    getScrollElement: () => scrollContainerRef?.current ?? localScrollRef.current,
+    estimateSize: () => 36,
+    overscan: 12,
+    initialRect: { width: 800, height: 800 },
+    getItemKey: (i) => flatItems[i]!.document.id,
+  });
 
-  function renderDocument(item: ProjectDocumentSummary, depth: number, nested: boolean) {
-    const children = byParent.get(item.id) ?? [];
-    const isCollapsed = collapsed.has(item.id);
-    return (
-      <SortableDocumentRow
-        key={item.id}
-        projectKey={projectKey}
-        document={item}
-        depth={depth}
-        nested={nested}
-        active={activeId === item.id}
-        collapsed={isCollapsed}
-        hasChildren={children.length > 0}
-        canCreate={canCreate}
-        reorderEnabled={reorderEnabled}
-        favoritePending={favoritePending}
-        onToggle={() => toggle(item.id)}
-        onCreate={() => onCreate(item.id)}
-        onFavoriteChange={() => onFavoriteChange(item.id, !item.isFavorite)}
-      >
-        {nested && !isCollapsed && children.length > 0 && renderRows(item.id, depth + 1)}
-      </SortableDocumentRow>
-    );
-  }
-
-  function renderRows(parentId: number | null, depth: number) {
-    return (
-      <ul role={depth === 0 ? 'tree' : 'group'} className={depth === 0 ? 'space-y-px' : undefined}>
-        {(byParent.get(parentId) ?? []).map((item) => renderDocument(item, depth, true))}
-      </ul>
-    );
-  }
+  const handleToggle = useCallback(
+    (documentId: number) => {
+      setTreeState((previous) => {
+        const next = new Set(previous.collapsed);
+        if (next.has(documentId)) next.delete(documentId);
+        else next.add(documentId);
+        return { collapsed: [...next] };
+      });
+    },
+    [setTreeState],
+  );
 
   if (documents.length === 0) {
     return (
@@ -209,6 +220,38 @@ export default function DocumentTree({
     if (projected) onMove({ documentId: source.id, version: source.version, ...projected });
   };
 
+  const treeContent = (
+    <nav aria-label={t('treeLabel')}>
+      <ul
+        role="tree"
+        style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
+      >
+        {virtualizer.getVirtualItems().map((vi) => {
+          const entry = flatItems[vi.index]!;
+          return (
+            <SortableDocumentRow
+              key={vi.key}
+              projectKey={projectKey}
+              document={entry.document}
+              depth={entry.depth}
+              nested={entry.nested}
+              active={activeId === entry.document.id}
+              collapsed={entry.isCollapsed}
+              hasChildren={entry.hasChildren}
+              canCreate={canCreate}
+              reorderEnabled={reorderEnabled}
+              favoritePending={favoritePending}
+              virtualStart={vi.start}
+              onToggle={handleToggle}
+              onCreate={onCreate}
+              onFavoriteChange={onFavoriteChange}
+            />
+          );
+        })}
+      </ul>
+    </nav>
+  );
+
   return (
     <DndContext
       sensors={sensors}
@@ -230,16 +273,16 @@ export default function DocumentTree({
       }}
     >
       <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
-        <nav aria-label={t('treeLabel')}>
-          {searching ? (
-            <ul role="tree" className="space-y-px">
-              {ordered.map((item) => renderDocument(item, 0, false))}
-            </ul>
-          ) : (
-            renderRows(null, 0)
-          )}
-        </nav>
+        {scrollContainerRef ? (
+          treeContent
+        ) : (
+          <div ref={localScrollRef} className="h-full overflow-y-auto">
+            {treeContent}
+          </div>
+        )}
       </SortableContext>
     </DndContext>
   );
 }
+
+export default memo(DocumentTree);

@@ -51,10 +51,23 @@ describe('normalizeToolKeys', () => {
 
   it('registers initiative actions and read tools', () => {
     expect(AGENT_ACTIONS.map((tool) => tool.key)).toEqual(
-      expect.arrayContaining(['create_initiative', 'update_initiative', 'delete_initiative']),
+      expect.arrayContaining([
+        'create_initiative',
+        'update_initiative',
+        'delete_initiative',
+        'link_document_initiative',
+        'unlink_document_initiative',
+      ]),
     );
     expect(ALWAYS_ON_ACTIONS.map((tool) => tool.key)).toEqual(
-      expect.arrayContaining(['list_initiatives', 'get_initiative']),
+      expect.arrayContaining([
+        'list_initiatives',
+        'get_initiative',
+        'list_initiative_activity',
+        'list_initiative_attachments',
+        'view_initiative_images',
+        'list_initiative_documents',
+      ]),
     );
   });
 
@@ -84,33 +97,6 @@ describe('normalizeToolKeys', () => {
       'create_document',
       'update_document',
       'delete_document',
-      'add_document_comment',
-      'list_document_comments',
-      'update_document_comment',
-      'list_document_issues',
-      'list_issue_documents',
-      'link_document_issue',
-      'unlink_document_issue',
-      'list_initiative_documents',
-      'list_document_initiatives',
-      'link_document_initiative',
-      'unlink_document_initiative',
-      'list_document_assets',
-      'view_document_asset',
-      'add_document_asset',
-      'add_document_asset_from_chat',
-      'delete_document_asset',
-      'list_document_revisions',
-      'get_document_revision',
-      'restore_document_revision',
-      'archive_document',
-      'restore_document',
-      'duplicate_document',
-      'lock_document',
-      'unlock_document',
-      'export_document',
-      'set_document_access',
-      'transfer_document_ownership',
     ];
     expect(normalizeToolKeys(keys)).toEqual(keys);
   });
@@ -128,9 +114,6 @@ describe('normalizeToolKeys', () => {
       'update_ai_agent',
       'delete_ai_agent',
       'regenerate_ai_agent_key',
-      'get_ai_agent_invocation_secret',
-      'rotate_ai_agent_invocation_secret',
-      'test_ai_agent_invocation',
       'run_ai_agent',
     ];
     expect(normalizeToolKeys(management)).toEqual([]);

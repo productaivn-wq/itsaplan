@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { usePersistedWidth } from '@/hooks/usePersistedWidth';
-import type { ProjectSort } from '@/lib/api/endpoints/projects';
+import type { ProjectSort } from '../utils/projectSwitcher';
 
-export const PROJECT_PICKER_WIDTH = { initial: 760, min: 560, max: 960 };
+export const PROJECT_PICKER_WIDTH = { initial: 420, min: 420, max: 720 };
 
 export function useProjectSwitcherPreferences(userId?: string) {
   const storageKey = `project-switcher:${userId ?? 'anonymous'}`;

@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { preloadFeatureByHref } from '@/utils/featurePreload';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarMenuButton,
@@ -36,7 +38,25 @@ export default function SidebarNavSubmenuCollapsible({
             {items.map((item) => (
               <SidebarMenuSubItem key={item.key}>
                 <SidebarMenuSubButton asChild isActive={item.active}>
-                  <Link href={item.href}>
+                  <Link
+                    href={item.href}
+                    prefetch={false}
+                    onMouseEnter={() => preloadFeatureByHref(item.href)}
+                    onFocus={() => preloadFeatureByHref(item.href)}
+                    onClick={(e) => {
+                      if (
+                        item.href.startsWith('/') &&
+                        e.button === 0 &&
+                        !e.metaKey &&
+                        !e.ctrlKey &&
+                        !e.shiftKey &&
+                        !e.altKey
+                      ) {
+                        e.preventDefault();
+                        navigateFeatureInstant(item.href);
+                      }
+                    }}
+                  >
                     <item.icon />
                     <span>{item.label}</span>
                   </Link>

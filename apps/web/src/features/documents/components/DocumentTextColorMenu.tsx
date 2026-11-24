@@ -44,7 +44,7 @@ export default function DocumentTextColorMenu({ editor }: { editor: Editor }) {
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 space-y-3 rounded-xl p-3 shadow-xl">
         <div>
-          <p className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground">
+          <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">
             {t('textColor')}
           </p>
           <div className="grid grid-cols-8 gap-1" aria-label={t('textColor')}>
@@ -71,7 +71,7 @@ export default function DocumentTextColorMenu({ editor }: { editor: Editor }) {
         </div>
 
         <div className="border-t pt-3">
-          <p className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground">
+          <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">
             {t('backgroundColor')}
           </p>
           <div className="grid grid-cols-8 gap-1" aria-label={t('backgroundColor')}>

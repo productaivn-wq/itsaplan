@@ -1,0 +1,119 @@
+{
+  "newIssue": "Tạo công việc mới",
+  "pin": "Ghim",
+  "unpin": "Bỏ ghim",
+  "collapse": "Thu gọn",
+  "expand": "Mở rộng",
+  "hide": "Ẩn",
+  "show": "Hiện",
+  "hiddenColumns": "Cột ẩn",
+  "hiddenGroups": "Nhóm ẩn",
+  "selectAll": "Chọn tất cả",
+  "deselectAll": "Bỏ chọn tất cả",
+  "resizeColumn": "Thay đổi kích thước cột",
+  "viewNamePlaceholder": "Tất cả công việc",
+  "sortedOrder": "Các công việc được sắp xếp theo {field}. Chuyển thứ tự sang Thủ công để di chuyển.",
+  "statusSince": "Ở trạng thái hiện tại từ {date}",
+  "createdOn": "Đã tạo {date}",
+  "updatedOn": "Đã cập nhật {date}",
+  "subtasksProgress": "Công việc con {done}/{total}",
+  "subtasksDone": "Đã hoàn thành {done}/{total} công việc con",
+  "wip": {
+    "reached": "{column} đã đạt giới hạn {limit} công việc.",
+    "tooltip": "Giới hạn công việc đang xử lý (WIP): {max}",
+    "count": "{count} / {max}",
+    "filteredCount": "{shown} trên {total} / {max}",
+    "filteredTooltip": "{shown} công việc hiển thị theo bộ lọc hiện tại. Giới hạn {max} tính trên tất cả {total} công việc trong cột."
+  },
+  "columns": {
+    "title": "Tiêu đề",
+    "status": "Trạng thái",
+    "statusAge": "Thời gian ở trạng thái",
+    "priority": "Độ ưu tiên",
+    "type": "Loại",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "estimatePoints": "Story points",
+    "estimateTime": "Thời gian",
+    "startDate": "Bắt đầu",
+    "dueDate": "Hạn hoàn thành",
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật"
+  },
+  "calendar": {
+    "previousMonth": "Tháng trước",
+    "nextMonth": "Tháng sau",
+    "today": "Hôm nay",
+    "moreIssues": "+{count} công việc khác",
+    "issueCount": "{count, plural, one {# công việc} other {# công việc}}",
+    "weekdays": {
+      "sun": "CN",
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7"
+    },
+    "noDate": {
+      "dueDate": "Không có hạn hoàn thành",
+      "startDate": "Không có ngày bắt đầu",
+      "custom": "Không có ngày"
+    },
+    "allDated": {
+      "dueDate": "Tất cả đều có hạn hoàn thành.",
+      "startDate": "Tất cả đều có ngày bắt đầu.",
+      "custom": "Tất cả đều có ngày."
+    }
+  },
+  "timeline": {
+    "empty": "Chưa có công việc nào để đặt trên dòng thời gian.",
+    "expandGroup": "Mở rộng nhóm",
+    "collapseGroup": "Thu gọn nhóm",
+    "inferredStart": "Ngày bắt đầu được suy ra từ ngày tạo",
+    "inferredStartDraggable": "Ngày bắt đầu được suy ra từ ngày tạo — kéo để thiết lập"
+  },
+  "bulk": {
+    "selected": "Đã chọn {count}",
+    "status": "Trạng thái",
+    "priority": "Độ ưu tiên",
+    "assignee": "Người phụ trách",
+    "delegate": "Tác nhân được ủy quyền",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "noAssignee": "Chưa có người phụ trách",
+    "noDelegate": "Chưa có tác nhân ủy quyền",
+    "noInitiative": "Không có sáng kiến",
+    "noCycle": "Không có chu kỳ",
+    "archive": "Lưu trữ",
+    "clearSelection": "Bỏ chọn"
+  },
+  "removal": {
+    "archive": {
+      "title": "{count, plural, one {Lưu trữ công việc} other {Lưu trữ công việc}}",
+      "confirm": "{count, plural, one {Lưu trữ # công việc} other {Lưu trữ # công việc}}",
+      "description": "{count, plural, one {Lưu trữ # công việc đã chọn? Công việc sẽ rời khỏi bảng và có thể khôi phục sau.} other {Lưu trữ # công việc đã chọn? Các công việc sẽ rời khỏi bảng và có thể khôi phục sau.}}"
+    },
+    "delete": {
+      "title": "{count, plural, one {Xóa công việc} other {Xóa công việc}}",
+      "confirm": "{count, plural, one {Xóa # công việc} other {Xóa # công việc}}",
+      "description": "{count, plural, one {Xóa # công việc đã chọn?} other {Xóa # công việc đã chọn?}} Thao tác này cũng sẽ xóa bình luận, hoạt động và tệp đính kèm. Không thể hoàn tác."
+    }
+  },
+  "share": {
+    "issueTitle": "Công việc",
+    "issueUnavailable": "Công việc này không khả dụng.",
+    "boardUnavailable": "Bảng chia sẻ này không khả dụng. Liên kết có thể đã bị thu hồi."
+  },
+  "groups": {
+    "noAssignee": "Chưa có người phụ trách",
+    "noDelegate": "Chưa có tác nhân ủy quyền",
+    "noPriority": "Không có độ ưu tiên",
+    "noType": "Chưa phân loại",
+    "noInitiative": "Không có sáng kiến",
+    "noCycle": "Không có chu kỳ",
+    "noMember": "Không có giá trị"
+  }
+}

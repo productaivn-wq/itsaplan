@@ -1,0 +1,202 @@
+{
+  "uc_id": "UC-008",
+  "min_tc": 12,
+  "test_cases": [
+    {
+      "tc_id": "TC-UC008-01",
+      "category": "positive",
+      "slice": "UC-008.S01",
+      "title": "Timeline consolidation single canonical Gantt view",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-277",
+        "check_id": 1
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-02",
+      "category": "positive",
+      "slice": "UC-008.S02",
+      "title": "Human-centric timeline row height >=32px and orthogonal FS arrows",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-278",
+        "check_id": 2
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-03",
+      "category": "positive",
+      "slice": "UC-008.S03",
+      "title": "Vibe Docs and Notes unified sidebar and tree consolidation",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-278-DOCS",
+        "check_id": 3
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-04",
+      "category": "positive",
+      "slice": "UC-008.S01",
+      "title": "Vietnamese 33-namespace NFC UTF-8 encoding zero mojibake",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-279",
+        "check_id": 4
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-05",
+      "category": "positive",
+      "slice": "UC-008.S02",
+      "title": "H1-H7 tasks and subtasks bidirectional sync with SQLite",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-280",
+        "check_id": 5
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-06",
+      "category": "positive",
+      "slice": "UC-008.S03",
+      "title": "Multi-branch 3 H1 -> 4 H2..H7 -> 7 Tasks -> 14 Subtasks WBS tree",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-281",
+        "check_id": 6
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-07",
+      "category": "positive",
+      "slice": "UC-008.S01",
+      "title": "ACCORD Milled Carbon (#0C0E12) & Swiss Vellum (#F7F6F2) brand tokens",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-282",
+        "check_id": 7
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-08",
+      "category": "positive",
+      "slice": "UC-008.S02",
+      "title": "Multimodal clipboard image paste in AI Chat composer",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-283-PASTE",
+        "check_id": 8
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-09",
+      "category": "positive",
+      "slice": "UC-008.S03",
+      "title": "Complete removal of God Mode toggle from navigation",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-283-GOD",
+        "check_id": 9
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-10",
+      "category": "boundary",
+      "slice": "UC-008.S01",
+      "title": "Complete removal of redundant Project Settings tab",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-284-SET",
+        "check_id": 10
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-11",
+      "category": "boundary",
+      "slice": "UC-008.S02",
+      "title": "Initiatives and Cycles views wired strictly to active records",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-284-WIRE",
+        "check_id": 11
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-12",
+      "category": "boundary",
+      "slice": "UC-008.S03",
+      "title": "Instant feature menu tab navigation under 150ms latency",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-285",
+        "check_id": 12
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-13",
+      "category": "negative",
+      "slice": "UC-008.S01",
+      "title": "36-project portfolio SSOT synchronization boundary check",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-243",
+        "check_id": 13
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    },
+    {
+      "tc_id": "TC-UC008-14",
+      "category": "negative",
+      "slice": "UC-008.S02",
+      "title": "Chat orchestrator adversarial payload & oversized image rejection",
+      "input": {
+        "spec_ref": "SPEC-ITSAPLAN-249",
+        "check_id": 14
+      },
+      "expected": {
+        "passed": true,
+        "eai_min": 0.98
+      }
+    }
+  ]
+}

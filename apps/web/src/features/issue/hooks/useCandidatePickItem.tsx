@@ -3,7 +3,7 @@ import type { Assignee } from '@/lib/api/endpoints/projects';
 import { useSession } from '@/lib/auth-client';
 import Avatar from '@/components/common/Avatar';
 import type { PickItem } from '@/components/common/fields/PopoverPick';
-import { isForeignAgent } from '@/utils/foreignAgent';
+import { isForeignAgent } from '../utils/delegates';
 
 // Builds the row one candidate gets in a picker over the project's people and agents,
 // shared by the controls that write such a candidate to an issue. An agent bound to
@@ -28,14 +28,14 @@ export function useCandidatePickItem(
     return {
       key: a.userId,
       search: a.name,
-      icon: <Avatar name={a.name} image={a.image} className="size-4 text-[8px]" />,
+      icon: <Avatar name={a.name} image={a.image} className="size-4 text-xs" />,
       label: a.name,
       selected: a.userId === value,
       trailing: foreign ? (
         <Avatar
           name={owner?.name ?? ''}
           image={owner?.image ?? null}
-          className="size-4 text-[8px]"
+          className="size-4 text-xs"
         />
       ) : undefined,
       tooltip: foreign ? ownerLabel : undefined,

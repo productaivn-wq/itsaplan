@@ -3,6 +3,8 @@ import {
   type CredentialPatch,
   type IntegrationKind,
   type NewCredentialInput,
+  type SaveOAuthProviderConfigInput,
+  type StartOAuthInput,
   listCredentials,
   listIntegrationOptions,
   listIntegrationCatalog,
@@ -10,6 +12,9 @@ import {
   createCredential,
   updateCredential,
   deleteCredential,
+  getOAuthProviderConfig,
+  saveOAuthProviderConfig,
+  startOAuthConnection,
 } from '@/lib/api/endpoints/integrations';
 import type { PageParams } from '@/lib/api/core/paging';
 import { qk } from '@/services/queryKeys';
@@ -86,5 +91,30 @@ export function useDeleteCredential(teamId: number) {
       // The team list carries how many credentials the team holds.
       void qc.invalidateQueries({ queryKey: qk.teams });
     },
+  });
+}
+
+export function useOAuthProviderConfigQuery(teamId: number, integrationKey: string | null) {
+  return useQuery({
+    queryKey: ['oauth-provider-config', teamId, integrationKey ?? ''],
+    queryFn: () => getOAuthProviderConfig(teamId, integrationKey!),
+    enabled: integrationKey != null && integrationKey.length > 0,
+  });
+}
+
+export function useSaveOAuthProviderConfig(teamId: number, integrationKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SaveOAuthProviderConfigInput) =>
+      saveOAuthProviderConfig(teamId, integrationKey, input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['oauth-provider-config', teamId, integrationKey] });
+    },
+  });
+}
+
+export function useStartOAuthConnection(teamId: number, integrationKey: string) {
+  return useMutation({
+    mutationFn: (input: StartOAuthInput) => startOAuthConnection(teamId, integrationKey, input),
   });
 }

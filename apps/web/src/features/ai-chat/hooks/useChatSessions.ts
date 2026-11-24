@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { arrayMove } from '@dnd-kit/sortable';
+import { getWorkspaceState, saveWorkspaceState } from '@/lib/api/endpoints/agents';
 import { uuid } from '@/utils/uuid';
 
 // One open conversation in the chat panel. `threadId` is null until the agent answers
@@ -81,6 +82,44 @@ function write(projectKey: string, sessions: ChatSession[], activeId: string | n
   }
 }
 
+export function reconcileRemoteChatSessions({
+  current,
+  currentActiveId,
+  remote,
+  userInteracted,
+}: {
+  current: ChatSession[];
+  currentActiveId: string | null;
+  remote: StoredTabs;
+  userInteracted: boolean;
+}): { sessions: ChatSession[]; activeId: string | null } {
+  if (remote.sessions.length === 0) {
+    return { sessions: current, activeId: currentActiveId };
+  }
+  const restored: ChatSession[] = remote.sessions.map((session) => ({
+    ...session,
+    running: false,
+    hasMessages: true,
+  }));
+  const hasActiveLocalWork =
+    userInteracted ||
+    current.some((s) => s.running || s.hasMessages || s.threadId != null);
+  if (!hasActiveLocalWork) {
+    return {
+      sessions: restored,
+      activeId: remote.activeId ?? restored[0]?.id ?? null,
+    };
+  }
+  const existingThreadIds = new Set(
+    current.map((s) => s.threadId).filter((id): id is string => id != null),
+  );
+  const extraRemote = restored.filter((s) => !existingThreadIds.has(s.threadId!));
+  return {
+    sessions: extraRemote.length > 0 ? [...current, ...extraRemote] : current,
+    activeId: currentActiveId ?? current[0]?.id ?? null,
+  };
+}
+
 // The sessions the chat panel holds open, for one project. Every session stays mounted
 // while it is open, so a session that is not shown keeps its transcript and its composer
 // and continues to receive its reply.
@@ -94,17 +133,56 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // The agent a new tab starts with: the one the user picked last.
   const [lastAgentId, setLastAgentId] = useState<number | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const remoteDirtyRef = useRef(false);
+  const userInteractedRef = useRef(false);
+  const sessionsRef = useRef<ChatSession[]>(sessions);
+  sessionsRef.current = sessions;
+  const activeIdRef = useRef<string | null>(activeId);
+  activeIdRef.current = activeId;
 
   // The panel outlives the route, so a move to a different project loads that
   // project's tabs. Storage is read here rather than in the state initializer: this
   // component also renders on the server, where there is none.
   useEffect(() => {
     if (!projectKey) return;
+    let cancelled = false;
+    remoteDirtyRef.current = false;
+    userInteractedRef.current = false;
     const stored = read(projectKey);
     setSessions(stored.sessions);
     setActiveId(stored.activeId);
     setLastAgentId(null);
     setLoadedKey(projectKey);
+
+    void getWorkspaceState(projectKey)
+      .then((remote) => {
+        if (cancelled) return;
+        const payload = remote?.state;
+        if (stored.sessions.length === 0 && isStored(payload) && payload.sessions.length > 0) {
+          const reconciled = reconcileRemoteChatSessions({
+            current: sessionsRef.current,
+            currentActiveId: activeIdRef.current,
+            remote: payload,
+            userInteracted: userInteractedRef.current,
+          });
+          setSessions((prev) =>
+            reconcileRemoteChatSessions({
+              current: prev,
+              currentActiveId: activeIdRef.current,
+              remote: payload,
+              userInteracted: userInteractedRef.current,
+            }).sessions,
+          );
+          if (reconciled.activeId !== activeIdRef.current) {
+            setActiveId(reconciled.activeId);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [projectKey]);
 
   // Only once this project's tabs have been read: a fresh chat made before that would
@@ -119,16 +197,39 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // Only once this project's tabs have been read: an empty state on the way there
   // would overwrite them.
   useEffect(() => {
-    if (projectKey && loadedKey === projectKey) write(projectKey, sessions, activeId);
+    if (!projectKey || loadedKey !== projectKey) return;
+    const hasStartedThread = sessions.some((s) => s.threadId != null);
+    if (!remoteDirtyRef.current && !hasStartedThread) return;
+
+    write(projectKey, sessions, activeId);
+    if (!remoteDirtyRef.current) return;
+
+    const stored = sessions.flatMap((session) =>
+      session.threadId
+        ? [{ id: session.id, agentId: session.agentId, threadId: session.threadId }]
+        : [],
+    );
+    const timer = setTimeout(() => {
+      void saveWorkspaceState(projectKey, { sessions: stored, activeId }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(timer);
   }, [projectKey, loadedKey, sessions, activeId]);
 
+  const markInteracted = useCallback(() => {
+    userInteractedRef.current = true;
+  }, []);
+
   const update = useCallback((id: string, change: Partial<ChatSession>) => {
+    userInteractedRef.current = true;
+    remoteDirtyRef.current = true;
     setSessions((prev) =>
       prev.map((session) => (session.id === id ? { ...session, ...change } : session)),
     );
   }, []);
 
   const openTab = useCallback((agentId: number, threadId: string | null = null) => {
+    userInteractedRef.current = true;
+    remoteDirtyRef.current = true;
     const session = newSession(agentId, threadId);
     setSessions((prev) => [...prev, session]);
     setActiveId(session.id);
@@ -139,6 +240,8 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // opening a second tab for it.
   const openThread = useCallback(
     (agentId: number, threadId: string) => {
+      userInteractedRef.current = true;
+      remoteDirtyRef.current = true;
       const existing = sessions.find((session) => session.threadId === threadId);
       if (existing) {
         setActiveId(existing.id);
@@ -153,6 +256,8 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // empty chat with the agent that session used.
   const closeSession = useCallback(
     (id: string) => {
+      userInteractedRef.current = true;
+      remoteDirtyRef.current = true;
       const index = sessions.findIndex((session) => session.id === id);
       if (index < 0) return;
       const rest = sessions.filter((session) => session.id !== id);
@@ -171,6 +276,8 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // A tab dragged onto another one takes its place in the row. The order is what is
   // kept on the device, so it is also the order a reload opens the chats in.
   const moveTab = useCallback((id: string, overId: string) => {
+    userInteractedRef.current = true;
+    remoteDirtyRef.current = true;
     setSessions((prev) => {
       const from = prev.findIndex((session) => session.id === id);
       const to = prev.findIndex((session) => session.id === overId);
@@ -182,6 +289,8 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
   // A chat picked from the menu of the tabs the row did not fit takes the place of the
   // tab it appears in, so it stays in the row once another tab is selected.
   const swapTabs = useCallback((id: string, otherId: string) => {
+    userInteractedRef.current = true;
+    remoteDirtyRef.current = true;
     setSessions((prev) => {
       const from = prev.findIndex((session) => session.id === id);
       const to = prev.findIndex((session) => session.id === otherId);
@@ -193,12 +302,19 @@ export function useChatSessions(projectKey: string | null, defaultAgentId: numbe
     });
   }, []);
 
+  const setActive = useCallback((id: string) => {
+    userInteractedRef.current = true;
+    remoteDirtyRef.current = true;
+    setActiveId(id);
+  }, []);
+
   const active = sessions.find((session) => session.id === activeId) ?? sessions[0] ?? null;
 
   return {
     sessions,
     active,
-    setActive: setActiveId,
+    setActive,
+    markInteracted,
     newTab: useCallback(() => {
       const agentId = lastAgentId ?? defaultAgentId;
       if (agentId != null) openTab(agentId);

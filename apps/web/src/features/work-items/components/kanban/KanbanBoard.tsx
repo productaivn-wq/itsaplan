@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { type WorkItemsViewProps } from '@/utils/project';
 import { SelectionProvider } from '../../context/useSelection';
-import { WorkItemsEmpty } from '../shared/WorkItemsEmpty';
 import FlatBoard from './FlatBoard';
 import SwimlaneBoard from './SwimlaneBoard';
 import { BulkActionBar } from './BulkActionBar';
@@ -16,10 +15,6 @@ export default function KanbanBoard(props: WorkItemsViewProps) {
     () => new Set(props.project.issues.map((i) => i.id)),
     [props.project.issues],
   );
-
-  if (props.project.issues.length === 0 && !props.settings.showEmptyGroups) {
-    return <WorkItemsEmpty filters={props.filters} />;
-  }
 
   return (
     <SelectionProvider validIds={validIds}>

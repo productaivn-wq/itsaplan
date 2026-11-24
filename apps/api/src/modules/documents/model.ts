@@ -1,5 +1,4 @@
 import { t } from 'elysia';
-import { AttachmentContent, ViewAttachmentsResponse } from '#modules/attachments/model';
 
 export const documentParams = t.Object({
   projectKey: t.String(),
@@ -15,10 +14,7 @@ export const documentRevisionParams = t.Object({
 export const documentAssetParams = t.Object({
   projectKey: t.String(),
   documentId: t.Numeric(),
-  publicId: t.String({
-    format: 'uuid',
-    description: "The asset's id, from list_document_assets or from its url in the page text.",
-  }),
+  publicId: t.String({ format: 'uuid' }),
 });
 
 const DocumentSummaryResponse = t.Object({
@@ -47,10 +43,6 @@ export const DocumentResponse = t.Composite([
   t.Object({
     content: t.String(),
     contentJson: t.Nullable(t.Record(t.String(), t.Any())),
-    shareToken: t.Nullable(t.String()),
-    shareExpiresAt: t.Nullable(t.String()),
-    shareIncludeChildren: t.Boolean(),
-    shareIncludeIssues: t.Boolean(),
   }),
 ]);
 
@@ -167,14 +159,6 @@ export const IssueDocumentLinkResponse = t.Object({
 
 export const IssueDocumentLinkListResponse = t.Array(IssueDocumentLinkResponse);
 
-export const DocumentInitiativeLinkListResponse = t.Array(
-  t.Object({
-    initiativeId: t.Number(),
-    title: t.String(),
-    createdAt: t.String(),
-  }),
-);
-
 const DocumentRevisionSummaryResponse = t.Object({
   id: t.Number(),
   documentId: t.Number(),
@@ -212,13 +196,6 @@ export const DocumentExportResponse = t.Object({
 
 export const uploadDocumentAssetBody = t.Object({ file: t.File() });
 
-export const documentAssetFromChatBody = t.Object({
-  chatAttachmentId: t.String({
-    format: 'uuid',
-    description: 'The attachment id of the file in the chat.',
-  }),
-});
-
 export const DocumentAssetResponse = t.Object({
   id: t.String({ format: 'uuid' }),
   filename: t.String(),
@@ -227,15 +204,9 @@ export const DocumentAssetResponse = t.Object({
   uploadedByUserId: t.Nullable(t.String()),
   createdAt: t.String(),
   url: t.String(),
-  embedUrl: t.String({ description: 'The address to use in the page text to show this file.' }),
 });
 
 export const DocumentAssetListResponse = t.Array(DocumentAssetResponse);
-
-export const ViewDocumentAssetResponse = t.Object({
-  images: ViewAttachmentsResponse.properties.images,
-  others: t.Array(t.Composite([DocumentAssetResponse, AttachmentContent])),
-});
 
 export const deleteDocumentQuery = t.Object({
   version: t.Integer({ minimum: 1 }),
@@ -275,26 +246,12 @@ export const documentCommentParams = t.Object({
   commentId: t.String({ format: 'uuid' }),
 });
 export const documentCommentBody = t.Object({
-  body: t.String({
-    minLength: 1,
-    maxLength: 10_000,
-    description: 'The comment. Tag a project member or an AI agent with @username.',
-  }),
-  parentId: t.Optional(
-    t.String({
-      format: 'uuid',
-      description: 'The first comment of the thread to reply in. Omit to start a thread.',
-    }),
-  ),
+  body: t.String({ minLength: 1, maxLength: 10_000 }),
+  parentId: t.Optional(t.String({ format: 'uuid' })),
   quote: t.Optional(t.String({ maxLength: 2000 })),
   from: t.Optional(t.Integer({ minimum: 0 })),
   to: t.Optional(t.Integer({ minimum: 1 })),
-  version: t.Optional(
-    t.Integer({
-      minimum: 1,
-      description: 'The document version the text was selected in. Required to start a thread.',
-    }),
-  ),
+  version: t.Integer({ minimum: 1 }),
 });
 export const documentCommentUpdateBody = t.Object({
   body: t.Optional(t.String({ minLength: 1, maxLength: 10_000 })),

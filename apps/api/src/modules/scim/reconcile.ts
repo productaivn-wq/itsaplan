@@ -2,19 +2,13 @@ import {
   db,
   project,
   projectMember,
-  scimGroup,
   scimGroupMapping,
   scimGroupMember,
-  scimUser,
   teamMember,
-  teamWorkspaceId,
-  user,
 } from '@repo/db';
-import { and, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
-import { workspacesWithOwnScim } from '@repo/auth';
+import { and, eq } from 'drizzle-orm';
 import { removeMember, setMembership, type MemberRole } from '#modules/members/service';
-import { getDefaultRoleId } from '#modules/roles/service';
-import { listSeatHolderIds } from '#modules/teams/service';
+import { listTeamMemberIds } from '#modules/teams/service';
 import { getLimits } from '#shared/limits';
 
 // Turns provisioned group membership into project membership, and into the team
@@ -22,8 +16,7 @@ import { getLimits } from '#shared/limits';
 // and it only ever touches rows it owns (`source: 'scim'`) — a membership somebody
 // set up through an invite is left exactly as it is, in either direction.
 //
-// Called after a group's members or its mappings change, a person becomes active, or a
-// workspace turns SCIM of its own on or off.
+// Called after a group's members or its mappings change.
 
 interface Desired {
   role: MemberRole;
@@ -36,27 +29,10 @@ export async function reconcileProjects(projectIds: number[]): Promise<void> {
   }
 }
 
-// The group members whose mappings grant a project of this workspace, as a condition on
-// `scimGroup`, `scimUser` and `user`. A person a workspace's provider deactivated is
-// granted nothing by its groups. An account the instance's provider deactivated keeps
-// what it had: it cannot sign in, and is back where it was once reactivated. The
-// instance's groups grant nothing in a workspace that set up SCIM of its own.
-async function grantingMembers(workspaceId: number) {
-  const active = or(isNull(scimUser.active), eq(scimUser.active, true));
-  if ((await workspacesWithOwnScim()).includes(workspaceId)) {
-    return and(isNotNull(scimGroup.workspaceId), active);
-  }
-  return or(active, and(isNull(scimGroup.workspaceId), eq(user.active, false)));
-}
-
 // Who the mappings say should be a member of this project. A user reachable
 // through two mappings resolves to the strongest: 'owner' beats 'member', and among
 // equals the lowest mapping id wins, so the result does not depend on row order.
-async function desiredMembers(
-  projectId: number,
-  workspaceId: number,
-): Promise<Map<string, Desired>> {
-  const granting = await grantingMembers(workspaceId);
+async function desiredMembers(projectId: number): Promise<Map<string, Desired>> {
   const rows = await db
     .select({
       userId: scimGroupMember.userId,
@@ -65,41 +41,27 @@ async function desiredMembers(
     })
     .from(scimGroupMapping)
     .innerJoin(scimGroupMember, eq(scimGroupMember.groupId, scimGroupMapping.groupId))
-    .innerJoin(scimGroup, eq(scimGroup.id, scimGroupMapping.groupId))
-    .innerJoin(user, eq(user.id, scimGroupMember.userId))
-    .leftJoin(
-      scimUser,
-      and(
-        sql`${scimUser.workspaceId} IS NOT DISTINCT FROM ${scimGroup.workspaceId}`,
-        eq(scimUser.userId, scimGroupMember.userId),
-      ),
-    )
-    .where(and(eq(scimGroupMapping.projectId, projectId), granting))
+    .where(eq(scimGroupMapping.projectId, projectId))
     .orderBy(scimGroupMapping.id);
 
-  const defaultRoleId = await getDefaultRoleId();
   const desired = new Map<string, Desired>();
   for (const row of rows) {
     const role = row.role as MemberRole;
     const current = desired.get(row.userId);
     if (current && (current.role === 'owner' || role !== 'owner')) continue;
     // Owners bypass the permission matrix, so they carry no custom role.
-    desired.set(row.userId, {
-      role,
-      roleId: role === 'owner' ? null : (row.roleId ?? defaultRoleId),
-    });
+    desired.set(row.userId, { role, roleId: role === 'owner' ? null : row.roleId });
   }
   return desired;
 }
 
 async function reconcileProject(projectId: number): Promise<void> {
+  const desired = await desiredMembers(projectId);
   const [owner] = await db
     .select({ teamId: project.teamId })
     .from(project)
     .where(eq(project.id, projectId));
   if (!owner) return;
-  const workspaceId = await teamWorkspaceId(owner.teamId, db);
-  const desired = await desiredMembers(projectId, workspaceId);
   const existing = await db
     .select({
       userId: projectMember.userId,
@@ -111,10 +73,11 @@ async function reconcileProject(projectId: number): Promise<void> {
     .where(eq(projectMember.projectId, projectId));
 
   const byUser = new Map(existing.map((row) => [row.userId, row]));
-  // A seat ceiling stops the provider from adding people the workspace has no room for.
+  // A seat ceiling stops the provider from adding people the team has no room for.
   // Those already in it keep their membership and still join the project.
-  const { maxSeats } = await getLimits(workspaceId);
-  const seats = maxSeats > 0 ? new Set(await listSeatHolderIds(workspaceId)) : new Set<string>();
+  const { maxTeamMembers } = await getLimits({ teamId: owner.teamId });
+  const seats =
+    maxTeamMembers > 0 ? new Set(await listTeamMemberIds(owner.teamId)) : new Set<string>();
   // Tracked as rows change so the last-owner guard below stays correct without
   // re-counting after every write.
   let owners = existing.filter((row) => row.role === 'owner').length;
@@ -122,8 +85,8 @@ async function reconcileProject(projectId: number): Promise<void> {
   for (const [userId, want] of desired) {
     const have = byUser.get(userId);
     if (!have) {
-      if (maxSeats > 0 && !seats.has(userId)) {
-        if (seats.size >= maxSeats) continue;
+      if (maxTeamMembers > 0 && !seats.has(userId)) {
+        if (seats.size >= maxTeamMembers) continue;
         seats.add(userId);
       }
       // A project membership only exists on top of one in the team that owns the

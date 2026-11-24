@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { useShellRoute } from '@/hooks/useShellRoute';
 import { useShell } from '@/context/shellContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -14,15 +13,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError } from '@/lib/api/core/client';
 import {
   useCreateDocument,
+  useDeleteDocument,
+  useDuplicateDocument,
   useDocumentQuery,
   useDocumentsQuery,
 } from './services/documents.service';
-import DocumentView from './components/DocumentView';
+import DocumentEditor from './components/DocumentEditor';
+import DocumentLoadError from './components/DocumentLoadError';
+import DocumentLoadingState from './components/DocumentLoadingState';
 import DocumentsIndex from './components/DocumentsIndex';
-import { importedMarkdownJson, markdownTitle } from './utils/documentImport';
 import { documentBelongsToTab, type DocumentListTab } from './utils/documentList';
+import { documentAncestors } from './utils/documentTree';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { titlePath, useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useDocumentNavigation, useRecentDocuments } from '@/hooks/useDocumentNavigation';
 import { useTranslations } from 'next-intl';
 
@@ -33,7 +35,7 @@ export default function DocumentsPage() {
   const params = useParams<{ documentId?: string }>();
   const router = useRouter();
   const t = useTranslations('documents');
-  const { can } = usePermissions();
+  const { can, isOwner } = usePermissions();
   const projectKey = useShellRoute().projectKey ?? '';
   const routeId = params.documentId ? Number(params.documentId) : null;
   const documentId = routeId && Number.isFinite(routeId) ? routeId : null;
@@ -49,6 +51,13 @@ export default function DocumentsPage() {
   useEffect(() => {
     if (documentId !== null) visit(documentId);
   }, [documentId, visit]);
+  const allDocumentsQuery = useDocumentsQuery(projectKey);
+  const allArchivedDocumentsQuery = useDocumentsQuery(
+    projectKey,
+    '',
+    true,
+    documentId !== null || listTab === 'archived',
+  );
   const activeDocumentsQuery = useDocumentsQuery(
     projectKey,
     deferredSearch,
@@ -76,19 +85,30 @@ export default function DocumentsPage() {
       : document,
   );
   const documentQuery = useDocumentQuery(projectKey, documentId);
-  const documentTitle =
-    !documentQuery.isError &&
-    documentQuery.data &&
-    (documentQuery.data.title.trim() || t('untitled'));
-  useDocumentTitle(titlePath(project?.project.name, documentTitle));
   const createDocument = useCreateDocument(projectKey);
+  const deleteDocument = useDeleteDocument(projectKey);
+  const duplicateDocument = useDuplicateDocument(projectKey);
   const canRead = can('documents', 'read');
   const canCreate = can('documents', 'create');
   const canEdit = can('documents', 'edit');
+  const canDelete = can('documents', 'delete');
+  const canReadWorkItems = can('work_items', 'read');
+  const canLinkWorkItems = canEdit && can('work_items', 'edit');
 
   useLiveRefresh({
     scope: project ? revScope.documents(project.project.id) : null,
-    targets: [qk.documentListsForProject(projectKey)],
+    targets: [
+      qk.documentListsForProject(projectKey),
+      ...(documentId === null
+        ? []
+        : [
+            qk.document(projectKey, documentId),
+            qk.documentRevisions(projectKey, documentId),
+            qk.documentAssets(projectKey, documentId),
+            qk.documentComments(projectKey, documentId),
+            qk.documentIssueLinks(projectKey, documentId),
+          ]),
+    ],
   });
 
   useEffect(() => {
@@ -99,7 +119,7 @@ export default function DocumentsPage() {
 
   if (!project) {
     return (
-      <div className="flex flex-1 gap-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 gap-0 overflow-hidden">
         <Skeleton className="m-4 w-72" />
         <Skeleton className="m-4 flex-1" />
       </div>
@@ -114,7 +134,7 @@ export default function DocumentsPage() {
     );
   }
 
-  const create = async (parentId: number | null, isPrivate: boolean) => {
+  const create = async (parentId: number | null, isPrivate = false) => {
     try {
       setSearch('');
       const newDocument = await createDocument.mutateAsync({ parentId, isPrivate });
@@ -124,32 +144,41 @@ export default function DocumentsPage() {
     }
   };
 
-  const upload = async (file: File) => {
-    let markdown: string;
+  const remove = async (version: number) => {
+    if (documentId === null) return;
+    await deleteDocument.mutateAsync({ documentId, version });
+    router.push(documentsPath(projectKey));
+  };
+
+  const duplicate = async (title: string, version: number) => {
+    if (!activeDocument) return;
     try {
-      markdown = (await file.text()).replace(/^\uFEFF/, '');
-    } catch {
-      toast.error(t('markdownReadFailed'));
-      return;
-    }
-    const contentJson = importedMarkdownJson(markdown);
-    if (!contentJson) {
-      toast.error(t('markdownTooLarge'));
-      return;
-    }
-    try {
-      setSearch('');
-      const newDocument = await createDocument.mutateAsync({
-        title: markdownTitle(file.name),
-        content: markdown,
-        contentJson,
-        isPrivate: listTab === 'private',
+      const copy = await duplicateDocument.mutateAsync({
+        documentId: activeDocument.id,
+        version,
+        title: t('copyTitle', { title: title.trim() || t('untitled') }),
+        parentId: activeDocument.parentId,
       });
-      router.push(documentPath(projectKey, newDocument.id));
+      router.push(documentPath(projectKey, copy.id));
     } catch {
       // Mutation errors are reported by the shared query client.
     }
   };
+
+  const activeDocument = documentQuery.data;
+  const author = activeDocument?.updatedByUserId
+    ? project.assignees.find((candidate) => candidate.userId === activeDocument.updatedByUserId)
+    : null;
+  const ancestors = activeDocument
+    ? documentAncestors(activeDocument, [
+        ...(allDocumentsQuery.data ?? []),
+        ...(allArchivedDocumentsQuery.data ?? []),
+      ])
+    : [];
+  const detailFailed =
+    documentId !== null &&
+    documentQuery.isError &&
+    !(documentQuery.error instanceof ApiError && documentQuery.error.status === 404);
 
   if (documentId === null) {
     return (
@@ -171,20 +200,40 @@ export default function DocumentsPage() {
         onSearchChange={setSearch}
         onTabChange={setListTab}
         onCreate={(parentId) => void create(parentId, listTab === 'private')}
-        onUpload={(file) => void upload(file)}
         onRetry={() => void visibleDocumentsQuery.refetch()}
       />
     );
   }
 
+  if (detailFailed) return <DocumentLoadError onRetry={() => void documentQuery.refetch()} />;
+  if (!activeDocument) return <DocumentLoadingState />;
+
   return (
-    <DocumentView
-      key={documentId}
+    <DocumentEditor
+      key={activeDocument.id}
       projectKey={projectKey}
-      documentId={documentId}
+      projectName={project.project.name}
+      document={activeDocument}
+      ancestors={ancestors}
+      authorName={author?.name ?? null}
+      authorNames={Object.fromEntries(
+        project.assignees.map((candidate) => [candidate.userId, candidate.name]),
+      )}
+      canEdit={canEdit}
+      canReadWorkItems={canReadWorkItems}
+      canLinkWorkItems={canLinkWorkItems}
+      isProjectOwner={isOwner}
+      canCreate={canCreate}
+      canDelete={canDelete}
       onBack={() => router.push(documentsPath(projectKey))}
-      onCreated={() => setSearch('')}
-      onDeleted={() => router.push(documentsPath(projectKey))}
+      onCreateChild={() => void create(activeDocument.id, activeDocument.isPrivate)}
+      onDuplicate={duplicate}
+      onDelete={remove}
+      onReload={async () => {
+        const result = await documentQuery.refetch();
+        if (result.isError) throw result.error;
+        return result.data ?? null;
+      }}
     />
   );
 }

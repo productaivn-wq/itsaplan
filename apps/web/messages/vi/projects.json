@@ -1,0 +1,25 @@
+{
+  "editAction": "Chỉnh sửa dự án",
+  "copyAction": "Sao chép dự án",
+  "deleteAction": "Xóa dự án",
+  "leaveAction": "Rời dự án",
+  "deleteDialog": {
+    "title": "Xóa {name}?",
+    "confirm": "Xóa vĩnh viễn",
+    "description": "Thao tác này sẽ xóa vĩnh viễn <strong>{name}</strong> cùng toàn bộ dữ liệu bên trong: công việc, bình luận, tệp đính kèm và cài đặt. Không thể hoàn tác.",
+    "typeToConfirm": "Nhập <code>{key}</code> để xác nhận."
+  },
+  "leaveDialog": {
+    "title": "Rời khỏi {name}?",
+    "confirm": "Rời dự án",
+    "description": "Bạn sẽ mất quyền truy cập vào <strong>{name}</strong> và các hạng mục công việc bên trong. Để tham gia lại, bạn cần lời mời mới từ chủ sở hữu."
+  },
+  "editDialog": {
+    "title": "Chỉnh sửa dự án",
+    "key": "Mã dự án",
+    "keyHint": "Liên kết công việc cần mã gồm chữ cái in hoa và chữ số, bắt đầu bằng chữ cái. Sau khi lưu, mã dự án không thể thay đổi.",
+    "name": "Tên dự án",
+    "description": "Mô tả",
+    "submit": "Lưu"
+  }
+}

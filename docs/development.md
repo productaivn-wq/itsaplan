@@ -5,7 +5,7 @@ Requirements: [Bun](https://bun.sh) 1.3+, Docker, Git.
 ## Setup
 
 ```bash
-git clone https://github.com/croffasia/itsaplan.git
+git clone https://github.com/productaivn-wq/itsaplan.git
 cd itsaplan
 bun install
 bun run setup   # "Develop", or "Generate env" for just the .env files
@@ -52,8 +52,7 @@ pnpm: the lockfile is `bun.lock`.
 
 Integration tests against a real Postgres, not mocks. The setup prepared a separate `*_test`
 database with `.env.test` pointing at it; the name must contain "test", since the reset
-helper empties every table between tests and refuses otherwise. The api suite runs in
-parallel workers on copies of it, named `<name>_1` … `<name>_5`.
+helper TRUNCATEs every table between tests and refuses otherwise.
 
 ```bash
 bun run test
@@ -71,3 +70,43 @@ The integration suite is in `apps/api`. `apps/api/AGENTS.md` explains how to wri
 
 The mechanisms that span several apps — the revision engine, the interface languages — are
 described in [`docs/dev/`](dev/).
+
+## Runtime Subsystems (`apps/worker` & `apps/bot`)
+
+### Background Worker (`apps/worker/src` — `23` modules)
+
+| Module | Path | Responsibility |
+| :--- | :--- | :--- |
+| `agent-worker` | `apps/worker/src/agent-worker.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `backoff` | `apps/worker/src/backoff.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `canonical` | `apps/worker/src/canonical.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `config` | `apps/worker/src/config.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `cross-reference` | `apps/worker/src/cross-reference.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `delivery` | `apps/worker/src/delivery.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `env` | `apps/worker/src/env.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `import-store` | `apps/worker/src/import-store.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `import-worker` | `apps/worker/src/import-worker.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `index` | `apps/worker/src/index.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `notification-delivery` | `apps/worker/src/notification-delivery.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `notification-send` | `apps/worker/src/notification-send.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `plane-adapter` | `apps/worker/src/plane-adapter.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `poll-loop` | `apps/worker/src/poll-loop.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `reader` | `apps/worker/src/reader.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `schedule-timestamp` | `apps/worker/src/schedule-timestamp.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `schedules` | `apps/worker/src/schedules.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `signature` | `apps/worker/src/signature.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `store` | `apps/worker/src/store.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `telemetry-payload` | `apps/worker/src/telemetry-payload.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `telemetry-schedule` | `apps/worker/src/telemetry-schedule.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `telemetry` | `apps/worker/src/telemetry.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+| `worker` | `apps/worker/src/worker.ts` | Background queue, schedule, notification, telemetry, or import runtime module |
+
+### Telegram Bot Service (`apps/bot/src` — `5` modules)
+
+| Module | Path | Responsibility |
+| :--- | :--- | :--- |
+| `bot` | `apps/bot/src/bot.ts` | Telegram supervisor, config, PostgreSQL bridge, or webhook handler |
+| `config` | `apps/bot/src/config.ts` | Telegram supervisor, config, PostgreSQL bridge, or webhook handler |
+| `db` | `apps/bot/src/db.ts` | Telegram supervisor, config, PostgreSQL bridge, or webhook handler |
+| `index` | `apps/bot/src/index.ts` | Telegram supervisor, config, PostgreSQL bridge, or webhook handler |
+| `supervisor` | `apps/bot/src/supervisor.ts` | Telegram supervisor, config, PostgreSQL bridge, or webhook handler |

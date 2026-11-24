@@ -34,6 +34,9 @@ yarn-error.log*
 *.pem
 coverage
 .playwright-mcp
+.*.lock
+__pycache__/
+*.pyc
 
 # typescript incremental build cache
 *.tsbuildinfo
@@ -44,3 +47,5 @@ coverage
 
 # agent scratch space (test docs, drafts)
 .workspace/
+observations/
+

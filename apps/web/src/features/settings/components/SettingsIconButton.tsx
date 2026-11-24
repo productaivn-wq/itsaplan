@@ -24,6 +24,8 @@ export default function SettingsIconButton({
         <Button
           variant="ghost"
           size="icon"
+          aria-label={title}
+          title={title}
           className={cn(
             'size-11 text-muted-foreground sm:size-8',
             destructive ? 'hover:text-destructive' : 'hover:text-foreground',

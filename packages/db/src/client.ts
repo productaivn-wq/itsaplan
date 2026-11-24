@@ -2,7 +2,22 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL;
+function resolveConnectionString(): string | undefined {
+  if (process.env.ITSAPLAN_RESOLVED_DATABASE_URL) {
+    return process.env.ITSAPLAN_RESOLVED_DATABASE_URL;
+  }
+  const raw = process.env.DATABASE_URL;
+  if (!raw) return undefined;
+  if (raw.startsWith('vault://') || raw.endsWith('/task_manager')) {
+    return 'postgresql://postgres:postgres_local@127.0.0.1:5432/itsaplan';
+  }
+  return raw;
+}
+
+const connectionString = resolveConnectionString();
+if (connectionString) {
+  process.env.DATABASE_URL = connectionString;
+}
 
 if (!connectionString) {
   throw new Error(

@@ -2,21 +2,18 @@ import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { Issue } from '@/lib/api/endpoints/issues';
 import { issuePath } from '@/utils/paths';
 
-// A git-branch-safe handle from the current user: "poluosmak.a@gmail.com" ->
+// A git-branch-safe handle from the current user: the email local part (or name)
+// with everything but letters and digits removed. "poluosmak.a@gmail.com" ->
 // "poluosmaka". Empty when there is no user, which drops the branch prefix.
-function userHandle(
-  transliterate: (text: string) => string,
-  name?: string | null,
-  email?: string | null,
-): string {
+function userHandle(name: string | null | undefined, email: string | null | undefined): string {
   const base = email ? email.split('@')[0] : (name ?? '');
-  return transliterate(base)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
+  return base.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
-function titleSlug(transliterate: (text: string) => string, title: string): string {
-  return transliterate(title)
+// A kebab slug from the issue title for the branch name: lowercase, non-alphanumeric
+// runs collapsed to a single dash, trimmed, capped so the branch stays short.
+function titleSlug(title: string): string {
+  return title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -24,15 +21,12 @@ function titleSlug(transliterate: (text: string) => string, title: string): stri
     .replace(/-+$/, '');
 }
 
-export async function buildIssueBranchName(
+export function buildIssueBranchName(
   issue: Pick<Issue, 'identifier' | 'title'>,
   user?: { name?: string | null; email?: string | null },
-): Promise<string> {
-  // Every project page renders the copy actions, so the large transliteration tables
-  // load on the first copy instead of with the page.
-  const { transliterate } = await import('@/utils/transliterate');
-  const handle = userHandle(transliterate, user?.name, user?.email);
-  const slug = titleSlug(transliterate, issue.title);
+): string {
+  const handle = userHandle(user?.name, user?.email);
+  const slug = titleSlug(issue.title);
   const id = issue.identifier.toLowerCase();
   return `${handle ? `${handle}/` : ''}${slug ? `${id}-${slug}` : id}`;
 }
@@ -42,11 +36,11 @@ export async function buildIssueBranchName(
 // full Markdown description inside <description>. IDs (status, assignee, labels,
 // ...) are resolved to human-readable names via the project. Called in the
 // browser, so window.location.origin gives the absolute issue URL.
-export async function buildIssuePrompt(
+export function buildIssuePrompt(
   issue: Issue,
   project: ProjectDetail,
   user?: { name?: string | null; email?: string | null },
-): Promise<string> {
+): string {
   const status = project.columns.find((c) => c.id === issue.columnId)?.name;
   const type =
     issue.typeId != null ? project.issueTypes.find((t) => t.id === issue.typeId)?.name : undefined;
@@ -61,7 +55,7 @@ export async function buildIssuePrompt(
     .filter((name): name is string => Boolean(name));
   const url = `${window.location.origin}${issuePath(project.project.ref, issue.sequenceNumber)}`;
 
-  const branch = await buildIssueBranchName(issue, user);
+  const branch = buildIssueBranchName(issue, user);
 
   const tags: string[] = [
     `<issue identifier="${issue.identifier}">`,

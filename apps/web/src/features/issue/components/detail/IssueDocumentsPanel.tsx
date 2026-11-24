@@ -11,7 +11,7 @@ import {
   useUnlinkDocumentIssue,
 } from '@/features/documents/services/documents.service';
 import { useTranslations } from 'next-intl';
-import { usePersistedOpen } from '@/hooks/usePersistedOpen';
+import { useSmartSectionOpen } from '../../hooks/usePersistedOpen';
 import IssueSectionHeading from './IssueSectionHeading';
 
 export default function IssueDocumentsPanel({
@@ -26,12 +26,12 @@ export default function IssueDocumentsPanel({
   canLink: boolean;
 }) {
   const t = useTranslations('issue.documents');
-  const { open, toggle } = usePersistedOpen('issue-documents-open');
   const [pickerOpen, setPickerOpen] = useState(false);
   const links = useIssueDocumentLinksQuery(projectKey, issueId, canRead);
   const linkDocument = useLinkDocumentIssue(projectKey);
   const unlinkDocument = useUnlinkDocumentIssue(projectKey);
   const linkedIds = new Set((links.data ?? []).map((link) => link.documentId));
+  const { open, toggle } = useSmartSectionOpen('issue-documents-open-v2', linkedIds.size > 0);
 
   if (!canRead || (!links.isLoading && !links.isError && linkedIds.size === 0 && !canLink)) {
     return null;

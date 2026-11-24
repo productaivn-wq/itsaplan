@@ -1,0 +1,52 @@
+{
+  "none": "Chưa được cấp quyền nào",
+  "grantedCount": "Đã cấp {count, plural, one {# quyền} other {# quyền}}",
+  "resources": {
+    "work_items": "Hạng mục công việc",
+    "initiatives": "Sáng kiến",
+    "cycles": "Chu kỳ",
+    "dashboards": "Bảng điều khiển",
+    "documents": "Tài liệu",
+    "views": "Chế độ xem hạng mục",
+    "members_invite": "Lời mời",
+    "members_manage": "Thành viên",
+    "states": "Trạng thái",
+    "issue_types": "Loại công việc",
+    "labels": "Nhãn",
+    "ai_agents": "Tác nhân AI",
+    "integrations": "Tích hợp",
+    "agent_skills": "Kỹ năng tác nhân",
+    "agent_tools": "Công cụ tác nhân",
+    "custom_fields": "Trường tùy chỉnh",
+    "issue_templates": "Mẫu công việc",
+    "workflow_config": "Cấu hình quy trình",
+    "actions": "Tác vụ tự động",
+    "webhooks": "Webhooks",
+    "repositories": "Kho mã nguồn",
+    "note_boards": "Bảng ghi chú",
+    "import_export": "Nhập/Xuất dữ liệu",
+    "danger_zone": "Vùng nguy hiểm"
+  },
+  "actions": {
+    "create": "Tạo",
+    "edit": "Sửa",
+    "read": "Xem",
+    "delete": "Xóa"
+  },
+  "groups": {
+    "workItems": "Hạng mục công việc",
+    "dashboards": "Bảng điều khiển",
+    "documents": "Tài liệu",
+    "notes": "Ghi chú",
+    "ai": "AI",
+    "configuration": "Cấu hình",
+    "members": "Thành viên",
+    "project": "Dự án",
+    "other": "Khác"
+  },
+  "resourceColumn": "Tài nguyên",
+  "allowed": "được phép",
+  "notAllowed": "không được phép",
+  "accessHeading": "Quyền truy cập dự án này",
+  "joined": "tham gia {date}"
+}

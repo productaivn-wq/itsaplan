@@ -1,15 +1,14 @@
 import { request } from '@/lib/api/core/client';
 import { pageQuery, type Page, type PageParams } from '@/lib/api/core/paging';
 
-// A configured tool: a catalog tool (toolKey) bound to an integration credential, or
-// to none when its integration needs no credential, enriched with its integration and
-// the credential's label for display. (Distinct from AgentTool, which is a built-in
-// capability tool in the agent's Actions list.)
+// A configured tool: a catalog tool (toolKey) bound to an integration credential,
+// enriched with the credential's integration and label for display. (Distinct from
+// AgentTool, which is a built-in capability tool in the agent's Actions list.)
 export interface ConfiguredTool {
   id: number;
   teamId: number;
   toolKey: string;
-  credentialId: number | null;
+  credentialId: number;
   integrationKey: string;
   credentialLabel: string | null;
   createdAt: string;
@@ -17,21 +16,13 @@ export interface ConfiguredTool {
 
 export interface NewConfiguredToolInput {
   toolKey: string;
-  credentialId?: number;
-}
-
-// What the tool list asks for: the window, and a search over the tool name, its group
-// and its integration.
-export interface ConfiguredToolListParams extends PageParams {
-  search?: string;
+  credentialId: number;
 }
 
 // Configured tools: a team's tools bound to a credential, and the tools enabled on
 // one agent. The tool catalog itself comes from the integrations catalog.
-export const listConfiguredTools = (teamId: number, params: ConfiguredToolListParams) =>
-  request<Page<ConfiguredTool>>(
-    `/teams/${teamId}/agent-tools${pageQuery(params, { search: params.search })}`,
-  );
+export const listConfiguredTools = (teamId: number, params: PageParams) =>
+  request<Page<ConfiguredTool>>(`/teams/${teamId}/agent-tools${pageQuery(params)}`);
 
 // The whole list, which the agent editor's tool picker and the tool dialog need
 // entire.

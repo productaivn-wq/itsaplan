@@ -1,5 +1,156 @@
-import { db, agentChatUsage } from '@repo/db';
-import { eq, inArray } from 'drizzle-orm';
+import { db, agentChatUsage, agentUsageLedger, teamBudgetPolicy } from '@repo/db';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+
+export interface ModelRateMicrosPerMillion {
+  inputMicrosPerMillion: number;
+  outputMicrosPerMillion: number;
+}
+
+const MODEL_RATE_TABLE: Array<[RegExp, ModelRateMicrosPerMillion]> = [
+  [/flash|gemini-2\.5-flash|gemini-2\.0-flash/i, { inputMicrosPerMillion: 150_000, outputMicrosPerMillion: 600_000 }],
+  [/gemini-2\.5-pro|gemini-pro/i, { inputMicrosPerMillion: 1_250_000, outputMicrosPerMillion: 10_000_000 }],
+  [/gpt-5-mini|gpt-4o-mini|haiku/i, { inputMicrosPerMillion: 250_000, outputMicrosPerMillion: 1_250_000 }],
+  [/opus|claude-opus/i, { inputMicrosPerMillion: 15_000_000, outputMicrosPerMillion: 75_000_000 }],
+  [/gpt-5|gpt-4o|sonnet|claude-sonnet/i, { inputMicrosPerMillion: 3_000_000, outputMicrosPerMillion: 15_000_000 }],
+];
+
+const DEFAULT_MODEL_RATE: ModelRateMicrosPerMillion = {
+  inputMicrosPerMillion: 1_000_000,
+  outputMicrosPerMillion: 4_000_000,
+};
+
+export function resolveModelRates(model: string): ModelRateMicrosPerMillion {
+  for (const [pattern, rate] of MODEL_RATE_TABLE) {
+    if (pattern.test(model)) return rate;
+  }
+  return DEFAULT_MODEL_RATE;
+}
+
+export function estimateCostUsdMicros(
+  model: string,
+  inputTokens: number,
+  outputTokens: number,
+): number {
+  const safeIn = Math.max(0, Number.isFinite(inputTokens) ? inputTokens : 0);
+  const safeOut = Math.max(0, Number.isFinite(outputTokens) ? outputTokens : 0);
+  const { inputMicrosPerMillion, outputMicrosPerMillion } = resolveModelRates(model);
+  return Math.round(
+    (safeIn * inputMicrosPerMillion + safeOut * outputMicrosPerMillion) / 1_000_000,
+  );
+}
+
+export interface BudgetAllowanceResult {
+  allowed: boolean;
+  spentMicros: number;
+  capMicros: number;
+  spentTokens: number;
+  tokenCap: number;
+  utilizationPct: number;
+  softAlertTriggered: boolean;
+  hardStopped: boolean;
+  reason?: string;
+}
+
+export function checkTeamBudgetAllowance(
+  spentMicros: number,
+  capMicros: number,
+  hardStopEnabled: boolean,
+  spentTokens = 0,
+  tokenCap = 0,
+  softAlertPct = 80,
+): BudgetAllowanceResult {
+  const usdRatio = capMicros > 0 ? (spentMicros / capMicros) * 100 : 0;
+  const tokRatio = tokenCap > 0 ? (spentTokens / tokenCap) * 100 : 0;
+  const utilizationPct = Number(Math.max(usdRatio, tokRatio).toFixed(2));
+  const softAlertTriggered =
+    (capMicros > 0 || tokenCap > 0) && utilizationPct >= Math.max(1, softAlertPct);
+  const overCap =
+    (capMicros > 0 && spentMicros >= capMicros) || (tokenCap > 0 && spentTokens >= tokenCap);
+  const hardStopped = Boolean(hardStopEnabled && overCap);
+
+  return {
+    allowed: !hardStopped,
+    spentMicros,
+    capMicros,
+    spentTokens,
+    tokenCap,
+    utilizationPct,
+    softAlertTriggered,
+    hardStopped,
+    ...(hardStopped
+      ? {
+          reason:
+            capMicros > 0 && spentMicros >= capMicros
+              ? 'Team monthly USD budget ceiling reached'
+              : 'Team monthly token budget reached',
+        }
+      : {}),
+  };
+}
+
+export interface UsageLedgerEntryInput {
+  teamId: number;
+  projectId?: number | null;
+  agentId: number;
+  threadId?: string | null;
+  userId?: string | null;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  costUsdMicros?: number;
+}
+
+export async function appendUsageLedger(entry: UsageLedgerEntryInput): Promise<void> {
+  const costUsdMicros =
+    entry.costUsdMicros ?? estimateCostUsdMicros(entry.model, entry.inputTokens, entry.outputTokens);
+  await db.insert(agentUsageLedger).values({
+    teamId: entry.teamId,
+    projectId: entry.projectId ?? null,
+    agentId: entry.agentId,
+    threadId: entry.threadId ?? null,
+    userId: entry.userId ?? null,
+    provider: entry.provider,
+    model: entry.model,
+    inputTokens: Math.max(0, entry.inputTokens),
+    outputTokens: Math.max(0, entry.outputTokens),
+    costUsdMicros: Math.max(0, costUsdMicros),
+  });
+}
+
+export async function evaluateTeamBudget(teamId: number): Promise<BudgetAllowanceResult> {
+  const [policy] = await db
+    .select()
+    .from(teamBudgetPolicy)
+    .where(eq(teamBudgetPolicy.teamId, teamId))
+    .limit(1);
+
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [totals] = await db
+    .select({
+      spentMicros: sql<number>`coalesce(sum(${agentUsageLedger.costUsdMicros}), 0)::bigint`,
+      spentTokens: sql<number>`coalesce(sum(${agentUsageLedger.inputTokens} + ${agentUsageLedger.outputTokens}), 0)::bigint`,
+    })
+    .from(agentUsageLedger)
+    .where(and(eq(agentUsageLedger.teamId, teamId), gte(agentUsageLedger.createdAt, monthStart)));
+
+  const spentMicros = Number(totals?.spentMicros ?? 0);
+  const spentTokens = Number(totals?.spentTokens ?? 0);
+  if (!policy) {
+    return checkTeamBudgetAllowance(spentMicros, 0, false, spentTokens, 0);
+  }
+  return checkTeamBudgetAllowance(
+    spentMicros,
+    Number(policy.monthlyUsdCeilingMicros ?? 0),
+    policy.hardStopEnabled,
+    spentTokens,
+    Number(policy.monthlyTokenBudget ?? 0),
+    policy.softAlertPct,
+  );
+}
 
 // The context size of a chat thread (see the agent_chat_usage comment in the schema).
 // Both kinds of agent report it — an external one through its runner, an internal one

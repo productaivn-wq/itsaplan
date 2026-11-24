@@ -47,21 +47,26 @@ export default function BreakdownWidget({
         <ChartContainer dir="ltr" config={{}} className="aspect-square h-[160px]">
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
-            <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={45} strokeWidth={2}>
+            <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={72} paddingAngle={3} cornerRadius={4} strokeWidth={0}>
               {chartData.map((d, i) => (
                 <Cell key={i} fill={d.fill} />
               ))}
             </Pie>
           </PieChart>
         </ChartContainer>
-        <ul className="min-w-0 flex-1 space-y-1 text-sm">
-          {chartData.map((d, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.fill }} />
-              <span className="min-w-0 flex-1 truncate">{d.name}</span>
-              <span className="text-muted-foreground tabular-nums">{d.value}</span>
-            </li>
-          ))}
+        <ul className="min-w-0 flex-1 space-y-1.5 text-sm">
+          {chartData.map((d, i) => {
+            const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
+            return (
+              <li key={i} className="flex items-center gap-2">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: d.fill }} />
+                <span className="min-w-0 flex-1 truncate text-foreground">{d.name}</span>
+                <span className="text-end text-xs text-muted-foreground tabular-nums">
+                  {d.value} ({pct}%)
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     );

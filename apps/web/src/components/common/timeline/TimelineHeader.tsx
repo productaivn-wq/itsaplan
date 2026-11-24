@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react';
 import { startOfDay } from 'date-fns';
 import { daysBetween } from '@/utils/dates';
 import { type MonthLabel } from '@/utils/timelineTrack';
@@ -12,28 +11,26 @@ export function TimelineHeader({
   dayW,
   months,
   days,
-  corner,
 }: {
   labelW: number;
   trackWidth: number;
   dayW: number;
   months: MonthLabel[];
   days: Date[];
-  // What the corner over the label column shows; empty when absent.
-  corner?: ReactNode;
 }) {
   const today = startOfDay(new Date());
   return (
     <div className="sticky top-0 z-20 flex border-b bg-background">
-      <div className="sticky left-0 z-10 shrink-0 border-r bg-background" style={{ width: labelW }}>
-        {corner}
-      </div>
+      <div
+        className="sticky left-0 z-10 shrink-0 border-r bg-background"
+        style={{ width: labelW }}
+      />
       <div className="relative" style={{ width: trackWidth, height: 44 }}>
         <div className="relative h-5 border-b">
           {months.map((m) => (
             <div
               key={m.left}
-              className="absolute top-0 truncate px-1.5 text-[11px] leading-5 font-medium text-muted-foreground"
+              className="absolute top-0 truncate px-1.5 text-xs leading-5 font-medium text-muted-foreground"
               style={{ left: m.left, width: m.width }}
             >
               {m.label}
@@ -51,7 +48,7 @@ export function TimelineHeader({
               <div
                 key={i}
                 className={cn(
-                  'flex shrink-0 items-center justify-center text-[10px]',
+                  'flex shrink-0 items-center justify-center text-xs',
                   weekend ? 'text-muted-foreground/50' : 'text-muted-foreground',
                   isToday && 'font-semibold text-primary',
                 )}

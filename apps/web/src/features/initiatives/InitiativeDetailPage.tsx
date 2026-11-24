@@ -8,7 +8,6 @@ import { revScope } from '@/utils/revScopes';
 import { initiativePath, type InitiativeTab } from '@/utils/paths';
 import { qk } from '@/services/queryKeys';
 import { useInitiativeQuery } from '@/services/initiatives.service';
-import { titlePath, useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PageSkeleton from '@/components/common/skeleton/PageSkeleton';
 import InitiativeHeader from './components/detail/InitiativeHeader';
@@ -33,9 +32,6 @@ export default function InitiativeDetailPage({
 
   const query = useInitiativeQuery(initiativeId);
   const projectKey = project?.project.ref ?? '';
-  useDocumentTitle(
-    titlePath(project?.project.name, !query.isError && query.data?.title, t(`detailTabs.${tab}`)),
-  );
 
   // Refetch the initiative (progress/health), its files, its linked Docs, its feed
   // and the board issues when its linked issues or its own fields change.

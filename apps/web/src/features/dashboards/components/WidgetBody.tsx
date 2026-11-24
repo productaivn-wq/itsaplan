@@ -1,5 +1,7 @@
+import { memo } from 'react';
 import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { WidgetInstance } from '@/utils/dashboardWidgets';
+import WatchedMetricsWidget from './widgets/WatchedMetricsWidget';
 import StatWidget from './widgets/StatWidget';
 import BreakdownWidget from './widgets/BreakdownWidget';
 import ThroughputWidget from './widgets/ThroughputWidget';
@@ -14,7 +16,7 @@ import AgentWorkloadWidget from './widgets/AgentWorkloadWidget';
 
 // The widget body for a given type. Each widget reads its own config and analytics
 // query and renders a static view; its config is edited through WidgetSettings.
-export default function WidgetBody({
+function WidgetBody({
   widget,
   projectKey,
   project,
@@ -25,8 +27,10 @@ export default function WidgetBody({
 }) {
   const config = widget.config ?? {};
   switch (widget.type) {
+    case 'watched_metrics':
+      return <WatchedMetricsWidget projectKey={projectKey} config={config} />;
     case 'stat':
-      return <StatWidget config={config} />;
+      return <StatWidget projectKey={projectKey} config={config} />;
     case 'breakdown':
       return <BreakdownWidget projectKey={projectKey} config={config} />;
     case 'throughput':
@@ -51,3 +55,5 @@ export default function WidgetBody({
       return null;
   }
 }
+
+export default memo(WidgetBody);

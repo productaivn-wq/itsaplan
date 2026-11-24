@@ -80,7 +80,7 @@ export default function AgentTokenSection({
                 {agent.apiKeyStart ?? '—'}
                 <span className="text-muted-foreground">••••••••</span>
               </code>
-              {can('edit') && agent.canManage && (
+              {can('edit') && (
                 <Button
                   type="button"
                   variant="outline"

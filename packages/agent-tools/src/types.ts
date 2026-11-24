@@ -11,9 +11,7 @@ import type { z } from 'zod';
 //     (inputSchema) and how to run it (execute); the credential is passed in.
 //
 // A configured tool binds one tool to one credential, so different tools of the same
-// integration can use different credentials (e.g. two Jina keys). An integration with an
-// empty credentialSchema needs no account with an external service (PDF), and its
-// configured tools are bound to no credential.
+// integration can use different credentials (e.g. two Jina keys).
 
 // A field of an integration's credential form. `type` "secret" marks a value stored
 // encrypted and masked in the redacted view; other types are stored in plaintext.
@@ -51,18 +49,50 @@ export interface CustomToolEntry {
   // catalog UI so a human knows what the token needs. Omit for tools with no scope
   // requirement (e.g. an API-key integration).
   scopes?: string[];
-  // The section the tool is listed under in its integration's catalog. Tools without
-  // one are listed first, under no heading.
-  group?: string;
   // What the model passes at call time.
   inputSchema: z.ZodTypeAny;
   // Runs the tool with the integration's decrypted credential and the model input.
   execute: (credential: ToolConfig, input: Record<string, unknown>) => Promise<unknown>;
 }
 
+export type IntegrationAuthMode = 'api_key' | 'oauth2';
+
+export interface OAuth2IdentitySpec {
+  url: string;
+  jsonPath: string;
+  headers?: Record<string, string>;
+}
+
+export interface OAuth2ProviderSpec {
+  authorizeUrl: string;
+  tokenUrl: string;
+  revokeUrl?: string;
+  scopes: string[];
+  allowedDomains: string[];
+  pkce?: boolean;
+  extraAuthorizeParams?: Record<string, string>;
+  // Credential field storing the access token (defaults to 'accessToken').
+  tokenField?: string;
+  delivery?: 'bearer' | 'env';
+  envVar?: string;
+  identity?: OAuth2IdentitySpec;
+  clientReviewNote?: string;
+}
+
+export interface OAuth2CatalogMeta {
+  scopes: string[];
+  allowedDomains: string[];
+  pkce: boolean;
+  delivery: 'bearer' | 'env';
+  envVar?: string;
+  clientReviewNote?: string;
+}
+
 export interface Integration {
   key: string;
   label: string;
+  authModes?: IntegrationAuthMode[];
+  oauth2?: OAuth2ProviderSpec;
   credentialSchema: ConfigField[];
   tools: CustomToolEntry[];
 }
@@ -74,7 +104,6 @@ export interface ToolDescriptor {
   description: string;
   // The scopes/permissions the token needs for this tool (see CustomToolEntry.scopes).
   scopes?: string[];
-  group?: string;
 }
 
 // The serializable form of an integration, returned by the API catalog endpoint so a
@@ -82,6 +111,8 @@ export interface ToolDescriptor {
 export interface IntegrationDescriptor {
   key: string;
   label: string;
+  authModes?: IntegrationAuthMode[];
+  oauth2?: OAuth2CatalogMeta;
   credentialSchema: ConfigField[];
   tools: ToolDescriptor[];
 }

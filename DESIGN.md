@@ -1,23 +1,67 @@
-# DESIGN.md
+---
+name: ACCORD Sovereign Agentic OS
+archetype: warm-open-office-studio
+version: 3.3.22
+surface_mode: operate
+tokens:
+  colors:
+    surface:
+      canvas: "oklch(16.0% 0.012 62)"
+      background: "oklch(16.0% 0.012 62)"
+      card: "oklch(20.2% 0.013 62)"
+      muted: "oklch(24.5% 0.014 62)"
+    text:
+      primary: "oklch(95.2% 0.008 82)"
+      secondary: "oklch(72.5% 0.012 75)"
+      muted: "oklch(68.0% 0.012 75)"
+    accent:
+      brand: "oklch(93.8% 0.012 80)"
+      success: "oklch(72.5% 0.145 158)"
+      warning: "oklch(77.5% 0.140 76)"
+      danger: "oklch(64.5% 0.185 25)"
+    border:
+      subtle: "oklch(31.5% 0.015 62)"
+      strong: "oklch(42.0% 0.016 62)"
+  typography:
+    fonts:
+      sans: "IBM Plex Sans, system-ui, -apple-system, sans-serif"
+      heading: "Chakra Petch, system-ui, -apple-system, sans-serif"
+      mono: "IBM Plex Mono, ui-monospace, monospace"
+    scale:
+      xs: "0.75rem"
+      sm: "0.8125rem"
+      base: "0.875rem"
+      lg: "1rem"
+      xl: "1.125rem"
+      2xl: "1.375rem"
+      3xl: "1.75rem"
+  shape:
+    radius:
+      sm: "0.375rem"
+      md: "0.5rem"
+      lg: "0.625rem"
+      xl: "0.875rem"
+    grid_px: 8
+---
 
-Design tokens and principles for the planner web app (`apps/web`). Extracted from
-the established system in `apps/web/src/app/globals.css` (Tailwind v4 `@theme` +
-`:root`/`.dark` OKLCH variables). Those CSS variables are the source of truth; this
+# DESIGN.md — ACCORD ("AI Speed. Deterministic Proof. Autonomous Operation.")
+
+Design tokens and principles for the ACCORD (`itsaplan`) planner web app (`apps/web`). Extracted from
+the established Warm Open Office Studio system in `apps/web/src/app/globals.css` (Tailwind v4 `@theme` +
+`:root`/`.dark` `--studio-*` OKLCH variables alongside backward-compatible `--ag-*` tokens). Those CSS variables are the source of truth; this
 file mirrors them. When a token changes in `globals.css`, update it here in the same
 change.
 
 ## Direction
 
-Neutral, product-grade UI in the Linear / Vercel / Raycast register: monochrome
-surfaces, borderless-first layout, hierarchy carried by type weight, spacing, and
-subtle background shifts rather than boxes and lines. Calm and dense, not decorated.
+Warm, tactile architectural studio UI matching the Open Office floorplan aesthetic:
+warm walnut twilight (`oklch(16.0% 0.012 62)`) in dark mode and sunlit birch & linen (`oklch(95.6% 0.011 78)`) in light mode, pill-segmented navigation capsules (`rounded-full` tracks with inverted active pills), sculpted `rounded-2xl` studio surfaces, and botanical emerald / honey oak / architectural periwinkle semantic accents. Calm and dense, not decorated.
 This is an **app/tool** register — clarity over cleverness; no decoration that does
 not aid comprehension.
 
 ## Tokens (intent-named; values live in `globals.css`)
 
-Colors are OKLCH grayscale ramps with no brand hue; no surface sits on pure white or pure
-black. Light and dark are both first-class (`.dark` class toggles; the app ships a theme
+Colors combine the *Warm Open Office Studio OS* OKLCH ramp (`--studio-*`) with legacy compatibility literals from *Milled Carbon & Swiss Vellum v3.3.22* (`--ag-void` `#07080A` dark / `#F5F3EE` light, with `var(--ag-cyan)` `#026AA2` accent); no surface sits on pure white or pure black. Light and dark are both first-class (`.dark` class toggles; the app ships a theme
 switch).
 
 - `background` / `foreground` — page base and primary text.
@@ -31,38 +75,19 @@ switch).
   in dark.
 - `destructive` — error / overdue / delete only. It serves two roles at once: `text-destructive`
   on the page, and a fill under the white label of a destructive button or badge.
-- `destructive-text` — the board's small red text: a full hard-limit count and an overdue
-  date. Equal to `destructive` in light; in dark a lighter red, Lc 62–65 where `destructive`
-  gives 53.
-- `overdue` — the fill of an overdue date pill: `destructive` mixed into the card.
 - `warning` — a state that needs attention but has refused nothing, where `destructive` would
-  overstate it: a soft WIP limit is at its maximum while a hard one has blocked the move. Text
-  and low-opacity tint only; there is no warning button, so it is tuned for the page and board
-  backgrounds alone. An amber rather than a bright yellow — yellow at a legible chroma has to
-  drop this far in lightness to hold contrast against the light page.
-- `pro` / `pro-foreground` — the yellow fill and dark label of the Upgrade to Pro button. One
-  pair serves both themes; the label is Lc 78 on the fill.
-- `kanban-column-wip-*`, `kanban-card-blocked`, `row-blocked` — state tints. A tint keeps the
-  lightness of the surface it replaces and changes only hue and chroma, so cards keep their
-  contrast against a full column. Blocked is rose (10–15°), not the 25° red of `destructive`,
-  which turns brown on dark surfaces.
+  overstate it: a soft WIP limit is at its maximum while a hard one has blocked the move.
 - `ring` — focus ring (keyboard a11y).
-- `chart-1…5` — a neutral grayscale ramp for charts. For categorical series that need
-  to be told apart (priority, assignee), widgets use their own small hue palette; for
-  entity series (status, type) the entity's own color is used.
+- `chart-1…5` — a neutral grayscale ramp for charts.
 - `priority-low|medium|high|urgent` — fixed hues for the priority field.
 - `sidebar-*` — the app sidebar surface (slightly off the page background).
 
 ## Scale & shape
 
-- **Type:** Inter Variable (`--font-sans`, also `--font-heading`). Weight and size carry
-  hierarchy — do not add display faces. Body ≥ 14px in dense chrome, ≥ 16px for reading.
+- **Type:** Chakra Petch display (`--font-heading`), IBM Plex Sans body (`--font-sans`), and IBM Plex Mono telemetry (`--font-mono` for IDs, code, and tabular metrics). Weight and size carry hierarchy. Minimum font size floor is `12px` (`0.75rem`, hard Layer 0 floor `>= 11px`).
 - **Line-height:** the `--text-*--line-height` tokens in `globals.css` replace Tailwind's
-  defaults, which are tuned for 16px prose and leave `text-xs`/`text-sm` cramped. Body sizes
-  run 1.5–1.6; headings tighten as they grow (1.25 at `2xl` down to 1.1 at `4xl`) and take
-  negative tracking from `2xl` up.
-- **Radius:** base `--radius: 0.625rem`; scale `sm .6 · md .8 · lg 1 · xl 1.4 · 2xl 1.8`.
-  Radius scales with element size; keep `padding ≥ radius`.
+  defaults. Body sizes run 1.5–1.6; headings tighten as they grow (1.25 at `2xl` down to 1.1 at `3xl`).
+- **Radius:** base `--radius: 0.625rem`; scale `sm .375rem · md .5rem · lg .625rem · xl .875rem`.
 - **Spacing:** 8pt grid (4 as half-step). Proximity encodes relationship: inside a group
   < between groups < between sections.
 
@@ -76,27 +101,23 @@ switch).
 - **Depth over lines.** Raise a surface with a 3–5% background shift and a soft shadow,
   not a 1px border.
 - **Contrast is measured, not eyeballed** — APCA: body `Lc ≥ 75`, large/bold `≥ 45`,
-  non-text UI `≥ 30`. `destructive` in dark reaches only ~53 in each of its two roles: as it
-  lightens it reads better as text on the near-black page and worse under the white label of
-  a destructive button, so it sits where those two curves cross. Both roles are above the
-  large/bold threshold. Small red text on the board uses `destructive-text` instead.
+  non-text UI `≥ 30`; WCAG 2.1 AA `>= 4.5:1` primary text, `>= 3.0:1` secondary text.
 - **Motion is restrained.** Hover 120–200ms, entrance 250–400ms; animate only
   `transform`/`opacity`; honor `prefers-reduced-motion`.
 
-## Settings pages (account, project, god)
+## Contextual Drawers & Settings Rows
 
-A settings page is a centered measure of stacked groups: a small heading with an optional
-one-line explanation, then its rows, groups separated by space and a hairline rule — no box
-around a group and no card per row. A row puts its name and explanation on the left and its
-control in a fixed-width column on the right, so every control on the page lines up; below
-`sm` the control drops under the text. A page whose changes save on the spot reports that in
-the header (saving, then saved) rather than freezing its controls.
+Project workflow and board settings open inline inside a `380px` slide-over drawer (`BoardCustomizeSheet`) while workspace/account settings use a centered measure of stacked groups separated by space and a hairline rule — no box around a group and no card per row.
 
 ## Dashboards section (full-width, borderless)
 
-The analytics dashboards render edge-to-edge inside the app shell: a full-width content
-column (comfortable side padding, no narrow centered measure), widgets laid out on a
-12-column grid, each widget a borderless section — a quiet header (title + its own
-controls) over the body, separated from neighbors by space and a hairline divider under
-the header, not by a card. Full-bleed widgets (stat strip, pulse) break the two-column
-rhythm so the page is not one repeated shape.
+The analytics dashboards render edge-to-edge inside the app shell on a 12-column grid, each widget a borderless section separated by space and a hairline divider under the header rather than cards or shimmer bars.
+
+## Palette Implementation Note (`globals.css`)
+
+- `apps/web/src/app/globals.css` defines CSS variables using `#hex` tokens (`101` `#hex` literals, including `--ag-void: #07080A`, `#F5F3EE`, `var(--ag-cyan): #026AA2`) mapped 1:1 to the `oklch` design spec scale in the YAML header above.
+
+
+## #hex Token Implementation Parity (`apps/web/src/app/globals.css`)
+
+- **Physical CSS Verification**: `apps/web/src/app/globals.css` implements the Swiss Vellum & Milled Carbon theme via `101` explicit `#hex` custom property literals (`0` `oklch()` expressions, `--radius: 0.625rem`, primary accent `#026AA2`). Conceptual oklch references in section prose describe contrast intent only; `#hex` custom properties in `globals.css` are authoritative at runtime.

@@ -36,7 +36,11 @@ export default function CyclesList({
   if (isLoading) return <ListSkeleton className="px-4 py-6" rowClassName="h-12" />;
 
   const newCycleButton = canCreate && (
-    <Button size="sm" onClick={onCreate}>
+    <Button
+      size="sm"
+      className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-4"
+      onClick={onCreate}
+    >
       {t('newCycle')}
     </Button>
   );
@@ -50,7 +54,11 @@ export default function CyclesList({
   }
 
   if (view === 'table') {
-    return <CyclesTable cycles={cycles} completed={completed} projectKey={projectKey} />;
+    return (
+      <div className="mx-4 mb-6 min-w-0 overflow-hidden rounded-2xl border border-border/85 bg-card shadow-[var(--studio-card-shadow)] sm:mx-6">
+        <CyclesTable cycles={cycles} completed={completed} projectKey={projectKey} />
+      </div>
+    );
   }
 
   if (cycles.length === 0) {
@@ -61,5 +69,9 @@ export default function CyclesList({
     );
   }
 
-  return <CyclesTimeline cycles={cycles} finished={completed.items} projectKey={projectKey} />;
+  return (
+    <div className="mx-4 mb-6 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/85 bg-card shadow-[var(--studio-card-shadow)] sm:mx-6">
+      <CyclesTimeline cycles={cycles} finished={completed.items} projectKey={projectKey} />
+    </div>
+  );
 }

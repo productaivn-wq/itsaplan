@@ -1,27 +1,33 @@
+import { randomUUID } from 'node:crypto';
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { createMappedImport } from '#modules/imports/service';
+import { getCompanySettings } from '#modules/settings/service';
+import { createApprovalRequest } from '../../../hitl/service';
+import { searchTenantKnowledge } from '../memory';
 
-// The agent tools with no route behind them. Everything an agent does to a project
-// goes through the real API (see route-tools.ts); this is what is left over.
-//
-// The current date is not a project resource, so exposing it over REST would add an
-// endpoint that exists only for the agent. It is answered in process instead.
-// prepare_issue_import is the same kind of thing: it works on a file already
-// stored by the chat-attachments routes, and the draft it creates exists for the
-// user's review, not for the API's surface. It is gated like any capability: built
-// only when the agent has it enabled.
+export function resolveEffectiveRequireSod(
+  requested: boolean | undefined,
+  companyRequired: boolean,
+): boolean {
+  return Boolean(requested) || companyRequired;
+}
+
+export interface LocalToolContext {
+  teamId: number;
+  agentId: number;
+  threadId?: string | null;
+  callerUserId?: string | null;
+  resolveCompanyRequireSod?: () => Promise<boolean>;
+}
 
 export function buildLocalTools(
   projectId: number,
   enabledTools: string[],
+  ctx?: LocalToolContext,
 ): Record<string, ReturnType<typeof createTool>> {
   const enabled = new Set(enabledTools);
 
-  // The mapping step of an issue import: reading the file is covered by the
-  // read_chat_attachment route tool; what is left is turning the attachment into
-  // the draft the review card renders. Issues are still created by the confirm
-  // route alone, when the user presses the button.
   const prepare_issue_import = createTool({
     id: 'prepare_issue_import',
     description:
@@ -54,6 +60,99 @@ export function buildLocalTools(
     },
   });
 
+  const search_project_knowledge = createTool({
+    id: 'search_project_knowledge',
+    description:
+      'Search documents strictly inside the current project & team knowledge base. ' +
+      'Always use this when the user asks about project specs, docs, policies, or decisions.',
+    inputSchema: z.object({
+      query: z.string().min(1).describe('Search keywords or question.'),
+      limit: z.number().int().min(1).max(10).optional().describe('Max documents to return (default 5).'),
+    }),
+    execute: async ({ query, limit }) => {
+      if (!ctx?.teamId) {
+        return { hits: [], error: 'Tenant context unavailable for knowledge search.' };
+      }
+      const hits = await searchTenantKnowledge({
+        teamId: ctx.teamId,
+        projectId,
+        query,
+        limit: limit ?? 5,
+      });
+      return { hits };
+    },
+  });
+
+  const emit_artifact = createTool({
+    id: 'emit_artifact',
+    description:
+      'Render a rich interactive deliverable card (diff, code, mermaid diagram, or markdown report) ' +
+      'directly in the client workspace UI.',
+    inputSchema: z.object({
+      kind: z.enum(['diff', 'code', 'mermaid', 'markdown']),
+      title: z.string().min(1).max(120),
+      content: z.string().min(1),
+      language: z.string().optional(),
+    }),
+    execute: async ({ kind, title, content, language }) => ({
+      __itsaplan_event: 'artifact' as const,
+      artifactId: randomUUID(),
+      kind,
+      title,
+      content,
+      ...(language ? { language } : {}),
+    }),
+  });
+
+  const request_human_approval = createTool({
+    id: 'request_human_approval',
+    description:
+      'Create a persistent Human-in-the-Loop (HITL) approval card in the workspace before executing ' +
+      'high-impact mutations or external side effects.',
+    inputSchema: z.object({
+      toolName: z.string().min(1).max(120),
+      summary: z.string().min(1).max(500),
+      payload: z.record(z.string(), z.unknown()).optional(),
+      requireSod: z.boolean().optional(),
+    }),
+    execute: async ({ toolName, summary, payload, requireSod }) => {
+      if (!ctx?.teamId || !ctx?.agentId) {
+        return { error: 'Agent context required to register HITL approval request.' };
+      }
+      const toolCallId = randomUUID();
+      const companySod = await (
+        ctx.resolveCompanyRequireSod
+          ? ctx.resolveCompanyRequireSod()
+          : getCompanySettings()
+              .then((s) => s.requireSodApproval)
+              .catch(() => false)
+      );
+      const effectiveRequireSod = resolveEffectiveRequireSod(requireSod, companySod);
+      const fullPayload = { summary, ...(payload ?? {}) };
+      const row = await createApprovalRequest({
+        teamId: ctx.teamId,
+        projectId,
+        agentId: ctx.agentId,
+        threadId: ctx.threadId ?? null,
+        toolCallId,
+        toolName,
+        kind: 'approval',
+        payload: fullPayload,
+        requestedByUserId: ctx.callerUserId ?? null,
+        requireSod: effectiveRequireSod,
+      });
+      return {
+        __itsaplan_event: 'approval-required' as const,
+        approvalId: row.id,
+        toolCallId: row.toolCallId,
+        toolName: row.toolName,
+        args: JSON.stringify(fullPayload),
+        requireSod: row.requireSod,
+        status: row.status,
+      };
+    },
+  });
+
   return {
     get_current_date: createTool({
       id: 'get_current_date',
@@ -65,6 +164,9 @@ export function buildLocalTools(
         return { iso: now.toISOString(), date: now.toISOString().slice(0, 10) };
       },
     }),
+    search_project_knowledge,
+    emit_artifact,
+    request_human_approval,
     ...(enabled.has('prepare_issue_import') ? { prepare_issue_import } : {}),
   };
 }

@@ -79,7 +79,7 @@ export default function DocumentIconPicker({
         : section.values.filter((value) => value.includes(query.trim())),
   })).filter((section) => section.values.length > 0);
   const iconContent = icon ? (
-    <span className="text-[1.65rem] leading-none" aria-hidden>
+    <span className="text-2xl leading-none" aria-hidden>
       {icon}
     </span>
   ) : (
@@ -136,7 +136,7 @@ export default function DocumentIconPicker({
         >
           {sections.map((section) => (
             <section key={section.label} className="mb-2 last:mb-0">
-              <h2 className="px-1.5 py-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              <h2 className="px-1.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 {t(section.label)}
               </h2>
               <div className="grid grid-cols-8 gap-0.5">

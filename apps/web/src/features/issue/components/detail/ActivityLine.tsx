@@ -32,7 +32,7 @@ export default function ActivityLine({
   const { line, popover } = describeActivity(item);
   const actor = item.actorName ?? t('system');
   return (
-    <li className="flex items-start gap-2.5 py-1 text-[13px]">
+    <li className="flex items-start gap-2.5 py-1 text-xs">
       {nested ? (
         <span className="w-6 shrink-0" />
       ) : (

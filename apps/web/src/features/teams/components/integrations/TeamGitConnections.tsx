@@ -21,9 +21,15 @@ export default function TeamGitConnections({ teamId }: { teamId: number }) {
   const disconnect = useDisconnectGitProvider(teamId);
   const [provider, setProvider] = useState<GitConnectionProvider>('gitlab');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
 
   async function remove(connectionId: number, label: string) {
-    if (!window.confirm(t('nativeDisconnectConfirm', { provider: label }))) return;
+    if (confirmRemoveId !== connectionId) {
+      setConfirmRemoveId(connectionId);
+      toast.info(t('nativeDisconnectConfirm', { provider: label }));
+      return;
+    }
+    setConfirmRemoveId(null);
     try {
       await disconnect.mutateAsync(connectionId);
       toast.success(t('nativeDisconnected', { provider: label }));

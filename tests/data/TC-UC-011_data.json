@@ -1,0 +1,204 @@
+{
+  "uc_id": "UC-011",
+  "spec_id": "SPEC-53.ACT.500",
+  "department_id": "exec_hq",
+  "department_name": "Phòng Điều Hành",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-011",
+    "FR-061",
+    "UC-010"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC011-01",
+      "slice_id": "UC-011.S01",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state?project_key=PM",
+        "room_id": "exec_hq"
+      },
+      "expected": {
+        "department_id": "exec_hq",
+        "has_kpis": true,
+        "zero_fake_agents": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-02",
+      "slice_id": "UC-011.S02",
+      "fr_ref": "FR-061",
+      "category": "stateful",
+      "input": {
+        "department_id": "exec_hq",
+        "template_id": "ops_reconciliation",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "target_room": "exec_hq",
+        "creates_real_issue": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-03",
+      "slice_id": "UC-011.S02",
+      "fr_ref": "FR-061",
+      "category": "negative",
+      "input": {
+        "department_id": "exec_hq",
+        "adversarial_guard": "Self-Approval Violation (`GW-SOD-01`)"
+      },
+      "expected": {
+        "rejected_fail_closed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-04",
+      "slice_id": "UC-011.S03",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "input": {
+        "department_id": "exec_hq",
+        "project_ref": "owner.PM"
+      },
+      "expected": {
+        "module_links": [
+          "/{teamRef}/{projectKey}/initiatives",
+          "/{teamRef}/{projectKey}/cycles",
+          "/{teamRef}/{projectKey}/dashboards",
+          "/{teamRef}/{projectKey}/inbox"
+        ],
+        "dead_links": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC011-05",
+      "slice_id": "UC-011.S01",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "positive_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-06",
+      "slice_id": "UC-011.S02",
+      "fr_ref": "FR-061",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "boundary_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC011-07",
+      "slice_id": "UC-011.S03",
+      "fr_ref": "FR-061",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "negative_07",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC011-08",
+      "slice_id": "UC-011.S04",
+      "fr_ref": "FR-061",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "stateful_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-09",
+      "slice_id": "UC-011.S01",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "positive_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC011-10",
+      "slice_id": "UC-011.S02",
+      "fr_ref": "FR-061",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "boundary_10",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC011-11",
+      "slice_id": "UC-011.S03",
+      "fr_ref": "FR-061",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC011-12",
+      "slice_id": "UC-011.S04",
+      "fr_ref": "FR-061",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — Exec HQ Portfolio Steering & Governance",
+      "input": {
+        "uc_id": "UC-011",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

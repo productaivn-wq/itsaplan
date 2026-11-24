@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type DocumentIssueLink,
   type DocumentAsset,
@@ -55,6 +55,7 @@ export function useDocumentsQuery(
     queryFn: () => listDocuments(projectKey!, q || undefined, archived),
     enabled: enabled && projectKey != null,
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,11 +1,11 @@
 import { CalendarRange, CircleDashed } from 'lucide-react';
 import type { Cycle } from '@/lib/api/endpoints/cycles';
 import { CYCLE_STATUS_META } from '@/utils/cycleMeta';
-import { formatShortDate } from '@/utils/dates';
+import { formatShortDate, formatTime } from '@/utils/dates';
 import { progressPercent } from '@/utils/progress';
 import { cn } from '@/lib/utils';
 import type { CycleDragMode } from '../../hooks/useCycleDrag';
-import { cycleLength, movableEnds } from '../../utils/cycleDates';
+import { formatCycleDuration, movableEnds } from '../../utils/cycleDates';
 import { CYCLE_ROW_H } from '../../utils/cycleTimeline';
 import CycleInfoPopover from './CycleInfoPopover';
 import { useTranslations } from 'next-intl';
@@ -65,7 +65,7 @@ export default function CycleTimelineRow({
         <div
           onPointerDown={canEdit ? (e) => onBeginDrag(e, cycle, 'move') : undefined}
           onClick={canEdit ? undefined : () => onOpen(cycle.id)}
-          title={`${formatShortDate(cycle.startDate)} – ${formatShortDate(cycle.endDate)}`}
+          title={`${formatShortDate(cycle.startDate)} ${formatTime(cycle.startDate)} – ${formatTime(cycle.endDate)}`}
           className={cn(
             'group absolute top-1/2 z-10 flex h-6 -translate-y-1/2 items-center overflow-hidden rounded px-1.5 text-white select-none',
             canMove ? 'cursor-grab' : 'cursor-pointer',
@@ -82,7 +82,7 @@ export default function CycleTimelineRow({
               className="absolute top-0 left-0 h-full w-1.5 cursor-ew-resize bg-white/40 opacity-0 group-hover:opacity-100"
             />
           )}
-          <span className="relative truncate text-[11px] leading-none">{cycle.name}</span>
+          <span className="relative truncate text-xs leading-none">{cycle.name}</span>
           {canEdit && ends.end && (
             <span
               onPointerDown={(e) => onBeginDrag(e, cycle, 'end')}
@@ -92,12 +92,12 @@ export default function CycleTimelineRow({
         </div>
 
         <div
-          className="pointer-events-none absolute top-1/2 flex -translate-y-1/2 items-center gap-2.5 text-[11px] whitespace-nowrap text-muted-foreground tabular-nums"
+          className="pointer-events-none absolute top-1/2 flex -translate-y-1/2 items-center gap-2.5 text-xs whitespace-nowrap text-muted-foreground tabular-nums"
           style={{ left: rect.left + rect.width + 8 }}
         >
           <span className="flex items-center gap-1" title={t('columns.length')}>
             <CalendarRange className="size-3" />
-            {cycleLength(cycle)}d
+            {formatCycleDuration(cycle)}
           </span>
           {cycle.progress.total > 0 && (
             <span className="flex items-center gap-1" title={t('issuesDone')}>

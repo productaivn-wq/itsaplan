@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Hash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { IssueSearchHit } from '@/lib/api/endpoints/issues';
@@ -6,30 +5,24 @@ import { ISSUE_PREFIX } from '@/utils/commandFilter';
 import { CommandGroup, CommandItem, CommandSeparator } from '@/components/ui/command';
 import ArchivedBadge from '@/components/common/ArchivedBadge';
 
-// A palette group of issue hits. The list comes from the server (already filtered
-// and ordered); the ISSUE_PREFIX value keeps cmdk from re-filtering it. A later
-// group starts its values at valueOffset, so the values stay unique and it sorts
-// below the groups before it.
-export default function CommandPaletteIssues<T extends IssueSearchHit>({
-  heading,
+// The palette's "Issues" group. The list comes from the server (already filtered
+// and ordered); the ISSUE_PREFIX value keeps cmdk from re-filtering it.
+export default function CommandPaletteIssues({
   hits,
   fetching,
-  valueOffset = 0,
   onOpenIssue,
 }: {
-  heading: ReactNode;
-  hits: T[];
+  hits: IssueSearchHit[];
   fetching: boolean;
-  valueOffset?: number;
-  onOpenIssue: (hit: T) => void;
+  onOpenIssue: (sequenceNumber: number) => void;
 }) {
   const t = useTranslations('palette');
   return (
     <>
       <CommandSeparator />
-      <CommandGroup heading={heading}>
+      <CommandGroup heading={t('issues')}>
         {hits.length === 0 && fetching && (
-          <CommandItem value={`${ISSUE_PREFIX}${valueOffset}`} disabled>
+          <CommandItem value={`${ISSUE_PREFIX}0`} disabled>
             <Hash />
             <span className="text-muted-foreground">{t('searching')}</span>
           </CommandItem>
@@ -37,8 +30,8 @@ export default function CommandPaletteIssues<T extends IssueSearchHit>({
         {hits.map((issue, i) => (
           <CommandItem
             key={issue.id}
-            value={`${ISSUE_PREFIX}${valueOffset + i}`}
-            onSelect={() => onOpenIssue(issue)}
+            value={`${ISSUE_PREFIX}${i}`}
+            onSelect={() => onOpenIssue(issue.sequenceNumber)}
           >
             <Hash />
             <span className="flex-1 truncate">{issue.title}</span>

@@ -3,7 +3,6 @@ import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { BoardIssue } from '@/lib/api/endpoints/issues';
 import { type Maps } from '@/utils/project';
 import { cn } from '@/lib/utils';
-import { usePermissions } from '@/hooks/usePermissions';
 import type { PropertyKey } from '@/utils/viewSettings';
 import { BoardCard } from './BoardCard';
 import { CardDropSlot } from './CardDropSlot';
@@ -37,7 +36,6 @@ export function SwimlaneCell({
   onOpenIssue: (id: number) => void;
   onMoveIssue: (issueIds: number[], index: number) => void;
 }) {
-  const { can } = usePermissions();
   // Dropping on the empty cell area appends; dropping on a card inserts at it.
   const cellId = `col:${cellKey}`;
   const { setNodeRef, isOver } = useDroppable({
@@ -70,7 +68,6 @@ export function SwimlaneCell({
               maps={maps}
               properties={properties}
               onOpen={onOpenIssue}
-              canEdit={can('work_items', 'edit')}
               readOnly={readOnly}
             />
           </CardDropSlot>

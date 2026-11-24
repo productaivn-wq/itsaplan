@@ -29,6 +29,7 @@ import IssueSectionHeading from './IssueSectionHeading';
 import IssuePropertyRow from './IssuePropertyRow';
 import IssuePropertyGroupHeading from './IssuePropertyGroupHeading';
 import { type Embeddable } from '@/components/common/editor/attachmentEmbed';
+import { hasFieldValue } from '../../utils/fieldValues';
 import { parseDate } from '@/utils/dates';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
@@ -86,8 +87,29 @@ export default function IssueProperties({
   // start. Equal dates are allowed.
   const latestStart = parseDate(issue.dueDate);
   const earliestDue = parseDate(issue.startDate);
+  const planningParts = [
+    issue.initiative?.title,
+    issue.cycle?.name,
+    issue.dueDate ? issue.dueDate.slice(0, 10) : null,
+    issue.estimatePoints != null ? `${issue.estimatePoints}pt` : null,
+  ].filter((part): part is string => Boolean(part));
+  const planningSummary =
+    planningParts.length > 0
+      ? planningParts.length > 2
+        ? `${planningParts.slice(0, 2).join(', ')} +${planningParts.length - 2}`
+        : planningParts.join(', ')
+      : undefined;
+
+  const customCount = fieldDefs
+    .filter((def) => !def.showInBody)
+    .filter((def) => {
+      const f = issue.fields.find((item) => item.fieldId === def.id);
+      return Boolean(f && (f.valueEnd != null || hasFieldValue(f)));
+    }).length;
+
   const groups: {
     key: 'groupState' | 'groupPeople' | 'groupPlanning' | 'groupLabels' | 'groupCustom';
+    summary?: string;
     rows: ReactNode[];
   }[] = [
     {
@@ -163,6 +185,7 @@ export default function IssueProperties({
     },
     {
       key: 'groupPlanning',
+      summary: planningSummary,
       rows: [
         project.project.initiativesEnabled && (!readOnly || issue.initiative) && (
           <IssuePropertyRow key="initiative" label={t('initiative')}>
@@ -263,6 +286,7 @@ export default function IssueProperties({
     },
     {
       key: 'groupLabels',
+      summary: issue.labelIds.length > 0 ? String(issue.labelIds.length) : undefined,
       rows: [
         project.labels.length > 0 && (
           <IssuePropertyRow key="labels" label={t('labels')}>
@@ -279,6 +303,7 @@ export default function IssueProperties({
     },
     {
       key: 'groupCustom',
+      summary: customCount > 0 ? String(customCount) : undefined,
       rows: fieldDefs
         .filter((def) => !def.showInBody)
         .map((def) => {
@@ -296,7 +321,6 @@ export default function IssueProperties({
                   imageAttachments={imageAttachments}
                   onSetField={onSetField}
                   readOnly={readOnly}
-                  mentions={{ projectKey: project.project.ref, on: 'issue', place: 'text' }}
                 />
               </div>
             );
@@ -342,6 +366,7 @@ export default function IssueProperties({
               <Fragment key={group.key}>
                 <IssuePropertyGroupHeading
                   label={t(group.key)}
+                  summary={group.summary}
                   className={cn(i > 0 && 'mt-2')}
                   open={groupOpen}
                   onToggle={() => groupsOpen.toggle(group.key)}

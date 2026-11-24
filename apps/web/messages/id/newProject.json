@@ -4,11 +4,6 @@
   "copyKey": "Kunci",
   "description": "Deskripsi",
   "issueTypes": "Jenis issue",
-  "templates": "Templat",
-  "blank": "Proyek kosong",
-  "blankHint": "Status bawaan dan jenis issue yang Anda pilih",
-  "startFrom": "Mulai dari",
-  "continue": "Lanjutkan",
   "typesCreated": "{count, plural, one {# jenis issue} other {# jenis issue}} akan dibuat",
   "defaultType": "Issue baru akan menggunakan {type} secara bawaan. Jenis dapat diedit di pengaturan.",
   "presets": {
@@ -38,7 +33,6 @@
     "issueTypes": "Jenis issue",
     "labels": "Label",
     "customFields": "Bidang kustom",
-    "issueTemplates": "Templat issue",
     "views": "Tampilan",
     "dashboards": "Dasbor",
     "documents": "Dokumen",
@@ -53,5 +47,16 @@
   "create": "Buat proyek",
   "copyAction": "Salin proyek",
   "defaultAgents": "Agen yang akan bergabung dengan proyek ini: {names}",
-  "copyName": "Salinan {name}"
+  "copyName": "Salinan {name}",
+  "primaryLocation": "Primary storing location (optional)",
+  "primaryLocationPlaceholder": "~/workspace or https://drive.google.com/...",
+  "tabGeneral": "General",
+  "tabChannels": "Channels & Groups",
+  "tabContacts": "Contacts",
+  "tabLocations": "Locations",
+  "channelsHint": "Add Zalo, Telegram, Discord, Email, or Messenger channels and groups where agents collect context.",
+  "contactsHint": "Add project contacts, RACI roles, and messaging handles for agent coordination.",
+  "locationsHint": "Add local folders, Google Drive links, Git repos, or knowledge bases where project files live.",
+  "setupSummary": "{channels} channels/groups · {contacts} contacts · {locations} locations",
+  "nextStep": "Next →"
 }

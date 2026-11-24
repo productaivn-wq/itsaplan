@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Check, CircleDashed, RefreshCw } from 'lucide-react';
 import type { CycleRef } from '@/lib/api/endpoints/issues';
 import { useCycleOptionsQuery } from '@/services/cycles.service';
@@ -23,19 +23,14 @@ export default function CycleSelect({
   projectKey,
   value,
   onChange,
-  trigger,
 }: {
   projectKey: string;
   value: CycleRef | null;
   onChange: (cycle: CycleRef | null) => void;
-  // Replaces the pill where a caller needs its own (a Timeline cell).
-  trigger?: ReactNode;
 }) {
   const t = useTranslations('issue.cycleSelect');
   const [open, setOpen] = useState(false);
-  // A caller's own trigger shows the value itself, so then the list is read only
-  // while open: a Timeline mounts one select per row.
-  const { data } = useCycleOptionsQuery(trigger && !open ? null : projectKey);
+  const { data } = useCycleOptionsQuery(projectKey);
   const planned = data ?? [];
   const cycles =
     value && !planned.some((c) => c.id === value.id)
@@ -50,12 +45,10 @@ export default function CycleSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        {trigger ?? (
-          <Pill active={value != null}>
-            {value != null ? <RefreshCw /> : <CircleDashed />}
-            <span className="truncate">{value?.name ?? t('label')}</span>
-          </Pill>
-        )}
+        <Pill active={value != null}>
+          {value != null ? <RefreshCw /> : <CircleDashed />}
+          <span className="truncate">{value?.name ?? t('label')}</span>
+        </Pill>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="start">
         <Command>

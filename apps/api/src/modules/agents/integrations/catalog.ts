@@ -1,4 +1,4 @@
-import type { ConfigField } from '@repo/agent-tools';
+import type { ConfigField, IntegrationAuthMode, OAuth2CatalogMeta } from '@repo/agent-tools';
 import { integrationDescriptors } from '@repo/agent-tools';
 import { AI_PROVIDERS } from './llm-providers';
 
@@ -19,14 +19,10 @@ export interface UnifiedIntegration {
   key: string;
   label: string;
   kind: IntegrationKind;
+  authModes?: IntegrationAuthMode[];
+  oauth2?: OAuth2CatalogMeta;
   credentialSchema: ConfigField[];
-  tools: {
-    key: string;
-    label: string;
-    description: string;
-    scopes?: string[];
-    group?: string;
-  }[];
+  tools: { key: string; label: string; description: string; scopes?: string[] }[];
 }
 
 // The credential fields of an LLM provider: an API key, plus a base URL for the
@@ -51,33 +47,34 @@ const LLM_INTEGRATIONS: UnifiedIntegration[] = AI_PROVIDERS.map((p) => ({
   key: p.key,
   label: p.label,
   kind: 'llm',
+  authModes: ['api_key'],
   credentialSchema: llmCredentialSchema(p.requiresBaseUrl),
   tools: [],
 }));
 
-// Built on each call: an extension of the api adds tool integrations after this module
-// loads (setExtraIntegrations in @repo/agent-tools).
-export function integrationCatalog(): UnifiedIntegration[] {
-  const tools: UnifiedIntegration[] = integrationDescriptors().map((d) => ({
-    key: d.key,
-    label: d.label,
-    kind: 'tool',
-    credentialSchema: d.credentialSchema,
-    tools: d.tools,
-  }));
-  return [...LLM_INTEGRATIONS, ...tools];
-}
+const TOOL_INTEGRATIONS: UnifiedIntegration[] = integrationDescriptors().map((d) => ({
+  key: d.key,
+  label: d.label,
+  kind: 'tool',
+  authModes: d.authModes ?? ['api_key'],
+  oauth2: d.oauth2,
+  credentialSchema: d.credentialSchema,
+  tools: d.tools,
+}));
 
-function findIntegration(key: string): UnifiedIntegration | undefined {
-  return integrationCatalog().find((i) => i.key === key);
-}
+export const INTEGRATION_CATALOG: UnifiedIntegration[] = [
+  ...LLM_INTEGRATIONS,
+  ...TOOL_INTEGRATIONS,
+];
+
+const BY_KEY = new Map(INTEGRATION_CATALOG.map((i) => [i.key, i]));
 
 // The credential schema for an integration, or undefined for an unknown key.
 export function credentialSchemaFor(key: string): ConfigField[] | undefined {
-  return findIntegration(key)?.credentialSchema;
+  return BY_KEY.get(key)?.credentialSchema;
 }
 
 // The kind of an integration, or undefined for a key the catalog no longer carries.
 export function integrationKind(key: string): IntegrationKind | undefined {
-  return findIntegration(key)?.kind;
+  return BY_KEY.get(key)?.kind;
 }

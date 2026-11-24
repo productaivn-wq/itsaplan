@@ -13,12 +13,10 @@ import { threads } from './tools/threads';
 import { instagram } from './tools/instagram';
 import { notion } from './tools/notion';
 import { gitea } from './tools/gitea';
-import { github } from './tools/github';
-import { pdf } from './tools/pdf';
-import { keenable } from './tools/keenable';
+import { OAUTH_CONNECTOR_INTEGRATIONS, toOAuth2CatalogMeta } from './oauth-catalog';
 
-// The core's tool integrations. Add an integration by creating its folder under tools/
-// and listing it here.
+// The registry of tool integrations. Add an integration by creating its folder under
+// tools/ and listing it here.
 export const INTEGRATIONS: Integration[] = [
   jina,
   firecrawl,
@@ -27,57 +25,33 @@ export const INTEGRATIONS: Integration[] = [
   instagram,
   notion,
   gitea,
-  github,
-  pdf,
-  keenable,
+  ...OAUTH_CONNECTOR_INTEGRATIONS,
 ];
 
-type ToolIndex = Map<string, { integration: Integration; tool: CustomToolEntry }>;
+const BY_KEY = new Map(INTEGRATIONS.map((i) => [i.key, i]));
 
-let integrations = INTEGRATIONS;
-let byKey = new Map<string, Integration>();
-let toolIndex: ToolIndex = new Map();
-
-// Integration keys and tool keys are unique across all integrations; a collision
-// would drop one from the index, so it throws and the previous set stays.
-function index(list: Integration[]): void {
-  const keys = new Map<string, Integration>();
-  const tools: ToolIndex = new Map();
-  for (const integration of list) {
-    if (keys.has(integration.key)) {
-      throw new Error(`Duplicate integration key "${integration.key}".`);
+// Every tool across all integrations, mapped to its integration for credential
+// lookup. Tool keys are unique across integrations; a collision would drop a tool
+// from the index, so it fails at module load instead.
+const TOOL_INDEX = new Map<string, { integration: Integration; tool: CustomToolEntry }>();
+for (const integration of INTEGRATIONS) {
+  for (const tool of integration.tools) {
+    const clash = TOOL_INDEX.get(tool.key);
+    if (clash) {
+      throw new Error(
+        `Duplicate tool key "${tool.key}" in ${integration.key} and ${clash.integration.key}.`,
+      );
     }
-    keys.set(integration.key, integration);
-    for (const tool of integration.tools) {
-      const clash = tools.get(tool.key);
-      if (clash) {
-        throw new Error(
-          `Duplicate tool key "${tool.key}" in ${integration.key} and ${clash.integration.key}.`,
-        );
-      }
-      tools.set(tool.key, { integration, tool });
-    }
+    TOOL_INDEX.set(tool.key, { integration, tool });
   }
-  integrations = list;
-  byKey = keys;
-  toolIndex = tools;
-}
-
-index(INTEGRATIONS);
-
-// Integrations an extension of the api adds beside the core's; each call replaces the
-// previous ones. A self-hosted instance adds none. A configured tool whose integration
-// is removed stays stored, and the runtime skips it.
-export function setExtraIntegrations(extra: Integration[] = []): void {
-  index([...INTEGRATIONS, ...extra]);
 }
 
 export function getIntegration(key: string): Integration | undefined {
-  return byKey.get(key);
+  return BY_KEY.get(key);
 }
 
 export function isKnownIntegration(key: string): boolean {
-  return byKey.has(key);
+  return BY_KEY.has(key);
 }
 
 // The integration a tool belongs to plus the tool itself, or undefined for an unknown
@@ -85,22 +59,23 @@ export function isKnownIntegration(key: string): boolean {
 export function getTool(
   toolKey: string,
 ): { integration: Integration; tool: CustomToolEntry } | undefined {
-  return toolIndex.get(toolKey);
+  return TOOL_INDEX.get(toolKey);
 }
 
 // The serializable catalog for a frontend: the credential form is built from each
 // integration's credentialSchema, and the tool picker from its tools.
 export function integrationDescriptors(): IntegrationDescriptor[] {
-  return integrations.map((i) => ({
+  return INTEGRATIONS.map((i) => ({
     key: i.key,
     label: i.label,
+    authModes: i.authModes ?? ['api_key'],
+    oauth2: i.oauth2 ? toOAuth2CatalogMeta(i.oauth2) : undefined,
     credentialSchema: i.credentialSchema,
     tools: i.tools.map((t) => ({
       key: t.key,
       label: t.label,
       description: t.description,
       scopes: t.scopes,
-      group: t.group,
     })),
   }));
 }

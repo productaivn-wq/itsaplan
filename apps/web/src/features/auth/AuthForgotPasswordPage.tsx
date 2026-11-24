@@ -3,7 +3,7 @@ import AuthForgotPasswordForm from './components/forgot-password/AuthForgotPassw
 
 export default function AuthForgotPasswordPage() {
   return (
-    <AuthCard screen="forgotPassword">
+    <AuthCard>
       <AuthForgotPasswordForm />
     </AuthCard>
   );

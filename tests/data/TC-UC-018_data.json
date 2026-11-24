@@ -1,0 +1,204 @@
+{
+  "uc_id": "UC-018",
+  "spec_id": "SPEC-53.ACT.500",
+  "department_id": "commercial",
+  "department_name": "Kinh Doanh",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-018",
+    "FR-068",
+    "UC-010"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC018-01",
+      "slice_id": "UC-018.S01",
+      "fr_ref": "FR-068",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state?project_key=PM",
+        "room_id": "commercial"
+      },
+      "expected": {
+        "department_id": "commercial",
+        "has_kpis": true,
+        "zero_fake_agents": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-02",
+      "slice_id": "UC-018.S02",
+      "fr_ref": "FR-068",
+      "category": "stateful",
+      "input": {
+        "department_id": "commercial",
+        "template_id": "doc_synthesis",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "target_room": "commercial",
+        "creates_real_issue": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-03",
+      "slice_id": "UC-018.S02",
+      "fr_ref": "FR-068",
+      "category": "negative",
+      "input": {
+        "department_id": "commercial",
+        "adversarial_guard": "Overdue High-Priority Client Issue Detected"
+      },
+      "expected": {
+        "rejected_fail_closed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-04",
+      "slice_id": "UC-018.S03",
+      "fr_ref": "FR-068",
+      "category": "positive",
+      "input": {
+        "department_id": "commercial",
+        "project_ref": "owner.PM"
+      },
+      "expected": {
+        "module_links": [
+          "/{teamRef}/{projectKey}/dashboards",
+          "/{teamRef}/{projectKey}/initiatives",
+          "/{teamRef}/{projectKey}/settings/webhooks",
+          "/{teamRef}/{projectKey}/api"
+        ],
+        "dead_links": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC018-05",
+      "slice_id": "UC-018.S01",
+      "fr_ref": "FR-065",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "positive_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-06",
+      "slice_id": "UC-018.S02",
+      "fr_ref": "FR-065",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "boundary_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC018-07",
+      "slice_id": "UC-018.S03",
+      "fr_ref": "FR-065",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "negative_07",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC018-08",
+      "slice_id": "UC-018.S04",
+      "fr_ref": "FR-065",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "stateful_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-09",
+      "slice_id": "UC-018.S01",
+      "fr_ref": "FR-065",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "positive_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC018-10",
+      "slice_id": "UC-018.S02",
+      "fr_ref": "FR-065",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "boundary_10",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC018-11",
+      "slice_id": "UC-018.S03",
+      "fr_ref": "FR-065",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC018-12",
+      "slice_id": "UC-018.S04",
+      "fr_ref": "FR-065",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — Commercial Value Streams, SLA & Webhooks",
+      "input": {
+        "uc_id": "UC-018",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

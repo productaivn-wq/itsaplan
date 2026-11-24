@@ -1,0 +1,12 @@
+{
+  "updateAvailable": "Có bản cập nhật mới",
+  "releaseHistory": "Lịch sử phát hành",
+  "running": "Bạn đang chạy phiên bản {current}.",
+  "badgeRunning": "Đang chạy",
+  "badgeNew": "Mới",
+  "check": "Kiểm tra cập nhật",
+  "checking": "Đang kiểm tra",
+  "lastChecked": "Kiểm tra lần cuối",
+  "allReleases": "Tất cả bản phát hành",
+  "noNotes": "Bản phát hành này không có ghi chú."
+}

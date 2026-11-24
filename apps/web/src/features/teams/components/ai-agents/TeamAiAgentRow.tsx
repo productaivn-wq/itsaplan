@@ -51,9 +51,8 @@ export function TeamAiAgentRow({
   const can = useAgentCan();
   const canHistory = can('read');
   const KindIcon = AGENT_KIND_ICON[agent.kind];
-  const canEdit = can('edit') && agent.canManage;
-  const canDelete = can('delete') && agent.canManage;
-  const hasMenu = canEdit || canHistory || canDelete;
+  const canEdit = can('edit');
+  const hasMenu = canEdit || canHistory || can('delete');
 
   return (
     <TableRow
@@ -61,8 +60,8 @@ export function TeamAiAgentRow({
       onClick={canEdit ? onEdit : undefined}
     >
       <TableCell className="px-3 py-3 align-middle whitespace-normal">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-muted-foreground">
             <KindIcon className="size-4" />
           </div>
           <div className="flex min-w-0 flex-col gap-1">
@@ -81,6 +80,9 @@ export function TeamAiAgentRow({
                 ))
               )}
             </div>
+            {agent.instructions && (
+              <p className="line-clamp-1 text-xs text-muted-foreground">{agent.instructions}</p>
+            )}
           </div>
         </div>
       </TableCell>
@@ -88,16 +90,17 @@ export function TeamAiAgentRow({
         <AgentTriggers agent={agent} />
       </TableCell>
       <TableCell className="px-3 py-3 align-middle whitespace-normal">
-        {agent.kind === 'internal' ? (
+        <div className="flex flex-col items-start gap-1.5">
           <AgentMetaRow agent={agent} providerLabel={providerLabel} />
-        ) : (
-          <div className="flex flex-col gap-1">
-            <AgentRunnerStatus agent={agent} />
-            <span className="text-xs text-muted-foreground">
-              {agent.apiKeyStart ? t('apiKeyValue', { start: agent.apiKeyStart }) : t('apiKey')}
-            </span>
-          </div>
-        )}
+          {agent.kind !== 'internal' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <AgentRunnerStatus agent={agent} />
+              <span className="text-xs text-muted-foreground">
+                {agent.apiKeyStart ? t('apiKeyValue', { start: agent.apiKeyStart }) : t('apiKey')}
+              </span>
+            </div>
+          )}
+        </div>
       </TableCell>
       <TableCell className="px-3 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
         {onJoinsNewProjectsChange ? (
@@ -124,6 +127,7 @@ export function TeamAiAgentRow({
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label={t('moreActions')}
                       className="size-8 text-muted-foreground hover:text-foreground"
                     >
                       <MoreHorizontal className="size-4" />
@@ -145,14 +149,14 @@ export function TeamAiAgentRow({
                     {t('runHistory')}
                   </DropdownMenuItem>
                 )}
-                {canHistory && agent.chatEnabled && (
+                {canHistory && (
                   <DropdownMenuItem className="min-h-11 sm:min-h-8" onSelect={onChat}>
                     <MessageSquare />
                     {t('testChat')}
                   </DropdownMenuItem>
                 )}
-                {canDelete && (canEdit || canHistory) && <DropdownMenuSeparator />}
-                {canDelete && (
+                {can('delete') && (canEdit || canHistory) && <DropdownMenuSeparator />}
+                {can('delete') && (
                   <DropdownMenuItem
                     className="min-h-11 sm:min-h-8"
                     variant="destructive"

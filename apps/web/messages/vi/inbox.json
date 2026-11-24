@@ -1,0 +1,37 @@
+{
+  "title": "Hộp thư đến",
+  "empty": "Không có thông báo nào",
+  "selectNotification": "Chọn một thông báo",
+  "backToList": "Hộp thư đến",
+  "filter": "Bộ lọc",
+  "display": "Hiển thị",
+  "notificationType": "Loại thông báo",
+  "showRead": "Hiện thông báo đã đọc",
+  "showSnoozed": "Hiện thông báo tạm ẩn",
+  "markAllRead": "Đánh dấu tất cả là đã đọc",
+  "deleteAllRead": "Xóa tất cả thông báo đã đọc",
+  "deleteAllReadCompleted": "Xóa tất cả thông báo đã đọc của công việc đã hoàn thành",
+  "types": {
+    "assigned": "Được giao",
+    "mentioned": "Được nhắc đến",
+    "commented": "Đã bình luận",
+    "state_changed": "Đổi trạng thái"
+  },
+  "actions": {
+    "markRead": "Đánh dấu đã đọc",
+    "markUnread": "Đánh dấu chưa đọc",
+    "snooze": "Tạm ẩn",
+    "unsnooze": "Bỏ tạm ẩn",
+    "tomorrow": "Ngày mai",
+    "inAWeek": "Sau một tuần",
+    "pickDate": "Chọn ngày…"
+  },
+  "event": {
+    "someone": "Ai đó",
+    "assigned": "{who} đã giao công việc cho bạn",
+    "mentioned": "{who} đã nhắc đến bạn",
+    "commented": "{who} đã bình luận",
+    "stateChanged": "{who} đã đổi trạng thái từ {from} sang {to}",
+    "stateChangedPlain": "{who} đã đổi trạng thái"
+  }
+}

@@ -2,7 +2,8 @@ import { Elysia, t } from 'elysia';
 import { noContent } from '#shared/http';
 import { guards } from '#shared/guards';
 import { authContext } from '#shared/auth-context';
-import { getProjectAccess, requireUser } from '#shared/access';
+import { requireUser } from '#shared/access';
+import { getMembership } from '#modules/members/service';
 import { HttpError } from '#shared/lib';
 import { mcpTool } from '#mcp/generate';
 import { accessErrors, commonErrors } from '#shared/responses';
@@ -211,7 +212,7 @@ export const noteBoardRoutes = new Elysia({
       if (!board || board.projectId !== project.id) throw new HttpError(404, 'Board not found');
       // A project owner deletes any board, a private one included: the board of a
       // member who left the project would otherwise stay for good.
-      if ((await getProjectAccess(project.id, userId))?.role !== 'owner') {
+      if ((await getMembership(project.id, userId)) !== 'owner') {
         assertBoardVisible(board, userId);
         // A private or restricted board belongs to the member who made it, and
         // being granted a view of one does not carry deleting it. A public board

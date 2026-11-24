@@ -1,5 +1,5 @@
 import { db, issue, project as projectTable } from '@repo/db';
-import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '#shared/lib';
 import { archiveIssue, deleteIssue, restoreIssue, updateIssue } from './service';
@@ -50,7 +50,7 @@ async function refsWhere(condition: SQL): Promise<IssueRef[]> {
 // The issue's subtasks, by issue number. Archived ones are included: they stay
 // attached to their parent and are restored as its subtasks.
 export async function listSubtasks(issueId: number): Promise<IssueRef[]> {
-  return refsWhere(eq(issue.parentId, issueId));
+  return refsWhere(and(eq(issue.parentId, issueId), isNull(issue.archivedAt))!);
 }
 
 // The issue an issue is a subtask of, or null when it has none.
@@ -59,10 +59,7 @@ export async function getParentRef(parentId: number | null): Promise<IssueRef | 
   return (await refsWhere(eq(issue.id, parentId)))[0] ?? null;
 }
 
-// Puts each of the board's issues together with how many subtasks it has, archived
-// ones included. The board itself lists only active issues, so it cannot count them
-// from its own payload — and it has to know about the archived ones too, since they
-// are what a delete or an archive asks about.
+// Puts each of the board's issues together with how many active subtasks it has.
 export async function attachSubtaskCounts<T extends { id: number }>(
   issues: T[],
   projectId: number,
@@ -72,7 +69,7 @@ export async function attachSubtaskCounts<T extends { id: number }>(
     .select({ parentId: issue.parentId, count: sql<number>`count(*)::int` })
     .from(issue)
     .innerJoin(parent, eq(parent.id, issue.parentId))
-    .where(eq(parent.projectId, projectId))
+    .where(and(eq(parent.projectId, projectId), isNull(issue.archivedAt)))
     .groupBy(issue.parentId);
   const byParent = new Map(rows.map((row) => [row.parentId, row.count]));
   return issues.map((row) => ({ ...row, subtaskCount: byParent.get(row.id) ?? 0 }));
@@ -85,7 +82,7 @@ export async function restoreSubtasksOf(
   issueId: number,
   actorUserId?: string | null,
 ): Promise<void> {
-  for (const subtask of await listSubtasks(issueId))
+  for (const subtask of await refsWhere(eq(issue.parentId, issueId)))
     if (subtask.archived) await restoreIssue(subtask.id, actorUserId);
 }
 

@@ -29,7 +29,7 @@ export default function SectionPageView({
 }) {
   const width = widthClassName ?? (wide ? 'mx-auto max-w-[1600px]' : SECTION_COLUMN_CLASS);
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="min-h-0 flex-1 overflow-y-auto">
       <div className={cn('flex min-h-full w-full flex-col px-4 pt-5 pb-4 sm:px-6 lg:px-8', width)}>
         <PageHeader title={title} description={description} actions={actions} />
         {children}

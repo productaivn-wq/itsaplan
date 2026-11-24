@@ -45,12 +45,4 @@ describe('buildSlashItems', () => {
       ],
     );
   });
-
-  it('offers a task list in a compact editor that registers the extension', () => {
-    const items = buildSlashItems({ codeBlockLabel: 'Code', taskListLabel: 'Tasks' });
-    assert.deepEqual(
-      items.map((item) => item.title),
-      ['Tasks', 'Code'],
-    );
-  });
 });

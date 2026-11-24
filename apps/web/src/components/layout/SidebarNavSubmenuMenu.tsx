@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { navigateFeatureInstant } from '@/hooks/useInstantPathname';
+import { preloadFeatureByHref } from '@/utils/featurePreload';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +35,25 @@ export default function SidebarNavSubmenuMenu({
           <DropdownMenuLabel className="text-xs text-muted-foreground">{label}</DropdownMenuLabel>
           {items.map((item) => (
             <DropdownMenuItem key={item.key} asChild className="gap-2">
-              <Link href={item.href}>
+              <Link
+                href={item.href}
+                prefetch={false}
+                onMouseEnter={() => preloadFeatureByHref(item.href)}
+                onFocus={() => preloadFeatureByHref(item.href)}
+                onClick={(e) => {
+                  if (
+                    item.href.startsWith('/') &&
+                    e.button === 0 &&
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    !e.altKey
+                  ) {
+                    e.preventDefault();
+                    navigateFeatureInstant(item.href);
+                  }
+                }}
+              >
                 <item.icon />
                 <span>{item.label}</span>
               </Link>

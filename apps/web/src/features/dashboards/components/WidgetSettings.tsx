@@ -1,4 +1,5 @@
 import type { WidgetConfig, WidgetInstance, WidgetType } from '@/utils/dashboardWidgets';
+import WatchedMetricsWidgetSettings from './widgets/WatchedMetricsWidgetSettings';
 import StatWidgetSettings from './widgets/StatWidgetSettings';
 import BreakdownWidgetSettings from './widgets/BreakdownWidgetSettings';
 import ThroughputWidgetSettings from './widgets/ThroughputWidgetSettings';
@@ -29,6 +30,8 @@ export default function WidgetSettings({
 }) {
   const config = widget.config ?? {};
   switch (widget.type) {
+    case 'watched_metrics':
+      return <WatchedMetricsWidgetSettings config={config} onConfigChange={onConfigChange} />;
     case 'stat':
       return <StatWidgetSettings config={config} onConfigChange={onConfigChange} />;
     case 'breakdown':

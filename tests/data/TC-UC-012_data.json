@@ -1,0 +1,204 @@
+{
+  "uc_id": "UC-012",
+  "spec_id": "SPEC-53.ACT.500",
+  "department_id": "ba_tester",
+  "department_name": "BA-Tester",
+  "governing_refs": [
+    "53.REF.112",
+    "53.REF.07",
+    "UC-012",
+    "FR-062",
+    "UC-010"
+  ],
+  "test_cases": [
+    {
+      "tc_id": "TC-UC012-01",
+      "slice_id": "UC-012.S01",
+      "fr_ref": "FR-062",
+      "category": "positive",
+      "input": {
+        "endpoint": "GET /api/vibe/open-office/state?project_key=PM",
+        "room_id": "ba_tester"
+      },
+      "expected": {
+        "department_id": "ba_tester",
+        "has_kpis": true,
+        "zero_fake_agents": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-02",
+      "slice_id": "UC-012.S02",
+      "fr_ref": "FR-062",
+      "category": "stateful",
+      "input": {
+        "department_id": "ba_tester",
+        "template_id": "research_citation",
+        "auto_draft_criteria": true
+      },
+      "expected": {
+        "target_room": "ba_tester",
+        "creates_real_issue": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-03",
+      "slice_id": "UC-012.S02",
+      "fr_ref": "FR-062",
+      "category": "negative",
+      "input": {
+        "department_id": "ba_tester",
+        "adversarial_guard": "Missing Verification Proof (`EVIDENCE_REQUIRED`)"
+      },
+      "expected": {
+        "rejected_fail_closed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-04",
+      "slice_id": "UC-012.S03",
+      "fr_ref": "FR-062",
+      "category": "positive",
+      "input": {
+        "department_id": "ba_tester",
+        "project_ref": "owner.PM"
+      },
+      "expected": {
+        "module_links": [
+          "/{teamRef}/{projectKey}/docs",
+          "/{teamRef}/{projectKey}",
+          "/{teamRef}/{projectKey}/settings/issue-templates",
+          "/{teamRef}/{projectKey}/settings/issue-types"
+        ],
+        "dead_links": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC012-05",
+      "slice_id": "UC-012.S01",
+      "fr_ref": "FR-062",
+      "category": "positive",
+      "title": "Verify primary happy-path workflow — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "positive_05",
+        "project_key": "PM"
+      },
+      "expected": {
+        "status": "ok",
+        "passed": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-06",
+      "slice_id": "UC-012.S02",
+      "fr_ref": "FR-062",
+      "category": "boundary",
+      "title": "Verify Rule-of-6 field & pagination boundary — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "boundary_06",
+        "project_key": "PM"
+      },
+      "expected": {
+        "within_limit": true,
+        "max_fields": 6
+      }
+    },
+    {
+      "tc_id": "TC-UC012-07",
+      "slice_id": "UC-012.S03",
+      "fr_ref": "FR-062",
+      "category": "negative",
+      "title": "Reject unauthorized cross-team mutation (fail-closed) — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "negative_07",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 403
+      }
+    },
+    {
+      "tc_id": "TC-UC012-08",
+      "slice_id": "UC-012.S04",
+      "fr_ref": "FR-062",
+      "category": "stateful",
+      "title": "Verify revision bump & audit log persistence — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "stateful_08",
+        "project_key": "PM"
+      },
+      "expected": {
+        "revision_incremented": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-09",
+      "slice_id": "UC-012.S01",
+      "fr_ref": "FR-062",
+      "category": "positive",
+      "title": "Verify EN/VI localized plain-language rendering — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "positive_09",
+        "project_key": "PM"
+      },
+      "expected": {
+        "locale_parity": true,
+        "zero_jargon": true
+      }
+    },
+    {
+      "tc_id": "TC-UC012-10",
+      "slice_id": "UC-012.S02",
+      "fr_ref": "FR-062",
+      "category": "boundary",
+      "title": "Verify empty-state S5 CTA & zero NaN KPIs — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "boundary_10",
+        "project_key": "PM"
+      },
+      "expected": {
+        "empty_cta_visible": true,
+        "nan_count": 0
+      }
+    },
+    {
+      "tc_id": "TC-UC012-11",
+      "slice_id": "UC-012.S03",
+      "fr_ref": "FR-062",
+      "category": "negative",
+      "title": "Reject malformed payload & schema mismatch (400) — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "negative_11",
+        "project_key": "PM"
+      },
+      "expected": {
+        "rejected": true,
+        "http_status": 400
+      }
+    },
+    {
+      "tc_id": "TC-UC012-12",
+      "slice_id": "UC-012.S04",
+      "fr_ref": "FR-062",
+      "category": "positive",
+      "title": "Verify 10s Undo recovery & telemetry trace — BA-Tester UTOP Spec & Quality Verification",
+      "input": {
+        "uc_id": "UC-012",
+        "scenario_variant": "positive_12",
+        "project_key": "PM"
+      },
+      "expected": {
+        "undo_window_ms": 10000,
+        "trace_recorded": true
+      }
+    }
+  ]
+}

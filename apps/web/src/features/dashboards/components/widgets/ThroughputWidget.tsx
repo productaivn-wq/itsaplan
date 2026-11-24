@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { Bar as RechartsBar, BarChart, CartesianGrid, XAxis } from 'recharts';
 import { useTranslations } from 'next-intl';
 import type { WidgetConfig } from '@/utils/dashboardWidgets';
 import { formatShortDate } from '@/utils/dates';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/chart';
 import { useThroughputQuery } from '../../services/analytics.service';
 
-const SERIES_COLOR = { created: '#6366f1', closed: '#22c55e' };
+const SERIES_COLOR = { created: 'var(--chart-3)', closed: 'var(--chart-2)' };
 
 // Created vs closed issues per week, as grouped bars. "Closed" is an issue entering
 // the completed state it is still in; see the analytics store. The window is a
@@ -46,13 +46,13 @@ export default function ThroughputWidget({
     // each other. The labels and the tooltip are still translated.
     return (
       <ChartContainer dir="ltr" config={chartConfig} className="h-[180px] w-full">
-        <BarChart data={chartData}>
-          <CartesianGrid vertical={false} />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} fontSize={11} />
+        <BarChart data={chartData} barGap={8}>
+          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
-          <Bar dataKey="created" fill="var(--color-created)" radius={3} />
-          <Bar dataKey="closed" fill="var(--color-closed)" radius={3} />
+          <RechartsBar dataKey="created" fill="var(--color-created)" maxBarSize={40} radius={[6, 6, 0, 0]} />
+          <RechartsBar dataKey="closed" fill="var(--color-closed)" maxBarSize={40} radius={[6, 6, 0, 0]} />
         </BarChart>
       </ChartContainer>
     );

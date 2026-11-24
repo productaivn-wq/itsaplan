@@ -31,7 +31,7 @@ export default function InitiativeTabTrigger({
       ref={setNodeRef}
       value={value}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className="shrink-0 cursor-grab"
+      className="shrink-0 cursor-grab gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors data-[state=active]:bg-foreground data-[state=active]:text-background dark:data-[state=active]:bg-foreground dark:data-[state=active]:text-background data-[state=active]:hover:bg-foreground data-[state=active]:shadow-xs [&>span]:rounded-full data-[state=active]:[&>span]:bg-background/20 data-[state=active]:[&>span]:text-background"
       {...pointerListeners}
       onClick={onSelect}
     >

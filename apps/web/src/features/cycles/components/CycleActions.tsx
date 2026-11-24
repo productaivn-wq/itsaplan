@@ -70,7 +70,7 @@ export default function CycleActions({
           <button
             type="button"
             aria-label={t('options')}
-            className="rounded p-0.5 text-muted-foreground/60 hover:text-foreground"
+            className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-accent hover:text-foreground"
           >
             <MoreHorizontal className="size-4" />
           </button>

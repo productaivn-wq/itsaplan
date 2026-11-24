@@ -23,7 +23,10 @@ export function CredentialRow({
   onDelete: () => void;
 }) {
   const t = useTranslations('teams.integrations');
-  const fields = Object.entries(credential.redacted);
+  const isOAuth = credential.redacted.authMode === 'oauth2';
+  const fields = Object.entries(credential.redacted).filter(
+    ([k]) => !isOAuth || !['authMode', 'providerMode', 'accountEmail', 'hasRefreshToken', 'scopes'].includes(k),
+  );
   return (
     <TableRow className="group/item">
       <TableCell className="px-3 py-3 whitespace-normal">
@@ -32,9 +35,18 @@ export function CredentialRow({
             <KeyRound className="size-4" />
           </div>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-sm font-medium text-foreground">{integrationLabel}</span>
-            {credential.label && (
-              <span className="truncate text-xs text-muted-foreground">{credential.label}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-sm font-medium text-foreground">{integrationLabel}</span>
+              {isOAuth && (
+                <Badge variant="secondary" className="text-xs font-normal">
+                  OAuth ({String(credential.redacted.providerMode ?? 'direct')})
+                </Badge>
+              )}
+            </div>
+            {(Boolean(credential.label) || (isOAuth && Boolean(credential.redacted.accountEmail))) && (
+              <span className="truncate text-xs text-muted-foreground">
+                {credential.label ?? String(credential.redacted.accountEmail)}
+              </span>
             )}
           </div>
         </div>
@@ -43,7 +55,7 @@ export function CredentialRow({
         {fields.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {fields.map(([k, v]) => (
-              <Badge key={k} variant="outline" className="font-mono text-[10px] font-normal">
+              <Badge key={k} variant="outline" className="font-mono text-xs font-normal">
                 {k}: {String(v)}
               </Badge>
             ))}

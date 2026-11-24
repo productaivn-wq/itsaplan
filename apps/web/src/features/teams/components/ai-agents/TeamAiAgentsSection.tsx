@@ -9,6 +9,7 @@ import ListSkeleton from '@/components/common/skeleton/ListSkeleton';
 import { Button } from '@/components/ui/button';
 import { AgentSectionProvider } from '../../context/agentSection';
 import TeamAiAgents from './TeamAiAgents';
+import TeamFinOpsBudgetCard from './TeamFinOpsBudgetCard';
 import { TeamAiAgentSheet } from './TeamAiAgentSheet';
 
 // The agents of a team: created, configured and attached to the team's projects here,
@@ -39,6 +40,10 @@ export default function TeamAiAgentsSection({ teamId }: { teamId: number }) {
         <p className="text-sm text-muted-foreground">{t('agents.noAccess')}</p>
       ) : (
         <AgentSectionProvider teamId={teamId} permissions={permissions}>
+          <TeamFinOpsBudgetCard
+            teamId={teamId}
+            canManage={team != null && team.role !== 'member'}
+          />
           <TeamAiAgents />
           <TeamAiAgentSheet open={creating} agent={null} onClose={() => setCreating(false)} />
         </AgentSectionProvider>

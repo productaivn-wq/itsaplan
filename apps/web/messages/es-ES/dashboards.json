@@ -25,6 +25,7 @@
   "lastDays": "Últimos {days} días",
   "showRows": "Mostrar {count}",
   "widgetGroups": {
+    "metrics": "Métricas vigiladas",
     "issues": "Tickets",
     "agents": "Agentes de IA y webhooks"
   },
@@ -39,11 +40,11 @@
     },
     "activity_feed": {
       "label": "Filtro de actividad",
-      "description": "Registro de cambios de todo el proyecto, filtrable por actor y acción"
+      "description": "Registo de cambios de todo el proyecto, filtrable por actor y acción"
     },
     "pulse": {
       "label": "Pulso",
-      "description": "Mapa de calor de actividad diaria al estilo de GitHub"
+      "description": "Mapa de caldor de actividad diaria al estilo de GitHub"
     },
     "throughput": {
       "label": "Rendimiento",
@@ -72,6 +73,10 @@
     "agent_workload": {
       "label": "Carga del agente",
       "description": "Tickets delegados y resultados de las ejecuciones por agente"
+    },
+    "watched_metrics": {
+      "label": "Métricas vigiladas",
+      "description": "KPIs fijados del proyecto, umbrales y estado en vivo"
     }
   },
   "breakdown": {
@@ -198,9 +203,7 @@
       "delegation": "se ha ejecutado por una delegación de",
       "field": "se ha ejecutado por un campo de",
       "manual": "se ha ejecutado manualmente",
-      "schedule": "se ha ejecutado por programado",
-      "status": "se ha ejecutado por un cambio de estado de",
-      "event": "se ha ejecutado por un evento de"
+      "schedule": "se ha ejecutado por programado"
     }
   },
   "agentHealth": {
@@ -233,5 +236,124 @@
     "inProgress": "En curso",
     "backlog": "Pila de trabajo",
     "unassigned": "Sin asignar"
+  },
+  "watchedMetricsTab": "Métricas vigiladas",
+  "watchedMetrics": {
+    "manage": "Manage all",
+    "saveStarters": "Save starters",
+    "addMetric": "Add metric",
+    "starterPreviewBadge": "Live defaults",
+    "starterBannerTitle": "Showing live starter metrics",
+    "starterBannerDescription": "These 4 live project metrics are computed automatically. Save them to customize targets, pin/unpin cards, or add your own KPIs.",
+    "empty": "No watched metrics yet.",
+    "emptyPinned": "No metrics pinned to Overview.",
+    "emptyFiltered": "No watched metrics match your current filters.",
+    "searchPlaceholder": "Search metrics...",
+    "clearSearch": "Clear search",
+    "allCategories": "All categories",
+    "pinnedOnlyFilter": "Pinned only",
+    "pinnedBadge": "Pinned",
+    "updatedAt": "Updated {date}",
+    "noReadingsYet": "No readings yet",
+    "targetShort": "Target {operator} {target}",
+    "targetRule": "Target {operator} {target} {unit}",
+    "summary": {
+      "total": "Total watched",
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical"
+    },
+    "status": {
+      "healthy": "Healthy",
+      "warning": "Warning",
+      "critical": "Critical",
+      "no_data": "No data"
+    },
+    "categories": {
+      "delivery": "Delivery",
+      "agents": "AI agents",
+      "quality": "Quality",
+      "reliability": "Reliability",
+      "product": "Product",
+      "mece_v4": "MECE v4",
+      "okr": "OKRs",
+      "custom": "Custom"
+    },
+    "sources": {
+      "manual": "Manual check-in",
+      "api_push": "API push",
+      "live_stat": "Live project stat",
+      "live_completion_rate": "Live completion rate",
+      "live_agent_health": "Live agent success rate",
+      "live_webhook_health": "Live webhook health",
+      "live_filter": "Live issue filter"
+    },
+    "statKeys": {
+      "open": "Open issues",
+      "inProgress": "In progress",
+      "backlog": "Backlog",
+      "overdue": "Overdue issues",
+      "unassigned": "Unassigned active",
+      "closedLast7d": "Closed (last 7d)"
+    },
+    "actions": {
+      "record": "Record",
+      "pin": "Pin to Overview",
+      "unpin": "Unpin from Overview",
+      "edit": "Edit metric",
+      "delete": "Delete metric"
+    },
+    "settings": {
+      "pinnedOnly": "Show pinned only",
+      "category": "Category",
+      "maxItems": "Max items"
+    },
+    "toasts": {
+      "created": "Watched metric created.",
+      "bootstrapped": "Starter metrics saved to project.",
+      "updated": "Watched metric updated.",
+      "deleted": "Watched metric deleted.",
+      "sampleRecorded": "Metric reading recorded."
+    },
+    "dialog": {
+      "createTitle": "Add watched metric",
+      "editTitle": "Edit watched metric",
+      "description": "Define what this project tracks, how values are sourced, and its healthy/warning/critical thresholds.",
+      "name": "Metric name",
+      "namePlaceholder": "e.g. Cycle completion rate",
+      "metricDescription": "Description",
+      "metricDescriptionPlaceholder": "Why this metric matters and how it is evaluated...",
+      "category": "Category",
+      "sourceType": "Data source",
+      "statKey": "Project stat",
+      "windowDays": "Lookback window (days)",
+      "filterRules": "Matching issue filters",
+      "operator": "Operator",
+      "targetValue": "Target",
+      "unit": "Unit",
+      "warnThreshold": "Warning threshold",
+      "critThreshold": "Critical threshold",
+      "initialValue": "Initial reading",
+      "externalKey": "External sync key",
+      "optional": "Optional",
+      "pinnedToOverview": "Pin to Overview",
+      "pinnedHelp": "Show this metric in the Overview Watched Metrics widget.",
+      "createSubmit": "Create metric"
+    },
+    "recordDialog": {
+      "title": "Record reading · {name}",
+      "description": "Target: {operator} {target} {unit}",
+      "valueLabel": "Observed value",
+      "valuePlaceholder": "Enter numeric reading",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "Context or evidence for this reading...",
+      "submit": "Record reading",
+      "historyTitle": "Recent readings",
+      "historyEmpty": "No readings recorded yet."
+    },
+    "deleteDialog": {
+      "title": "Delete watched metric?",
+      "description": "This will permanently delete “{name}” and its reading history."
+    }
   }
 }

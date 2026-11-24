@@ -2,7 +2,7 @@ import { db, issue, issueType, label, project, projectColumn, team, user } from 
 import { eq, inArray } from 'drizzle-orm';
 import { emitWebhookEvents } from '#modules/webhooks/emit';
 import type { WebhookEventType } from '#modules/webhooks/service';
-import { commentUrl, issueUrl, teamRef } from '#modules/teams/ref';
+import { issueUrl, teamRef } from '#modules/teams/ref';
 import type { ActivityActor, FeedItemRow } from './activity';
 import type { IssueRow } from './service';
 
@@ -99,18 +99,11 @@ export async function emitIssueEvent(
   eventType: WebhookEventType,
   row: IssueRow,
   actor: ActivityActor,
-  extra: Record<string, unknown> = {},
 ): Promise<void> {
-  await emitWebhookEvents(
-    row.projectId,
-    eventType,
-    async () => (await issuePayloads([row])).map((payload) => ({ ...payload, ...extra })),
-    actor,
-  );
+  await emitIssueEvents(row.projectId, eventType, async () => [row], actor);
 }
 
-// A comment payload links to the comment and names the issue it is on, so a receiver can
-// link to either.
+// A comment payload names the issue it is on, so a receiver can link to it.
 export async function emitCommentEvent(
   projectId: number,
   eventType: WebhookEventType,
@@ -133,18 +126,19 @@ export async function emitCommentEvent(
         .innerJoin(project, eq(project.id, issue.projectId))
         .innerJoin(team, eq(team.id, project.teamId))
         .where(eq(issue.id, comment.issueId));
-      if (!row) return [{ ...comment, url: null, issue: null }];
-      const ref = teamRef({ id: row.teamId, slug: row.teamSlug });
       return [
         {
           ...comment,
-          url: commentUrl(ref, row.key, row.seq, comment.id) ?? null,
-          issue: {
-            id: comment.issueId,
-            identifier: `${row.key}-${row.seq}`,
-            title: row.title,
-            url: issueUrl(ref, row.key, row.seq) ?? null,
-          },
+          issue: row
+            ? {
+                id: comment.issueId,
+                identifier: `${row.key}-${row.seq}`,
+                title: row.title,
+                url:
+                  issueUrl(teamRef({ id: row.teamId, slug: row.teamSlug }), row.key, row.seq) ??
+                  null,
+              }
+            : null,
         },
       ];
     },

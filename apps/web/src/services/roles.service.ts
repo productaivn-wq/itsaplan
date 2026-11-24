@@ -9,6 +9,7 @@ import {
   createRole,
   updateRole,
   deleteRole,
+  getTeamAuthorization,
 } from '@/lib/api/endpoints/roles';
 import { qk } from '@/services/queryKeys';
 
@@ -96,4 +97,13 @@ export function useDeleteRole(teamId: number) {
     ({ roleId, targetRoleId }: { roleId: number; targetRoleId?: number }) =>
       deleteRole(teamId, roleId, targetRoleId),
   );
+}
+
+
+export function useTeamAuthorizationQuery(teamId: number | null) {
+  return useQuery({
+    queryKey: qk.teamAuthorization(teamId ?? 0),
+    queryFn: () => getTeamAuthorization(teamId!),
+    enabled: teamId !== null,
+  });
 }

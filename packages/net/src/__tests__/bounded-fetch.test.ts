@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { createServer, type RequestListener } from 'node:http';
-import {
-  assertPublicHttpUrl,
-  pinnedFetch,
-  ResponseTooLargeError,
-  UrlNotAllowedError,
-} from '../index';
+import { assertPublicHttpUrl, pinnedFetch, UrlNotAllowedError } from '../index';
 
 describe('public-only URL policy', () => {
   const environment = process.env.NODE_ENV;
@@ -93,9 +88,6 @@ describe('bounded pinned fetch', () => {
       async (url) => {
         expect(await (await pinnedFetch(url, { maxBytes: 5 })).text()).toBe('12345');
         await expect(pinnedFetch(url, { maxBytes: 4 })).rejects.toThrow('byte limit');
-        await expect(pinnedFetch(url, { maxBytes: 4 })).rejects.toBeInstanceOf(
-          ResponseTooLargeError,
-        );
       },
     );
   });

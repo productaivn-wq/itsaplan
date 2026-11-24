@@ -5,7 +5,6 @@ import {
   listInvites,
   createInvite,
   sendInviteEmail,
-  renewInvite,
   deleteInvite,
 } from '@/lib/api/endpoints/invites';
 import {
@@ -129,7 +128,6 @@ export function useCreateInvite(projectKey: string) {
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: qk.invites(projectKey) });
       if (result.emailQueued) toast.success(t('emailQueued'));
-      else if (result.emailFailed) toast.error(t('emailFailed'));
       else toast.info(t('emailUnavailable'));
     },
     // As with useAddMember: the add dialog owns the error UI.
@@ -144,20 +142,6 @@ export function useSendInviteEmail(projectKey: string) {
     onSuccess: (result) => {
       if (result.emailQueued) toast.success(t('emailQueued'));
       else toast.info(t('resendUnavailable'));
-    },
-  });
-}
-
-export function useRenewInvite(projectKey: string) {
-  const t = useTranslations('members.invites');
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (inviteId: number) => renewInvite(projectKey, inviteId),
-    onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: qk.invites(projectKey) });
-      if (result.emailQueued) toast.success(t('renewed'));
-      else if (result.emailFailed) toast.error(t('renewedEmailFailed'));
-      else toast.info(t('renewedNoEmail'));
     },
   });
 }

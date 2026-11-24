@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { createProject } from '#tests/helpers/app';
 import { resetDb } from '#tests/helpers/db';
 import { addUser, setup } from '../helpers';
 
@@ -26,69 +25,69 @@ describe('god project defaults', () => {
   });
 
   describe('settings — GET/PUT /god/project-defaults', () => {
-    it('starts with MCP on, so an instance driven through MCP needs no toggle', async () => {
+    it('starts with MCP off (fail-closed) until explicitly enabled', async () => {
       const { god } = await setup();
 
       const res = await god.api.god['project-defaults'].get();
 
       expect(res.status).toBe(200);
-      expect(res.data?.mcpEnabled).toBe(true);
+      expect(res.data?.mcpEnabled).toBe(false);
     });
 
     it('stores a change and reads it back', async () => {
       const { god } = await setup();
 
-      const put = await god.api.god['project-defaults'].put({ mcpEnabled: false });
+      const put = await god.api.god['project-defaults'].put({ mcpEnabled: true });
       const get = await god.api.god['project-defaults'].get();
 
       expect(put.status).toBe(200);
-      expect(put.data?.mcpEnabled).toBe(false);
-      expect(get.data?.mcpEnabled).toBe(false);
+      expect(put.data?.mcpEnabled).toBe(true);
+      expect(get.data?.mcpEnabled).toBe(true);
     });
   });
 
   describe('effect on project creation', () => {
-    it('creates a project with MCP on under the default', async () => {
+    it('creates a project with MCP off under the fail-closed default', async () => {
       const { god } = await setup();
 
-      const created = await createProject(god.api, { key: 'MKT', name: 'Marketing' });
+      const created = await god.api.projects.post({ key: 'MKT', name: 'Marketing' });
       const settings = await god.api.projects({ projectKey: 'MKT' }).settings.get();
 
       expect(created.status).toBe(201);
-      expect(settings.data?.mcpEnabled).toBe(true);
+      expect(settings.data?.mcpEnabled).toBe(false);
     });
 
-    it('creates a project with MCP off once the default is turned off', async () => {
+    it('creates a project with MCP on once the default is turned on', async () => {
       const { god } = await setup();
-      await god.api.god['project-defaults'].put({ mcpEnabled: false });
+      await god.api.god['project-defaults'].put({ mcpEnabled: true });
 
-      await createProject(god.api, { key: 'MKT', name: 'Marketing' });
+      await god.api.projects.post({ key: 'MKT', name: 'Marketing' });
       const settings = await god.api.projects({ projectKey: 'MKT' }).settings.get();
 
-      expect(settings.data?.mcpEnabled).toBe(false);
+      expect(settings.data?.mcpEnabled).toBe(true);
     });
 
     it('leaves projects that already exist untouched', async () => {
       const { god } = await setup();
-      await createProject(god.api, { key: 'MKT', name: 'Marketing' });
+      await god.api.projects.post({ key: 'MKT', name: 'Marketing' });
       const before = await god.api.projects({ projectKey: 'MKT' }).settings.get();
-      expect(before.data?.mcpEnabled).toBe(true);
+      expect(before.data?.mcpEnabled).toBe(false);
 
-      await god.api.god['project-defaults'].put({ mcpEnabled: false });
+      await god.api.god['project-defaults'].put({ mcpEnabled: true });
 
       const after = await god.api.projects({ projectKey: 'MKT' }).settings.get();
-      expect(after.data?.mcpEnabled).toBe(true);
+      expect(after.data?.mcpEnabled).toBe(false);
     });
 
     it('applies the default to a project created by any member, not just the owner', async () => {
       const { god } = await setup();
-      await god.api.god['project-defaults'].put({ mcpEnabled: false });
+      await god.api.god['project-defaults'].put({ mcpEnabled: true });
       const alice = await addUser();
 
-      await createProject(alice.api, { key: 'ALC', name: 'Alice Only' });
+      await alice.api.projects.post({ key: 'ALC', name: 'Alice Only' });
       const settings = await alice.api.projects({ projectKey: 'ALC' }).settings.get();
 
-      expect(settings.data?.mcpEnabled).toBe(false);
+      expect(settings.data?.mcpEnabled).toBe(true);
     });
   });
 });

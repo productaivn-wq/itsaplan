@@ -12,10 +12,12 @@ export default function AgentChatToolCall({
   tool,
   label,
   withIcon = false,
+  defaultOpen = false,
 }: {
   tool: AiChatToolPart;
   label: string;
   withIcon?: boolean;
+  defaultOpen?: boolean;
 }) {
   const t = useTranslations('common.agentChat');
 
@@ -33,7 +35,7 @@ export default function AgentChatToolCall({
   }
 
   return (
-    <AgentChatToolDisclosure label={label} withIcon={withIcon}>
+    <AgentChatToolDisclosure label={label} withIcon={withIcon} defaultOpen={defaultOpen}>
       <div className="flex flex-col gap-2 pt-1 pb-2">
         {tool.args && <AgentChatToolBlock label={t('toolInput')} text={tool.args} />}
         {tool.result && <AgentChatToolBlock label={t('toolOutput')} text={tool.result} />}

@@ -3,7 +3,6 @@ import {
   agentTool,
   aiAgent,
   db,
-  teamWorkspaceId,
   integrationCredential,
   issue,
   issueActivity,
@@ -11,18 +10,18 @@ import {
   projectColumn,
   projectMember,
   team,
-  teamInvite,
   teamMember,
   teamRole,
   user,
-  workspace,
-  workspaceManager,
 } from '@repo/db';
-import { and, desc, eq, ilike, inArray, isNotNull, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { HttpError, iso, pgErrorCode } from '#shared/lib';
 import { isReservedSlug, projectRefSql, teamRef } from './ref';
 import { getLimits } from '#shared/limits';
-import { fullPermissions, type Permissions } from '#shared/permissions';
+import { defaultMemberPermissions, fullPermissions, type Permissions } from '#shared/permissions';
+import { createProject } from '#modules/projects/service';
+import { createInvite, listTeamInvites } from '#modules/invites/service';
+import type { SetupTeamInput, SetupTeamResult } from './model';
 import {
   getMemberContext,
   getMembership,
@@ -35,21 +34,6 @@ import {
   type MemberSource,
 } from '#modules/members/service';
 import { getStats, type StatsDto } from '#modules/analytics/service';
-import { teamSkillObjectKeys } from '#modules/agents/skills/service';
-import { deleteObjects } from '@repo/storage';
-import {
-  assertMayCreateTeam,
-  projectWorkspaceGrant,
-  workspaceGrant,
-  workspaceGrants,
-  workspaceHoldsWork,
-} from '#modules/workspaces/service';
-import {
-  mergePermissions,
-  projectAccess,
-  teamAccess,
-  type AccessVia,
-} from '#shared/workspace-roles';
 
 // The rank a person holds in a team.
 export type TeamRole = 'owner' | 'manager' | 'member';
@@ -67,7 +51,6 @@ export function runsTeam(standing: TeamStanding | null): boolean {
 
 export interface TeamRow {
   id: number;
-  workspaceId: number;
   name: string;
   slug: string | null;
   // How web URLs name the team: the slug, or the id while it has none.
@@ -78,14 +61,12 @@ export interface TeamRow {
   // The caller's standing in the team, not a property of the team itself. An agent
   // reading its own team is 'agent', which runs nothing.
   role: TeamStanding;
-  // 'workspace' when the caller is not in the team and reaches it through their role
-  // in its workspace. Their source and joinedAt are then the team's defaults.
-  via: AccessVia;
   // How the caller's own membership came about. 'scim' is the identity provider's, and
   // is left there rather than here.
   source: MemberSource;
   joinedAt: string;
   projectCount: number;
+  mcpEnabledProjectCount: number;
   memberCount: number;
   // How many of those members are owners: the last one cannot leave.
   ownerCount: number;
@@ -130,7 +111,6 @@ export interface TeamProjectRow {
   memberCount: number;
   owners: { userId: string; name: string; image: string | null }[];
   isMember: boolean;
-  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -180,14 +160,9 @@ export interface TeamProjectDetail {
   // happened in it yet.
   lastActivityAt: string | null;
   stats: StatsDto;
-  // The reader's access to this project, or null when they only reach it through the
-  // team. What they may do with its members is decided from it.
-  viewer: {
-    role: MemberRole;
-    via: AccessVia;
-    source: MemberSource;
-    permissions: Permissions;
-  } | null;
+  // The reader's own membership in this project, or null when they only reach it
+  // through the team. What they may do with its members is decided from it.
+  viewer: { role: MemberRole; source: MemberSource; permissions: Permissions } | null;
 }
 
 // One page of the team's members, with how many match the search.
@@ -220,15 +195,12 @@ export interface TeamLeadRow {
   role: 'owner' | 'manager';
 }
 
-// The caller's teams as DTOs, optionally narrowed to one: the teams they are in and
-// the ones their role in a workspace reaches (workspace-roles.ts).
+// The caller's teams as DTOs, optionally narrowed to one. Membership is the join,
+// so a team the caller left is not returned at all.
 async function loadTeamRows(userId: string, teamId?: number): Promise<TeamRow[]> {
-  const grants = await workspaceGrants(userId);
-  const grantedTeams = [...grants.keys()];
   const rows = await db
     .select({
       id: team.id,
-      workspaceId: team.workspaceId,
       name: team.name,
       slug: team.slug,
       mcpEnabled: team.mcpEnabled,
@@ -237,16 +209,12 @@ async function loadTeamRows(userId: string, teamId?: number): Promise<TeamRow[]>
       joinedAt: teamMember.createdAt,
       createdAt: team.createdAt,
     })
-    .from(team)
-    .leftJoin(teamMember, and(eq(teamMember.teamId, team.id), eq(teamMember.userId, userId)))
+    .from(teamMember)
+    .innerJoin(team, eq(team.id, teamMember.teamId))
     .where(
-      and(
-        or(
-          isNotNull(teamMember.userId),
-          grantedTeams.length > 0 ? inArray(team.id, grantedTeams) : undefined,
-        ),
-        teamId === undefined ? undefined : eq(team.id, teamId),
-      ),
+      teamId === undefined
+        ? eq(teamMember.userId, userId)
+        : and(eq(teamMember.userId, userId), eq(team.id, teamId)),
     )
     .orderBy(team.id);
   if (rows.length === 0) return [];
@@ -266,6 +234,8 @@ async function loadTeamRows(userId: string, teamId?: number): Promise<TeamRow[]>
         teamId: project.teamId,
         count: sql<number>`count(*)::int`,
         joined: sql<number>`count(${projectMember.userId})::int`,
+        mcpEnabled: sql<number>`count(*) filter (where ${project.mcpEnabled})::int`,
+        mcpEnabledJoined: sql<number>`count(${projectMember.userId}) filter (where ${project.mcpEnabled})::int`,
       })
       .from(project)
       .leftJoin(
@@ -318,22 +288,20 @@ async function loadTeamRows(userId: string, teamId?: number): Promise<TeamRow[]>
   const tools = new Map(toolCounts.map((r) => [r.teamId, r.count]));
 
   return rows.map((row) => {
-    const grant = grants.get(row.id) ?? null;
-    const access = teamAccess(row.role as TeamStanding | null, grant)!;
-    const standing = access.role;
+    const standing = row.role as TeamStanding;
     const projectCount = projects.get(row.id);
     return {
       id: row.id,
-      workspaceId: row.workspaceId,
       name: row.name,
       slug: row.slug,
       ref: teamRef(row),
       mcpEnabled: row.mcpEnabled,
       role: standing,
-      via: access.via,
-      source: (row.source as MemberSource | null) ?? 'invite',
-      joinedAt: iso(row.joinedAt ?? row.createdAt),
-      projectCount: (runsTeam(standing) || grant ? projectCount?.count : projectCount?.joined) ?? 0,
+      source: row.source as MemberSource,
+      joinedAt: iso(row.joinedAt),
+      projectCount: (runsTeam(standing) ? projectCount?.count : projectCount?.joined) ?? 0,
+      mcpEnabledProjectCount:
+        (runsTeam(standing) ? projectCount?.mcpEnabled : projectCount?.mcpEnabledJoined) ?? 0,
       memberCount: members.get(row.id)?.count ?? 0,
       ownerCount: members.get(row.id)?.owners ?? 0,
       roleCount: roles.get(row.id) ?? 0,
@@ -460,11 +428,7 @@ export async function getTeam(teamId: number, userId: string): Promise<TeamDetai
   if (!row) return null;
 
   const [permissions, leads] = await Promise.all([
-    runsTeam(row.role)
-      ? fullPermissions()
-      : Promise.all([getTeamPermissions(teamId, userId), workspaceGrant(teamId, userId)]).then(
-          ([own, grant]) => mergePermissions(own, grant === 'owner' ? null : grant),
-        ),
+    runsTeam(row.role) ? fullPermissions() : getTeamPermissions(teamId, userId),
     listTeamLeads(teamId),
   ]);
   return { ...row, permissions, leads };
@@ -546,20 +510,18 @@ export async function listTeamMembers(
   };
 }
 
-// The projects of the team a caller reads: owners, managers and anyone whose workspace
-// role reaches the team see every one of them, everyone else only the ones they joined.
-// The search matches the key or the name.
-async function visibleTeamProjects(
+// The projects of the team a caller reads: owners and managers see every one of them,
+// everyone else only the ones they joined. The search matches the key or the name.
+function visibleTeamProjects(
   teamId: number,
   userId: string,
   standing: TeamStanding,
   search?: string,
 ) {
-  const seesAll = runsTeam(standing) || (await workspaceGrant(teamId, userId)) !== null;
   const term = search?.trim();
   return and(
     eq(project.teamId, teamId),
-    seesAll
+    runsTeam(standing)
       ? undefined
       : sql`exists (select 1 from ${projectMember} where ${projectMember.projectId} = ${project.id}
       and ${projectMember.userId} = ${userId})`,
@@ -576,7 +538,7 @@ export async function listTeamProjects(
   standing: TeamStanding,
   options: { search?: string; limit: number; offset: number },
 ): Promise<TeamProjectPage> {
-  const where = await visibleTeamProjects(teamId, userId, standing, options.search);
+  const where = visibleTeamProjects(teamId, userId, standing, options.search);
   const [projects, counted] = await Promise.all([
     db
       .select({
@@ -586,7 +548,6 @@ export async function listTeamProjects(
         name: project.name,
         description: project.description,
         mcpEnabled: project.mcpEnabled,
-        archivedAt: project.archivedAt,
         createdAt: project.createdAt,
         memberCount: sql<number>`count(${projectMember.userId})::int`,
         isMember: sql<boolean>`bool_or(${projectMember.userId} = ${userId})`,
@@ -645,7 +606,6 @@ export async function listTeamProjects(
       memberCount: p.memberCount,
       owners: ownersByProject.get(p.id) ?? [],
       isMember: p.isMember ?? false,
-      archivedAt: p.archivedAt ? iso(p.archivedAt) : null,
       createdAt: iso(p.createdAt),
     })),
     total: counted[0]?.count ?? 0,
@@ -669,7 +629,7 @@ export async function listTeamProjectOptions(
     })
     .from(project)
     .innerJoin(team, eq(team.id, project.teamId))
-    .where(await visibleTeamProjects(teamId, userId, standing))
+    .where(visibleTeamProjects(teamId, userId, standing))
     .orderBy(project.key);
 }
 
@@ -708,10 +668,7 @@ export async function getTeamProject(
 ): Promise<TeamProjectDetail | null> {
   if (!(await teamOwnsProject(teamId, projectId))) return null;
 
-  const viewer = projectAccess(
-    await getMemberContext(projectId, userId),
-    await projectWorkspaceGrant(projectId, userId),
-  );
+  const viewer = await getMemberContext(projectId, userId);
   if (!runsTeam(standing) && !viewer) return null;
 
   const [activity, stats, source] = await Promise.all([
@@ -724,12 +681,7 @@ export async function getTeamProject(
     lastActivityAt: activity,
     stats,
     viewer: viewer
-      ? {
-          role: viewer.role,
-          via: viewer.via,
-          source: source ?? 'invite',
-          permissions: viewer.permissions,
-        }
+      ? { role: viewer.role, source: source ?? 'invite', permissions: viewer.permissions }
       : null,
   };
 }
@@ -745,13 +697,7 @@ export async function listTeamProjectMembers(
   options: MemberFilters & { limit: number; offset: number },
 ): Promise<TeamProjectMemberPage | null> {
   if (!(await teamOwnsProject(teamId, projectId))) return null;
-  if (
-    !runsTeam(standing) &&
-    !(await getMembership(projectId, userId)) &&
-    !(await projectWorkspaceGrant(projectId, userId))
-  ) {
-    return null;
-  }
+  if (!runsTeam(standing) && !(await getMembership(projectId, userId))) return null;
 
   const { items, total } = await listMembersPage(projectId, { ...options, order: 'owners' });
 
@@ -777,71 +723,76 @@ export async function listTeamProjectMembers(
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+// Writes a team owned by one account, with the default role its projects assign.
 export async function insertOwnedTeam(
   tx: Transaction,
-  workspaceId: number,
   name: string,
   ownerId: string,
   slug: string | null = null,
 ) {
-  const [row] = await tx.insert(team).values({ workspaceId, name, slug }).returning();
+  const [row] = await tx.insert(team).values({ name, slug }).returning();
   const [membership] = await tx
     .insert(teamMember)
     .values({ teamId: row.id, userId: ownerId, role: 'owner' })
     .returning();
+  await tx.insert(teamRole).values({
+    teamId: row.id,
+    name: 'Member',
+    isDefault: true,
+    permissions: defaultMemberPermissions(),
+  });
   return { team: row, membership };
 }
 
-// The people across the workspace's teams, which is what a seat ceiling counts. An
-// agent's bot user sits in a member list but takes no seat.
-export async function listSeatHolderIds(workspaceId: number): Promise<string[]> {
-  const rows = await db
-    .selectDistinct({ userId: teamMember.userId })
+// How many teams this account owns, which is what the team ceiling counts.
+async function countOwnedTeams(ownerId: string): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
     .from(teamMember)
-    .innerJoin(team, eq(team.id, teamMember.teamId))
-    .where(and(eq(team.workspaceId, workspaceId), sql`${teamMember.role} <> 'agent'`));
+    .where(and(eq(teamMember.userId, ownerId), eq(teamMember.role, 'owner')));
+  return row?.count ?? 0;
+}
+
+// The people in the team, which is what a seat ceiling counts. An agent's bot user sits
+// in the member list but takes no seat.
+export async function listTeamMemberIds(teamId: number): Promise<string[]> {
+  const rows = await db
+    .select({ userId: teamMember.userId })
+    .from(teamMember)
+    .where(and(eq(teamMember.teamId, teamId), sql`${teamMember.role} <> 'agent'`));
   return rows.map((row) => row.userId);
 }
 
-// Refuses to add this person to the team when that takes a seat the workspace does not
-// have. Somebody already in another team of the workspace holds a seat.
-export async function assertSeatFree(teamId: number, userId: string): Promise<void> {
-  const workspaceId = await teamWorkspaceId(teamId, db);
-  const { maxSeats } = await getLimits(workspaceId);
-  if (maxSeats === 0) return;
-  const holders = await listSeatHolderIds(workspaceId);
-  if (!holders.includes(userId) && holders.length >= maxSeats) {
-    throw new HttpError(409, `The workspace has no free seats out of ${maxSeats}`);
+// Refuses one more person in the team. Called wherever a membership is added for
+// somebody who is not in it yet.
+export async function assertTeamSeatFree(teamId: number): Promise<void> {
+  const { maxTeamMembers } = await getLimits({ teamId });
+  if (maxTeamMembers === 0) return;
+  if ((await listTeamMemberIds(teamId)).length >= maxTeamMembers) {
+    throw new HttpError(409, `The team is full at ${maxTeamMembers} members`);
   }
 }
 
-export async function createTeam(
-  name: string,
-  slug: string,
-  ownerId: string,
-  workspaceId: number,
-): Promise<TeamRow> {
-  await assertMayCreateTeam(workspaceId, ownerId);
-  const { maxTeams } = await getLimits(workspaceId);
-  if (maxTeams > 0 && (await db.$count(team, eq(team.workspaceId, workspaceId))) >= maxTeams) {
-    throw new HttpError(409, `The workspace already has ${maxTeams} teams`);
+export async function createTeam(name: string, slug: string, ownerId: string): Promise<TeamRow> {
+  const { maxTeams } = await getLimits({ ownerUserId: ownerId });
+  if (maxTeams > 0 && (await countOwnedTeams(ownerId)) >= maxTeams) {
+    throw new HttpError(409, `You already own ${maxTeams} teams`);
   }
   assertSlugAllowed(slug);
   return withSlugConflict(() =>
     db.transaction(async (tx) => {
-      const { team: row, membership } = await insertOwnedTeam(tx, workspaceId, name, ownerId, slug);
+      const { team: row, membership } = await insertOwnedTeam(tx, name, ownerId, slug);
       return {
         id: row.id,
-        workspaceId: row.workspaceId,
         name: row.name,
         slug: row.slug,
         ref: teamRef(row),
         mcpEnabled: row.mcpEnabled,
         role: 'owner',
-        via: 'member',
         source: 'invite',
         joinedAt: iso(membership.createdAt),
         projectCount: 0,
+        mcpEnabledProjectCount: 0,
         memberCount: 1,
         ownerCount: 1,
         roleCount: 1,
@@ -892,26 +843,6 @@ export async function updateTeam(
   return row;
 }
 
-// A team holding a project or an AI agent is kept: those are people's work, and the
-// delete cascades to everything the team owns.
-export async function deleteTeam(teamId: number): Promise<void> {
-  const skillKeys = await teamSkillObjectKeys(teamId);
-  const deleted = await db
-    .delete(team)
-    .where(
-      and(
-        eq(team.id, teamId),
-        sql`not exists (select 1 from ${project} where ${project.teamId} = ${team.id})`,
-        sql`not exists (select 1 from ${aiAgent} where ${aiAgent.teamId} = ${team.id})`,
-      ),
-    )
-    .returning({ id: team.id });
-  if (deleted.length === 0) {
-    throw new HttpError(409, 'Delete the projects and AI agents of the team first');
-  }
-  await deleteObjects(skillKeys);
-}
-
 async function membershipInTransaction(
   tx: Transaction,
   teamId: number,
@@ -924,30 +855,10 @@ async function membershipInTransaction(
   return row ? (row.role as TeamStanding) : null;
 }
 
-// The actor's standing raised to their workspace grant (getTeamAccess), read inside the
-// transaction that locks the team.
-async function actorStandingInTransaction(
-  tx: Transaction,
-  teamId: number,
-  userId: string,
-): Promise<TeamStanding | null> {
-  const standing = await membershipInTransaction(tx, teamId, userId);
-  return teamAccess(standing, await workspaceGrant(teamId, userId))?.role ?? null;
-}
-
-// The last owner row is kept even against the workspace owner, who acts as an owner
-// without one.
-async function assertKeepsAnOwner(tx: Transaction, teamId: number): Promise<void> {
-  const owners = await tx.$count(
-    teamMember,
-    and(eq(teamMember.teamId, teamId), eq(teamMember.role, 'owner')),
-  );
-  if (owners === 1) throw new HttpError(409, 'A team must keep at least one owner');
-}
-
 // Changes what a member ranks as in the team. An agent's standing comes from its
 // agent settings, and nobody sets their own rank. Only an owner grants the owner rank
-// or changes what another owner holds.
+// or changes what another owner holds, which is also what keeps the last owner in
+// place: demoting an owner takes a second one.
 export async function setTeamMemberRole(
   teamId: number,
   actor: { userId: string; role: TeamStanding },
@@ -956,7 +867,7 @@ export async function setTeamMemberRole(
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.select({ id: team.id }).from(team).where(eq(team.id, teamId)).for('update');
-    const actorRole = await actorStandingInTransaction(tx, teamId, actor.userId);
+    const actorRole = await membershipInTransaction(tx, teamId, actor.userId);
     if (!runsTeam(actorRole))
       throw new HttpError(403, 'Only a team owner or manager can change ranks');
     if (userId === actor.userId) throw new HttpError(409, 'You cannot change your own rank');
@@ -967,7 +878,6 @@ export async function setTeamMemberRole(
     if (actorRole !== 'owner' && (role === 'owner' || current === 'owner')) {
       throw new HttpError(403, 'Only a team owner can grant or take the owner rank');
     }
-    if (current === 'owner' && role !== 'owner') await assertKeepsAnOwner(tx, teamId);
     await tx
       .update(teamMember)
       .set({ role })
@@ -1018,17 +928,6 @@ async function dropTeamMembership(tx: Transaction, teamId: number, userId: strin
   await tx
     .delete(projectMember)
     .where(and(eq(projectMember.userId, userId), inArray(projectMember.projectId, teamProjects)));
-  // A pending invite this member created outlives them otherwise, keeping the
-  // registration gate open on their behalf after they were removed.
-  await tx
-    .delete(teamInvite)
-    .where(
-      and(
-        eq(teamInvite.teamId, teamId),
-        eq(teamInvite.invitedByUserId, userId),
-        eq(teamInvite.status, 'pending'),
-      ),
-    );
   // A column cannot keep assigning issues to someone who no longer belongs to the
   // project, the same rule remove_member follows.
   await tx
@@ -1064,7 +963,8 @@ async function assertNotProvisioned(
 }
 
 // Removes a member from the team. Nobody removes themselves — that is leaving the
-// team.
+// team. Removing an owner is possible because the actor is one and stays, so the team
+// never loses its last owner.
 export async function removeTeamMember(
   teamId: number,
   actorId: string,
@@ -1072,7 +972,7 @@ export async function removeTeamMember(
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.select({ id: team.id }).from(team).where(eq(team.id, teamId)).for('update');
-    if ((await actorStandingInTransaction(tx, teamId, actorId)) !== 'owner') {
+    if ((await membershipInTransaction(tx, teamId, actorId)) !== 'owner') {
       throw new HttpError(403, 'Only a team owner can remove members');
     }
     if (userId === actorId) throw new HttpError(409, 'Leave the team instead of removing yourself');
@@ -1080,7 +980,6 @@ export async function removeTeamMember(
     if (!current) throw new HttpError(404, 'Member not found');
     if (current === 'agent')
       throw new HttpError(409, 'An agent is removed with its agent settings');
-    if (current === 'owner') await assertKeepsAnOwner(tx, teamId);
     await assertNotProvisioned(tx, teamId, userId);
     await assertLeavesNoProjectOwnerless(tx, teamId, userId, 'They');
     await dropTeamMembership(tx, teamId, userId);
@@ -1111,128 +1010,191 @@ export async function leaveTeam(teamId: number, userId: string): Promise<void> {
   });
 }
 
-// The workspaces an account owns, as it is deleted. One holding no project and no AI
-// agent goes with the account, teams and all. Any other passes to the instance owner,
-// with the teams and projects the account owned alone in it, so its people keep a
-// workspace somebody manages.
-export async function releaseOwnedWorkspaces(userId: string): Promise<void> {
-  const owned = await db
-    .select({ workspaceId: workspaceManager.workspaceId })
-    .from(workspaceManager)
-    .where(and(eq(workspaceManager.userId, userId), eq(workspaceManager.role, 'owner')));
-  if (owned.length === 0) return;
-  const [instanceOwner] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(eq(user.role, 'god'))
-    .orderBy(user.createdAt)
-    .limit(1);
-  const successor = instanceOwner?.id;
-  for (const { workspaceId } of owned) {
-    if (!(await workspaceHoldsWork(workspaceId))) {
-      await db.delete(workspace).where(eq(workspace.id, workspaceId));
-      continue;
-    }
-    if (!successor || successor === userId) continue;
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(workspaceManager)
-        .where(
-          and(eq(workspaceManager.workspaceId, workspaceId), eq(workspaceManager.userId, userId)),
-        );
-      await tx
-        .insert(workspaceManager)
-        .values({ workspaceId, userId: successor, role: 'owner' })
-        .onConflictDoUpdate({
-          target: [workspaceManager.workspaceId, workspaceManager.userId],
-          set: { role: 'owner' },
-        });
-    });
-    await dropWorkspaceMemberships(workspaceId, userId);
+export async function setupTeam(userId: string, body: SetupTeamInput): Promise<SetupTeamResult> {
+  const trimmedName = body.name.trim();
+  if (!trimmedName) {
+    throw new HttpError(400, 'Team name is required');
   }
-}
-
-// Takes a person out of every team of the workspace, and with that out of all of its
-// projects: what the workspace's identity provider does when it deprovisions them. A
-// team or project they own alone passes to the workspace owner, so none is left with
-// nobody who can manage it.
-export async function dropWorkspaceMemberships(workspaceId: number, userId: string): Promise<void> {
-  await db.transaction(async (tx) => {
-    const teams = await tx
-      .select({ id: team.id })
-      .from(team)
-      .innerJoin(teamMember, eq(teamMember.teamId, team.id))
-      .where(and(eq(team.workspaceId, workspaceId), eq(teamMember.userId, userId)))
-      .orderBy(team.id)
-      .for('update');
-    const [owner] = await tx
-      .select({ userId: workspaceManager.userId })
-      .from(workspaceManager)
-      .where(
-        and(eq(workspaceManager.workspaceId, workspaceId), eq(workspaceManager.role, 'owner')),
-      );
-    for (const { id: teamId } of teams) {
-      if (owner && owner.userId !== userId) {
-        await handOverSoleOwnership(tx, teamId, userId, owner.userId);
-      }
-      await dropTeamMembership(tx, teamId, userId);
+  if (body.slug !== undefined) {
+    if (!/^[a-z][a-z0-9-]{1,39}$/.test(body.slug)) {
+      throw new HttpError(400, 'Invalid team slug');
     }
+  }
+
+  const teams = await listTeams(userId);
+  let matched = teams.find((t) => {
+    if (body.teamId !== undefined && t.id === body.teamId) return true;
+    if (body.slug && t.slug === body.slug) return true;
+    if (t.name.toLowerCase() === trimmedName.toLowerCase()) return true;
+    return false;
   });
-}
 
-// Makes the successor the owner of what the person owns alone in the team: the team
-// itself and any of its projects. A project membership stands on a team one, so the
-// successor joins the team first.
-async function handOverSoleOwnership(
-  tx: Transaction,
-  teamId: number,
-  userId: string,
-  successorId: string,
-): Promise<void> {
-  const owners = await tx
-    .select({ userId: teamMember.userId })
-    .from(teamMember)
-    .where(and(eq(teamMember.teamId, teamId), eq(teamMember.role, 'owner')));
-  const ownsTeamAlone = owners.length === 1 && owners[0]!.userId === userId;
-  const soleProjects = await tx
-    .select({ id: project.id })
-    .from(projectMember)
-    .innerJoin(project, eq(project.id, projectMember.projectId))
-    .where(
-      and(
-        eq(project.teamId, teamId),
-        eq(projectMember.userId, userId),
-        eq(projectMember.role, 'owner'),
-        sql`(select count(*) from ${projectMember} o where o.project_id = ${project.id} and o.role = 'owner') = 1`,
-      ),
-    );
-  if (!ownsTeamAlone && soleProjects.length === 0) return;
+  let action: 'created' | 'updated';
+  if (matched) {
+    if (matched.role !== 'owner' && matched.role !== 'manager') {
+      throw new HttpError(403, 'Only a team owner or manager can update this team');
+    }
+    if (
+      matched.role === 'owner' &&
+      (matched.name !== trimmedName || (body.slug && matched.slug !== body.slug))
+    ) {
+      matched = await updateTeam(
+        matched.id,
+        { name: trimmedName, ...(body.slug ? { slug: body.slug } : {}) },
+        userId,
+      );
+    }
+    action = 'updated';
+  } else {
+    const slugToUse =
+      body.slug ??
+      trimmedName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^[^a-z]+/, '')
+        .slice(0, 40);
+    if (!/^[a-z][a-z0-9-]{1,39}$/.test(slugToUse)) {
+      throw new HttpError(400, 'Invalid team slug');
+    }
+    const created = await createTeam(trimmedName, slugToUse, userId);
+    matched = created;
+    action = 'created';
+  }
 
-  await tx
-    .insert(teamMember)
-    .values({ teamId, userId: successorId, role: ownsTeamAlone ? 'owner' : 'member' })
-    .onConflictDoNothing();
-  if (ownsTeamAlone) {
-    await tx
-      .update(teamMember)
-      .set({ role: 'owner' })
-      .where(and(eq(teamMember.teamId, teamId), eq(teamMember.userId, successorId)));
+  if (body.mcpEnabled !== undefined) {
+    await setTeamMcp(matched.id, { enabled: body.mcpEnabled });
   }
-  if (soleProjects.length > 0) {
-    // Not a SCIM row any more: the next sync must not take the ownership back.
-    await tx
-      .insert(projectMember)
-      .values(
-        soleProjects.map(({ id }) => ({
-          projectId: id,
-          userId: successorId,
-          role: 'owner',
-          roleId: null,
-        })),
-      )
-      .onConflictDoUpdate({
-        target: [projectMember.projectId, projectMember.userId],
-        set: { role: 'owner', roleId: null, source: 'invite' },
-      });
+
+  if (body.defaultAgentIds !== undefined) {
+    await setTeamProjectDefaults(matched.id, body.defaultAgentIds);
   }
+
+  const projectsEnsured: Array<{ id: number; key: string; name: string; ref: string }> = [];
+  if (body.projects && body.projects.length > 0) {
+    const existingProjects = await listTeamProjectOptions(matched.id, userId, matched.role);
+    const byKey = new Map(existingProjects.map((p) => [p.key.toUpperCase(), p]));
+    for (const p of body.projects) {
+      const keyUpper = p.key.toUpperCase();
+      const existing = byKey.get(keyUpper);
+      if (existing) {
+        projectsEnsured.push({
+          id: existing.id,
+          key: existing.key,
+          name: existing.name,
+          ref: existing.ref,
+        });
+      } else {
+        const createdProj = await createProject(
+          { key: keyUpper, name: p.name, description: p.description ?? '' },
+          userId,
+          matched.id,
+        );
+        projectsEnsured.push({
+          id: createdProj.id,
+          key: createdProj.key,
+          name: createdProj.name,
+          ref: createdProj.ref,
+        });
+        byKey.set(keyUpper, {
+          id: createdProj.id,
+          key: createdProj.key,
+          name: createdProj.name,
+          ref: createdProj.ref,
+          mcpEnabled: true,
+        });
+      }
+    }
+  }
+
+  const membersAdded: Array<{ userId: string; email: string; role: string }> = [];
+  const invitesCreated: Array<{ id: number; email: string; role: string; status: string }> = [];
+
+  if (body.members && body.members.length > 0) {
+    for (const m of body.members) {
+      let userRow: { id: string; email: string } | undefined;
+      if (m.userId) {
+        const rows = await db
+          .select({ id: user.id, email: user.email })
+          .from(user)
+          .where(eq(user.id, m.userId))
+          .limit(1);
+        userRow = rows[0];
+      } else if (m.email) {
+        const emailNorm = m.email.trim().toLowerCase();
+        const rows = await db
+          .select({ id: user.id, email: user.email })
+          .from(user)
+          .where(eq(sql`lower(${user.email})`, emailNorm))
+          .limit(1);
+        userRow = rows[0];
+      }
+
+      if (userRow) {
+        const targetRole = m.role ?? 'member';
+        const existingMembership = await getTeamMembership(matched.id, userRow.id);
+        if (!existingMembership) {
+          await db
+            .insert(teamMember)
+            .values({
+              teamId: matched.id,
+              userId: userRow.id,
+              role: targetRole,
+              source: 'invite',
+            })
+            .onConflictDoNothing();
+        } else if (existingMembership !== targetRole) {
+          await db
+            .update(teamMember)
+            .set({ role: targetRole })
+            .where(and(eq(teamMember.teamId, matched.id), eq(teamMember.userId, userRow.id)));
+        }
+        membersAdded.push({
+          userId: userRow.id,
+          email: userRow.email,
+          role: targetRole,
+        });
+      } else if (m.email) {
+        const emailNorm = m.email.trim().toLowerCase();
+        const pendingInvites = await listTeamInvites(matched.id);
+        const existingInv = pendingInvites.find(
+          (inv) => inv.email === emailNorm && inv.status === 'pending',
+        );
+        if (existingInv) {
+          invitesCreated.push({
+            id: existingInv.id,
+            email: existingInv.email,
+            role: existingInv.teamRole,
+            status: existingInv.status,
+          });
+        } else {
+          const inv = await createInvite({
+            teamId: matched.id,
+            projectId: null,
+            email: emailNorm,
+            teamRole: m.role ?? 'member',
+            projectRole: null,
+            roleId: null,
+            invitedByUserId: userId,
+          });
+          invitesCreated.push({
+            id: inv.id,
+            email: inv.email,
+            role: inv.teamRole,
+            status: inv.status,
+          });
+        }
+      }
+    }
+  }
+
+  const freshTeams = await listTeams(userId);
+  const freshTeam = freshTeams.find((t) => t.id === matched!.id) ?? matched;
+
+  return {
+    action,
+    team: freshTeam,
+    projectsEnsured,
+    membersAdded,
+    invitesCreated,
+  };
 }

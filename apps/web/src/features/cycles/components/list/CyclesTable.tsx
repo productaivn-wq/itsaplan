@@ -13,7 +13,7 @@ import CycleTableArchive from './CycleTableArchive';
 
 // The header row and every cycle row share this template, so the labels line up
 // with the cells below them.
-const GRID = 'minmax(200px,1fr) 200px 60px 56px 132px 32px';
+const GRID = 'minmax(200px,1fr) 210px 84px 56px 132px 32px';
 
 // The project's cycles as one table: the planned ones grouped by the status their
 // dates put them in, then the archive of the finished ones. Each planned group folds
@@ -36,10 +36,10 @@ export default function CyclesTable({
   const [transferring, setTransferring] = useState<Cycle | null>(null);
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="min-w-[760px]">
+    <div className="overflow-x-auto">
+      <div className="min-w-[780px]">
         <div
-          className="sticky top-0 z-10 grid items-center gap-3 border-b bg-background px-4 py-2 text-xs font-medium text-muted-foreground"
+          className="sticky top-0 z-10 grid items-center gap-3 border-b border-border/80 bg-card/95 backdrop-blur-xs px-4 py-2.5 text-xs font-medium text-muted-foreground"
           style={{ gridTemplateColumns: GRID }}
         >
           <span>{t('columns.name')}</span>

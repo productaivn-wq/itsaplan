@@ -1,0 +1,14 @@
+{
+  "placeholder": "Nhập lệnh hoặc tìm kiếm…",
+  "noResults": "Không tìm thấy kết quả nào.",
+  "issues": "Công việc",
+  "searching": "Đang tìm kiếm…",
+  "selectAllIssues": "Chọn tất cả công việc",
+  "newIssue": "Tạo công việc mới",
+  "newInitiative": "Tạo sáng kiến mới",
+  "newProject": "Tạo dự án mới",
+  "toggleChat": "Hiện hoặc ẩn khung trò chuyện AI",
+  "board": "Bảng",
+  "commands": "Lệnh",
+  "switchProject": "Chuyển dự án"
+}

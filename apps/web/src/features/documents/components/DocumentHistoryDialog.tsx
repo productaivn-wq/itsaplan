@@ -216,7 +216,7 @@ export default function DocumentHistoryDialog({
                           >
                             {revision.title.trim() || t('untitled')}
                           </span>
-                          <span className="mt-1 block truncate text-[11px] text-muted-foreground">
+                          <span className="mt-1 block truncate text-xs text-muted-foreground">
                             {t('versionBy', {
                               name: author,
                               time: relativeTime(revision.createdAt),

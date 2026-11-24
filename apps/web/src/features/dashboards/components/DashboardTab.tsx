@@ -42,15 +42,15 @@ export default function DashboardTab({
       {...attributes}
       {...listeners}
       className={cn(
-        'flex shrink-0 items-center rounded-md text-sm transition-colors',
+        'flex shrink-0 items-center rounded-full text-xs transition-colors',
         canEdit ? 'cursor-grab' : 'cursor-default',
         active
-          ? 'bg-secondary font-medium text-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          ? 'bg-foreground font-semibold text-background shadow-xs'
+          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
         isDragging && 'opacity-40',
       )}
     >
-      <button type="button" onClick={onSelect} className="flex items-center gap-1.5 py-1 pr-1 pl-2">
+      <button type="button" onClick={onSelect} className="flex h-8 items-center gap-1.5 pe-1.5 ps-3">
         <LayoutDashboard className="size-3.5" />
         {dashboard.name}
       </button>
@@ -60,7 +60,8 @@ export default function DashboardTab({
             <button
               type="button"
               title={t('options')}
-              className="mr-1.5 rounded p-0.5 hover:bg-accent-foreground/10"
+              aria-label={t('options')}
+              className="me-1 inline-flex size-8 items-center justify-center rounded-full hover:bg-background/20"
             >
               <MoreHorizontal className="size-3.5" />
             </button>
@@ -73,7 +74,7 @@ export default function DashboardTab({
                   setMenuOpen(false);
                   onRename();
                 }}
-                className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-start text-sm hover:bg-accent"
               >
                 <Pencil className="size-3.5" /> {t('rename')}
               </button>
@@ -85,7 +86,7 @@ export default function DashboardTab({
                   setMenuOpen(false);
                   onDelete();
                 }}
-                className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-destructive hover:bg-destructive/10"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-start text-sm text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="size-3.5" /> {tCommon('delete')}
               </button>

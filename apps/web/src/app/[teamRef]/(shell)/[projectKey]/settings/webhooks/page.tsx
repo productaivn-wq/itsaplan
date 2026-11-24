@@ -1,5 +1,5 @@
-import SettingsWebhooksPage from '@/features/settings/SettingsWebhooksPage';
+import ProjectSettingsCutRedirect from '@/features/settings/ProjectSettingsCutRedirect';
 
 export default function Page() {
-  return <SettingsWebhooksPage />;
+  return <ProjectSettingsCutRedirect />;
 }

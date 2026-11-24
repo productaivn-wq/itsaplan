@@ -1,4 +1,3 @@
-import { type ReactNode } from 'react';
 import { CircleDashed } from 'lucide-react';
 import type { IssueType } from '@/lib/api/endpoints/issueTypes';
 import { colorDot } from './colorDot';
@@ -11,14 +10,11 @@ export default function TypeSelect({
   value,
   onChange,
   readOnly,
-  trigger,
 }: {
   issueTypes: IssueType[];
   value: number | null;
   onChange: (id: number | null) => void;
   readOnly?: boolean;
-  // Replaces the pill where a caller needs its own (a Timeline cell).
-  trigger?: ReactNode;
 }) {
   const t = useTranslations('issue.fieldSelects');
   const type = issueTypes.find((t) => t.id === value);
@@ -26,12 +22,10 @@ export default function TypeSelect({
     <PopoverPick
       readOnly={readOnly}
       trigger={
-        trigger ?? (
-          <Pill active={!!type}>
-            {type ? colorDot(type.color) : <CircleDashed />}
-            <span className="truncate">{type?.name ?? t('type')}</span>
-          </Pill>
-        )
+        <Pill active={!!type}>
+          {type ? colorDot(type.color) : <CircleDashed />}
+          <span className="truncate">{type?.name ?? t('type')}</span>
+        </Pill>
       }
       inputPlaceholder={t('changeType')}
       items={[

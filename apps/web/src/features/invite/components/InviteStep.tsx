@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import type { InviteView } from '@/lib/api/endpoints/invites';
 import { signOut, useSession } from '@/lib/auth-client';
@@ -16,15 +17,17 @@ import InviteNotice from './InviteNotice';
 export default function InviteStep({ token, invite }: { token: string; invite: InviteView }) {
   const t = useTranslations('invite');
   const tCommon = useTranslations('common');
+  const router = useRouter();
   const { data: session, isPending: sessionPending } = useSession();
 
-  function switchAccount() {
-    void signOut('here');
+  async function switchAccount() {
+    await signOut();
+    router.refresh();
   }
 
-  if (invite.status !== 'pending' || invite.expired) {
+  if (invite.status !== 'pending') {
     return (
-      <InviteNotice>
+      <InviteNotice message={t('alreadyHandled', { status: invite.status })}>
         <Button asChild variant="outline">
           <Link href="/">{t('goToApp')}</Link>
         </Button>

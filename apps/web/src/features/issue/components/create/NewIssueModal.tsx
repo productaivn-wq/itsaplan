@@ -29,6 +29,7 @@ import NewIssueAttachmentStrip from './NewIssueAttachmentStrip';
 import NewIssueDropOverlay from './NewIssueDropOverlay';
 import NewIssueTemplatePill from './NewIssueTemplatePill';
 import Modal, { useModalFullscreen } from '@/components/common/overlay/Modal';
+import { ProgressiveDisclosure } from '@/components/common/ux/ProgressiveDisclosure';
 import NewIssueBody from './NewIssueBody';
 import AssigneeSelect from '@/components/common/fields/AssigneeSelect';
 import DatePill from '@/components/common/fields/DatePill';
@@ -72,10 +73,9 @@ export default function NewIssueModal({
   const [title, setTitle] = useState(defaults.title ?? '');
   const [description, setDescription] = useState(defaults.description ?? '');
   const [columnId, setColumnId] = useState(defaults.columnId ?? project.columns[0]?.id ?? 0);
+  const defaultTypeId = project.issueTypes.find((t) => t.isDefault)?.id ?? null;
   const [typeId, setTypeId] = useState<number | null>(
-    defaults.typeId === undefined
-      ? (project.issueTypes.find((t) => t.isDefault)?.id ?? null)
-      : defaults.typeId,
+    defaults.typeId === undefined ? defaultTypeId : defaults.typeId,
   );
   const [initiativeId, setInitiativeId] = useState<number | null>(defaults.initiativeId ?? null);
   // A default cycle that is not among the planned ones has finished, and nothing new
@@ -195,6 +195,15 @@ export default function NewIssueModal({
   useFilePaste(insertFilesIntoBody);
 
   const [addFieldOpen, setAddFieldOpen] = useState(false);
+  const [moreFieldsOpen, setMoreFieldsOpen] = useState<boolean>(() =>
+    Boolean(
+      defaults.delegateUserId ||
+        defaults.initiativeId != null ||
+        defaults.cycleId != null ||
+        (defaults.labelIds?.length ?? 0) > 0 ||
+        (defaults.fieldValues?.length ?? 0) > 0,
+    ),
+  );
 
   // Drop shown fields that no longer apply to the selected type. Nothing is shown
   // by default — the user adds fields from the "…" menu.
@@ -214,6 +223,16 @@ export default function NewIssueModal({
   const propertyDefs = fieldDefs.filter((d) => !d.showInBody);
   const activeDefs = propertyDefs.filter((d) => activeFieldIds.includes(d.id));
   const availableDefs = propertyDefs.filter((d) => !activeFieldIds.includes(d.id));
+  const configuredSecondaryCount =
+    (delegateUserId ? 1 : 0) +
+    (typeId !== defaultTypeId && typeId !== null ? 1 : 0) +
+    (initiativeId != null ? 1 : 0) +
+    (cycle != null ? 1 : 0) +
+    (labelIds.length > 0 ? 1 : 0) +
+    (estimatePoints != null ? 1 : 0) +
+    (estimateMinutes != null ? 1 : 0) +
+    (startDate ? 1 : 0) +
+    activeDefs.length;
 
   function toggleLabel(id: number) {
     setLabelIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -374,7 +393,6 @@ export default function NewIssueModal({
             onDescriptionReady={setDescEditor}
             bodyDefs={bodyDefs}
             fieldValues={fieldValues}
-            projectKey={project.project.ref}
             assignees={project.assignees}
             onFieldValue={setFieldValue}
             onFieldEditorReady={(id, editor) => {
@@ -385,122 +403,135 @@ export default function NewIssueModal({
           />
         </div>
 
-        <div
-          className={`${bodyDefs.length > 0 ? 'mt-8' : 'mt-4'} flex flex-wrap items-center gap-2`}
-        >
-          <StatusSelect columns={project.columns} value={columnId} onChange={setColumnId} />
+        <div className={`${bodyDefs.length > 0 ? 'mt-8' : 'mt-4'} space-y-2.5`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusSelect columns={project.columns} value={columnId} onChange={setColumnId} />
 
-          {project.assignees.some((a) => a.kind === 'member') && (
-            <AssigneeSelect
-              assignees={project.assignees}
-              value={assigneeUserId}
-              onChange={setAssigneeUserId}
-              placeholder={tFields('assignee')}
+            {project.assignees.some((a) => a.kind === 'member') && (
+              <AssigneeSelect
+                assignees={project.assignees}
+                value={assigneeUserId}
+                onChange={setAssigneeUserId}
+                placeholder={tFields('assignee')}
+              />
+            )}
+
+            <PrioritySelect value={priority} onChange={setPriority} />
+
+            <DatePill
+              value={dueDate || null}
+              placeholder={tFields('dueDate')}
+              onChange={(v) => setDueDate(v ?? '')}
+              disabled={earliestDue ? { before: earliestDue } : undefined}
             />
-          )}
+          </div>
 
-          {project.assignees.some((a) => a.kind === 'agent') && (
-            <DelegateSelect
-              assignees={project.assignees}
-              value={delegateUserId}
-              onChange={setDelegateUserId}
-              placeholder={tFields('delegate')}
+          <ProgressiveDisclosure
+            label={t('moreOptions')}
+            expandedLabel={t('lessOptions')}
+            count={configuredSecondaryCount || undefined}
+            open={moreFieldsOpen}
+            onOpenChange={setMoreFieldsOpen}
+            keepMounted
+            triggerVariant="pill"
+            triggerTestId="btn-new-issue-more-fields"
+            contentTestId="new-issue-secondary-fields"
+            contentClassName="flex flex-wrap items-center gap-2 pt-2"
+          >
+            {project.assignees.some((a) => a.kind === 'agent') && (
+              <DelegateSelect
+                assignees={project.assignees}
+                value={delegateUserId}
+                onChange={setDelegateUserId}
+                placeholder={tFields('delegate')}
+              />
+            )}
+
+            {project.issueTypes.length > 0 && (
+              <TypeSelect issueTypes={project.issueTypes} value={typeId} onChange={setTypeId} />
+            )}
+
+            {project.project.initiativesEnabled && (
+              <InitiativeSelect
+                projectKey={project.project.ref}
+                value={initiativeId}
+                onChange={setInitiativeId}
+              />
+            )}
+
+            {project.project.cyclesEnabled && (
+              <CycleSelect projectKey={project.project.ref} value={cycle} onChange={setCycle} />
+            )}
+
+            {project.labels.length > 0 && (
+              <LabelsSelect
+                labels={project.labels}
+                groups={project.labelGroups}
+                value={labelIds}
+                onToggle={toggleLabel}
+              />
+            )}
+
+            {project.project.pointsEstimateEnabled && (
+              <EstimatePill kind="points" value={estimatePoints} onChange={setEstimatePoints} />
+            )}
+
+            {project.project.timeEstimateEnabled && (
+              <EstimatePill kind="time" value={estimateMinutes} onChange={setEstimateMinutes} />
+            )}
+
+            <DatePill
+              value={startDate || null}
+              placeholder={tFields('startDate')}
+              onChange={(v) => setStartDate(v ?? '')}
+              disabled={latestStart ? { after: latestStart } : undefined}
             />
-          )}
 
-          <PrioritySelect value={priority} onChange={setPriority} />
+            {activeDefs.map((def) => (
+              <IssueCustomFieldPill
+                key={def.id}
+                def={def}
+                value={fieldValues[def.id]}
+                assignees={project.assignees}
+                defaultOpen={def.id === justAddedId}
+                onChange={(v) => setFieldValue(def.id, v)}
+              />
+            ))}
 
-          {project.issueTypes.length > 0 && (
-            <TypeSelect issueTypes={project.issueTypes} value={typeId} onChange={setTypeId} />
-          )}
-
-          {project.project.initiativesEnabled && (
-            <InitiativeSelect
-              projectKey={project.project.ref}
-              value={initiativeId}
-              onChange={setInitiativeId}
-            />
-          )}
-
-          {project.project.cyclesEnabled && (
-            <CycleSelect projectKey={project.project.ref} value={cycle} onChange={setCycle} />
-          )}
-
-          {project.labels.length > 0 && (
-            <LabelsSelect
-              labels={project.labels}
-              groups={project.labelGroups}
-              value={labelIds}
-              onToggle={toggleLabel}
-            />
-          )}
-
-          {project.project.pointsEstimateEnabled && (
-            <EstimatePill kind="points" value={estimatePoints} onChange={setEstimatePoints} />
-          )}
-
-          {project.project.timeEstimateEnabled && (
-            <EstimatePill kind="time" value={estimateMinutes} onChange={setEstimateMinutes} />
-          )}
-
-          <DatePill
-            value={startDate || null}
-            placeholder={tFields('startDate')}
-            onChange={(v) => setStartDate(v ?? '')}
-            disabled={latestStart ? { after: latestStart } : undefined}
-          />
-
-          <DatePill
-            value={dueDate || null}
-            placeholder={tFields('dueDate')}
-            onChange={(v) => setDueDate(v ?? '')}
-            disabled={earliestDue ? { before: earliestDue } : undefined}
-          />
-
-          {activeDefs.map((def) => (
-            <IssueCustomFieldPill
-              key={def.id}
-              def={def}
-              value={fieldValues[def.id]}
-              assignees={project.assignees}
-              defaultOpen={def.id === justAddedId}
-              onChange={(v) => setFieldValue(def.id, v)}
-            />
-          ))}
-
-          {availableDefs.length > 0 && (
-            <Popover open={addFieldOpen} onOpenChange={setAddFieldOpen}>
-              <PopoverTrigger asChild>
-                <Pill>
-                  <MoreHorizontal />
-                </Pill>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-0" align="start">
-                <Command>
-                  <CommandInput placeholder={t('addFieldPlaceholder')} />
-                  <CommandList>
-                    <CommandEmpty>{t('noFields')}</CommandEmpty>
-                    <CommandGroup>
-                      {availableDefs.map((def) => (
-                        <CommandItem
-                          key={def.id}
-                          value={def.name}
-                          onSelect={() => {
-                            setActiveFieldIds((ids) => [...ids, def.id]);
-                            setJustAddedId(def.id);
-                            setAddFieldOpen(false);
-                          }}
-                        >
-                          <span className="flex-1">{def.name}</span>
-                          <span className="text-xs text-muted-foreground">{def.fieldType}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          )}
+            {availableDefs.length > 0 && (
+              <Popover open={addFieldOpen} onOpenChange={setAddFieldOpen}>
+                <PopoverTrigger asChild>
+                  <Pill>
+                    <MoreHorizontal />
+                  </Pill>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder={t('addFieldPlaceholder')} />
+                    <CommandList>
+                      <CommandEmpty>{t('noFields')}</CommandEmpty>
+                      <CommandGroup>
+                        {availableDefs.map((def) => (
+                          <CommandItem
+                            key={def.id}
+                            value={def.name}
+                            onSelect={() => {
+                              setActiveFieldIds((ids) => [...ids, def.id]);
+                              setJustAddedId(def.id);
+                              setAddFieldOpen(false);
+                            }}
+                          >
+                            <span className="flex-1">{def.name}</span>
+                            <span className="text-xs text-muted-foreground">{def.fieldType}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+          </ProgressiveDisclosure>
         </div>
 
         {errorMessage && <p className="mt-3 text-xs text-destructive">{errorMessage}</p>}

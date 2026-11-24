@@ -3,7 +3,6 @@ import type { WorkItemsView } from '@/utils/viewTypes';
 import { isTypingTarget, type HotkeyId } from '@/utils/hotkeys';
 import { useHotkeyMatch } from '@/context/useHotkeys';
 
-// The layout hotkeys, paired with the view each one opens.
 const VIEW_HOTKEYS: [HotkeyId, WorkItemsView][] = [
   ['view.kanban', 'kanban'],
   ['view.table', 'table'],
@@ -11,23 +10,17 @@ const VIEW_HOTKEYS: [HotkeyId, WorkItemsView][] = [
   ['view.calendar', 'calendar'],
 ];
 
-// The global keyboard layer. Which combination runs what is declared in
-// lib/hotkeys; this hook only decides when a binding may fire. A 'global' binding
-// (the palette) fires even with an overlay open, while an 'app' one is suppressed
-// while the user types or an overlay is open, because its combination is a plain
-// key that would land in the text being typed.
+// SPEC-ITSAPLAN-CUT-PROJECT-SETTINGS-284: 'project.settings' keyboard shortcut removed.
 export function useKeyboardShortcuts(opts: {
   hasProject: boolean;
-  // Whether this project has a chat panel to show at all.
   hasChat: boolean;
-  // True while any modal/overlay is open, which suppresses the app bindings.
   overlayOpen: boolean;
   onToggleCommand: () => void;
   onChangeView: (view: WorkItemsView) => void;
   onNewIssue: () => void;
   onNewInitiative: () => void;
   onNewProject: () => void;
-  onSettings: () => void;
+  onSettings?: () => void;
   onToggleChat: () => void;
 }) {
   const {
@@ -39,7 +32,6 @@ export function useKeyboardShortcuts(opts: {
     onNewIssue,
     onNewInitiative,
     onNewProject,
-    onSettings,
     onToggleChat,
   } = opts;
   const matches = useHotkeyMatch();
@@ -77,11 +69,6 @@ export function useKeyboardShortcuts(opts: {
         onNewProject();
         return;
       }
-      if (hasProject && matches(e, 'project.settings')) {
-        e.preventDefault();
-        onSettings();
-        return;
-      }
       if (hasChat && matches(e, 'chat.toggle')) {
         e.preventDefault();
         onToggleChat();
@@ -99,7 +86,6 @@ export function useKeyboardShortcuts(opts: {
     onNewIssue,
     onNewInitiative,
     onNewProject,
-    onSettings,
     onToggleChat,
   ]);
 }

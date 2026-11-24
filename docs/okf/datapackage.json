@@ -1,0 +1,152 @@
+{
+  "profile": "data-package",
+  "name": "itsaplan-utop-17-artifact-baseline",
+  "version": "3.3.20",
+  "created": "2026-11-09T10:55:59+07:00",
+  "resources": [
+    {
+      "name": "business_sop",
+      "path": "docs/business_sop.md",
+      "sha256": "17540929067fd076f27c4b17f2dbe043eea60afc75873312b71d9f27c7567eb4",
+      "bytes": 1829
+    },
+    {
+      "name": "bpmn_workflows",
+      "path": "docs/bpmn_workflows.md",
+      "sha256": "8c9cc0e62af54cd6b7d78feac62760ead8e2f2bf4569cd778a0e491037f95a02",
+      "bytes": 7597
+    },
+    {
+      "name": "uc-001_project_and_board_lifecycle",
+      "path": "docs/UC-001_project_and_board_lifecycle.md",
+      "sha256": "94888c4d7024b8537eeb9d3229a4b9afa37ed36d43972dda5e57aac6b82eb0b4",
+      "bytes": 7166
+    },
+    {
+      "name": "uc-002_issue_and_worklog_tracking",
+      "path": "docs/UC-002_issue_and_worklog_tracking.md",
+      "sha256": "f599ebdc9ee04d5a000e44dc0741c875b7b9f16337b96e1602e4ed2b729fda33",
+      "bytes": 7083
+    },
+    {
+      "name": "uc-003_ai_agent_runtime_and_mcp_tools",
+      "path": "docs/UC-003_ai_agent_runtime_and_mcp_tools.md",
+      "sha256": "bbdc11a45bf16ef26ad041ae270fb6b674a2891280eea9afd1af51f14a3267c6",
+      "bytes": 5980
+    },
+    {
+      "name": "uc-004_realtime_revision_sync_and_notifications",
+      "path": "docs/UC-004_realtime_revision_sync_and_notifications.md",
+      "sha256": "f4df1365ea70f060e3800181e98a560878af297b5757e2ac060dec17c3f462da",
+      "bytes": 6463
+    },
+    {
+      "name": "uc-005_initiative_and_cycle_management",
+      "path": "docs/UC-005_initiative_and_cycle_management.md",
+      "sha256": "240fe1a66cdfaeaeb40a5740c5e143fb3a8c470323b9b6c7db27375bf05caa76",
+      "bytes": 5460
+    },
+    {
+      "name": "uc-006_document_and_knowledge_collaboration",
+      "path": "docs/UC-006_document_and_knowledge_collaboration.md",
+      "sha256": "b7d154f226f7e9931763f49a7e4c4a89ba0ccb71b77c9d174e2210bcb1e2fec4",
+      "bytes": 5574
+    },
+    {
+      "name": "uc-007_vibe_working_canvas_native_merge",
+      "path": "docs/UC-007_vibe_working_canvas_native_merge.md",
+      "sha256": "5c2decd043eb468587b8e6a98d77a443d54ae036802a853571b56f276a444eb7",
+      "bytes": 4597
+    },
+    {
+      "name": "uc-008_h1_h7_multi_branch_and_i18n_governance",
+      "path": "docs/UC-008_h1_h7_multi_branch_and_i18n_governance.md",
+      "sha256": "698d9b7fa645bac9d255545d1200936b9b38f54d7dd6862523f0615bf743efce",
+      "bytes": 5380
+    },
+    {
+      "name": "uc-009_autonomous_portfolio_directory_reconciliation_and_7h_provisioning",
+      "path": "docs/UC-009_autonomous_portfolio_directory_reconciliation_and_7h_provisioning.md",
+      "sha256": "ca06e4f931cbc110c86ac8e23aa219d6f32fbbcdbf2f5f87898173e023294732",
+      "bytes": 8139
+    },
+    {
+      "name": "uc-010_open_office_spatial_telemetry_and_task_contracts",
+      "path": "docs/UC-010_open_office_spatial_telemetry_and_task_contracts.md",
+      "sha256": "a9ac905978f570adacd7a02080b70eb7a0851d9b9f21921a4eb6f69175d33960",
+      "bytes": 10028
+    },
+    {
+      "name": "erd",
+      "path": "docs/erd.md",
+      "sha256": "13cbda337cd69058d1a68ea8cb9fa14113104dbd483e011f5dbeee267575f958",
+      "bytes": 5883
+    },
+    {
+      "name": "sequence_diagrams",
+      "path": "docs/sequence_diagrams.md",
+      "sha256": "29799ff76fbac598900cd8a0a24f3a3159ecd5b05910d177a5df9ff34d02fb0a",
+      "bytes": 8033
+    },
+    {
+      "name": "state_diagrams",
+      "path": "docs/state_diagrams.md",
+      "sha256": "fae3833cd709c915d884039f3916140b2f1fc7cabf80fa97a18f53010cf1dbe0",
+      "bytes": 2413
+    },
+    {
+      "name": "functional_requirements",
+      "path": "docs/functional_requirements.md",
+      "sha256": "6163eee4b4ec4e6c38e75375c141098862d49f2ddf0fb5cbeb7d81a66a0510a1",
+      "bytes": 13868
+    },
+    {
+      "name": "function_list",
+      "path": "docs/function_list.md",
+      "sha256": "d93a06478e0bc66a29d8b00e89ed52d3c6aa3b24a48d4f0aa4ae9691c7b022ea",
+      "bytes": 148848
+    },
+    {
+      "name": "function_rules",
+      "path": "docs/function_rules.md",
+      "sha256": "1a0fd4994ffe5ce48ca30e8852324a4aa75b7f669f9491d9c91f935b3af7859d",
+      "bytes": 7837
+    },
+    {
+      "name": "permission_matrix",
+      "path": "docs/permission_matrix.md",
+      "sha256": "9f483845ccb06442fb953dceb2bf6928d9b88433b9821e865d749cde60f19643",
+      "bytes": 1927
+    },
+    {
+      "name": "field_permission_matrix",
+      "path": "docs/FIELD_PERMISSION_MATRIX.md",
+      "sha256": "da70277c4cf9ed802ade40f9f3adbc1769cc9138a34491e76a31df19729c1488",
+      "bytes": 3746
+    },
+    {
+      "name": "status_action_matrix",
+      "path": "docs/STATUS_ACTION_MATRIX.md",
+      "sha256": "fa7a9f4bc96bd1006b5bff9db1b8340f7163eb87b22fe5e98f09b331b7042203",
+      "bytes": 5315
+    },
+    {
+      "name": "checkpoints",
+      "path": "docs/checkpoints.md",
+      "sha256": "7e8b246c76106e935872127ae98dda90b6777b2402061b89120dc7c2871bc689",
+      "bytes": 1729
+    },
+    {
+      "name": "tc-specs",
+      "path": "docs/TC-SPECS.md",
+      "sha256": "bb622d52c354fb2ba1fc042bd99178c5664ea9f8541d49231c1ebaa214cc04ec",
+      "bytes": 13799
+    },
+    {
+      "name": "traceability_matrix",
+      "path": "docs/traceability_matrix.md",
+      "sha256": "028c96239f369d7cf43139d4999833703e6fe90dd9d1fcc02960c77c4d43f16d",
+      "bytes": 8451
+    }
+  ]
+}
